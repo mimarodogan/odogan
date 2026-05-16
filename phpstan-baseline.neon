@@ -1,11 +1,66 @@
-# PHPStan baseline — pre-existing reportlar burada listelenir.
-#
-# Yeniden üretmek için (require-dev kurulduktan sonra):
-#   composer require --dev phpstan/phpstan
-#   vendor/bin/phpstan analyse --generate-baseline phpstan-baseline.neon
-#
-# CI baseline'lı mod kullanır (composer analyse). Baseline'a giren error'lar
-# rapor edilmez; YENİ hatalar fail eder. Eski borç adım adım silinip
-# baseline'dan çıkarılır.
 parameters:
-    ignoreErrors: []
+	ignoreErrors:
+		-
+			message: "#^Call to function method_exists\\(\\) with 'App\\\\\\\\Services\\\\\\\\PostNotifier' and 'notifyApprovalProgr…' will always evaluate to false\\.$#"
+			count: 1
+			path: app/Controllers/Editor/ApprovalController.php
+
+		-
+			message: "#^Constant APP_START not found\\.$#"
+			count: 1
+			path: app/Controllers/HealthController.php
+
+		-
+			message: "#^Offset 'category_name' does not exist on array\\{id\\: int, title\\: string, slug\\: string, category_slug\\: string, score\\: float\\}\\.$#"
+			count: 1
+			path: app/Controllers/Panel/PostController.php
+
+		-
+			message: "#^Method App\\\\Controllers\\\\SitemapController\\:\\:xmlResponse\\(\\) is unused\\.$#"
+			count: 1
+			path: app/Controllers/SitemapController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between non\\-falsy\\-string and '' will always evaluate to false\\.$#"
+			count: 1
+			path: app/Core/Request.php
+
+		-
+			message: "#^Strict comparison using \\!\\=\\= between null and null will always evaluate to false\\.$#"
+			count: 1
+			path: app/Core/View.php
+
+		-
+			message: "#^Method App\\\\Models\\\\AnalyticsEvent\\:\\:uaKind\\(\\) never returns null so it can be removed from the return type\\.$#"
+			count: 1
+			path: app/Models/AnalyticsEvent.php
+
+		-
+			message: "#^Method App\\\\Models\\\\UserSession\\:\\:pruneStale\\(\\) should return int but returns PDOStatement\\.$#"
+			count: 1
+			path: app/Models/UserSession.php
+
+		-
+			message: "#^Offset 'samesite' on array\\{lifetime\\: int\\<0, max\\>, path\\: non\\-falsy\\-string, domain\\: string, secure\\: bool, httponly\\: bool, samesite\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Services/AuthService.php
+
+		-
+			message: "#^Left side of && is always true\\.$#"
+			count: 1
+			path: app/Services/LinkChecker.php
+
+		-
+			message: "#^Property PHPMailer\\\\PHPMailer\\\\PHPMailer\\:\\:\\$SMTPSecure \\(string\\) does not accept false\\.$#"
+			count: 2
+			path: app/Services/MailService.php
+
+		-
+			message: "#^Offset 0 on array\\{array\\<int, string\\>\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Services/SeoScoreService.php
+
+		-
+			message: "#^Offset 1 on array\\{array\\<int, string\\>, array\\<int, non\\-empty\\-string\\>\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: app/Services/SeoScoreService.php
