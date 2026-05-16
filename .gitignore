@@ -41,7 +41,8 @@ Arşiv*.zip
 Ar*iv*.zip
 *.zip
 
-# CSS/JS build outputs (kaynak partials'tan otomatik üretilir)
-/assets/css/*.min.css
-/assets/js/*.min.js
+# Not: .min.css ve .min.js dosyaları git'te kalır — production deploy
+# kolaylığı için (clone-and-deploy). Source map'ler de yanlarında durur
+# (Sentry sembolize stack trace + browser devtools için). Yerel'de
+# kaynak değiştirince npm run build ile yenilenir, sonra commit edilir.
 !/assets/css/.gitkeep

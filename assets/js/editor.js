@@ -213,17 +213,6 @@
         ],
     ];
 
-    groups.forEach((group, gi) => {
-        if (gi > 0) {
-            const sep = document.createElement('span');
-            sep.className = 'wy-sep';
-            toolbar.appendChild(sep);
-        }
-        group.forEach(a => {
-            renderItem(a);
-        });
-    });
-
     const renderItem = a => {
         if (a.dropdown) {
             renderDropdown(a);
@@ -310,6 +299,20 @@
         });
         toolbar.appendChild(wrap);
     };
+
+    // ─── Toolbar render — renderItem + renderDropdown tanımları yukarıda
+    // Bu çağrı IIFE içinde synchronous loop'ta yapılıyor, dolayısıyla
+    // renderItem'ı önceden const olarak tanımlamamız ŞART (TDZ aksi halde).
+    groups.forEach((group, gi) => {
+        if (gi > 0) {
+            const sep = document.createElement('span');
+            sep.className = 'wy-sep';
+            toolbar.appendChild(sep);
+        }
+        group.forEach(a => {
+            renderItem(a);
+        });
+    });
 
     const applyDropdown = (kind, item) => {
         editor.focus();
