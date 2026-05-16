@@ -15,6 +15,9 @@
 /uploads/[0-9]*
 /uploads/!(.htaccess|.gitkeep)
 
+# Claude Code (CLI) local metadata — yerel ayarlar, repo'ya girmesin
+.claude/
+
 # OS / editor / build artifacts
 .DS_Store
 ._*
