@@ -1,0 +1,310 @@
+/* ════════════════════════════════════════════════════════════════════
+   wysiwyg.css — WYSIWYG editör · toolbar · dropdowns · source · fullscreen
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════ WYSIWYG ══════════════════════════════════ */
+.wysiwyg{
+  border:1px solid var(--soot);
+  /* overflow:hidden YOK — sticky toolbar'ın çalışması için parent
+     bir scroll/overflow context'i yaratmamalı. */
+  background:var(--bone);
+  position:relative;
+}
+.wysiwyg::before{
+  /* "YAZIM" label — sticky toolbar'ın üstüne çıkmasın diye gizle.
+     Toolbar zaten "YAZIM" etiketinin yerini alıyor görsel olarak. */
+  display:none;
+}
+.wy-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0;
+  padding:.25rem;
+  border-bottom:1px solid var(--soot);
+  background:var(--bone-2);
+  min-height:48px;
+  /* Sticky: admin-bar (fixed, height 44px) altında dur */
+  position:sticky;
+  top:44px;
+  z-index:30;
+  box-shadow:0 1px 0 var(--soot);
+}
+.wy-toolbar:empty::before{
+  content:"BIÇIM ARAÇLARI YÜKLENİYOR…";
+  color:var(--ash);
+  font-family:var(--mono);
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  padding:.85rem 1rem;
+}
+.wy-btn{
+  background:transparent;
+  color:var(--soot);
+  border:1px solid transparent;
+  padding:.55rem .75rem;
+  cursor:pointer;
+  font:inherit;
+  font-family:var(--mono);
+  font-size:.85rem;
+  font-weight:500;
+  min-width:2.4rem;
+  transition:background 200ms var(--ease),border-color 200ms var(--ease),color 200ms var(--ease);
+  border-radius:0;
+}
+.wy-btn:hover{background:var(--bone);border-color:var(--hair-2);color:var(--cobalt)}
+.wy-btn:active{background:var(--cobalt);color:var(--bone);border-color:var(--cobalt)}
+.wy-sep{display:inline-block;width:1px;background:var(--hair-2);margin:.3rem .25rem}
+.wy-editor{
+  min-height:520px;
+  padding:2.5rem 2.75rem;
+  line-height:1.75;
+  font-size:1.18rem;
+  font-family:var(--serif);
+  background:var(--bone);
+  color:var(--soot);
+}
+.wy-editor:focus{box-shadow:inset 3px 0 0 var(--cobalt)}
+.wy-editor:focus:not(:focus-visible){outline:0}
+.wy-editor:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+.wy-editor h1,.wy-editor h2,.wy-editor h3{
+  margin:1.4em 0 .55em;
+  letter-spacing:-.025em;
+  font-family:var(--serif);
+  font-weight:600;
+  color:var(--soot);
+}
+.wy-editor h2{font-size:1.6em;line-height:1.1}
+.wy-editor h3{font-size:1.25em;line-height:1.15}
+.wy-editor blockquote{
+  border-left:0;
+  border-top:1px solid var(--hair);
+  border-bottom:1px solid var(--hair);
+  padding:1rem 0 1rem 1.5rem;
+  color:var(--soot);
+  margin:1.5em 0;
+  font-style:italic;
+  font-size:1.2em;
+  position:relative;
+}
+.wy-editor blockquote::before{
+  content:"❝";
+  color:var(--cobalt);
+  font-style:normal;
+  position:absolute;
+  left:-.1rem;
+  top:.6rem;
+  font-size:1.6em;
+  line-height:1;
+}
+.wy-editor pre{
+  background:var(--soot);
+  color:var(--bone);
+  border:0;
+  padding:1.25rem 1.5rem;
+  overflow-x:auto;
+  font-family:var(--mono);
+  font-size:.9em;
+}
+.wy-editor img{max-width:100%;height:auto;background:var(--bone-2);border-top:1px solid var(--soot);border-bottom:1px solid var(--soot)}
+.wy-editor figure{margin:1.5em 0}
+.wy-editor figcaption{
+  color:var(--ash);
+  font-family:var(--mono);
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  text-align:left;
+  margin-top:.5rem;
+  padding-top:.4rem;
+  border-top:1px solid var(--hair);
+}
+.wy-source{display:none}
+
+/* ────────────────  Editör — yeni geliştirmeler  ─────────────── */
+
+/* Dropdown trigger */
+.wy-dd{position:relative;display:inline-block}
+.wy-dd-trigger{display:inline-flex;align-items:center;gap:.35rem}
+.wy-dd-menu{
+  position:absolute;
+  top:calc(100% + 4px);
+  left:0;
+  background:var(--bone);
+  border:1px solid var(--soot);
+  box-shadow:0 4px 12px rgba(17,17,17,.08);
+  z-index:30;
+  min-width:160px;
+  max-height:320px;
+  overflow-y:auto;
+  padding:.25rem 0;
+}
+.wy-dd-item{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  width:100%;
+  padding:.5rem .85rem;
+  background:transparent;
+  border:0;
+  text-align:left;
+  cursor:pointer;
+  font-family:var(--sans);
+  font-size:.9rem;
+  color:var(--soot);
+  white-space:nowrap;
+}
+.wy-dd-item:hover{background:var(--ink-soft);color:var(--cobalt)}
+.wy-dd-color{font-family:var(--mono);font-size:.78rem}
+.wy-color-swatch{
+  display:inline-block;
+  width:1rem;
+  height:1rem;
+  border-radius:2px;
+  margin-right:.1rem;
+  vertical-align:middle;
+  border:1px solid var(--hair-2);
+}
+
+/* Dropdown'ların kapalı default'unu zorla — [hidden] attr'ını override eden
+   yüksek-specificity grid'leri yenmek için */
+.wy-dd-menu[hidden]{display:none !important}
+
+/* Renk paleti grid layout — sadece görünür durumda */
+.wy-dd-menu.wy-dd-color:not([hidden]),
+.wy-dd-menu.wy-dd-bg:not([hidden]){
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:.25rem;
+  padding:.5rem;
+  min-width:200px;
+}
+.wy-dd-menu.wy-dd-color .wy-dd-item,
+.wy-dd-menu.wy-dd-bg    .wy-dd-item{
+  flex-direction:column;
+  align-items:center;
+  padding:.4rem .3rem;
+  gap:.25rem;
+  font-size:.62rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.wy-dd-menu.wy-dd-color .wy-color-swatch,
+.wy-dd-menu.wy-dd-bg    .wy-color-swatch{
+  width:1.4rem;
+  height:1.4rem;
+  margin:0;
+}
+
+/* Statusbar (kelime/karakter + mod) */
+.wy-statusbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:.4rem 1rem;
+  background:var(--bone-2);
+  border-top:1px solid var(--hair);
+  font-family:var(--mono);
+  font-size:.66rem;
+  color:var(--ash);
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+}
+
+/* HTML kaynak modu */
+.wy-source-view{
+  width:100%;
+  min-height:520px;
+  padding:1.5rem;
+  border:0;
+  background:#1a1a1a;
+  color:#e6e6e6;
+  font-family:var(--mono);
+  font-size:.85rem;
+  line-height:1.6;
+  resize:vertical;
+  white-space:pre;
+  overflow:auto;
+}
+.wy-source-view:focus:not(:focus-visible){outline:0}
+.wy-source-view:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+.wy-source-mode .wy-editor{display:none}
+
+/* Editör içinde tablo */
+.wy-editor table,
+.wy-editor .wy-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:1.5em 0;
+  font-family:var(--sans);
+  font-size:.95em;
+}
+.wy-editor table th,
+.wy-editor table td{
+  border:1px solid var(--hair-2);
+  padding:.6rem .8rem;
+  text-align:left;
+  vertical-align:top;
+}
+.wy-editor table th{
+  background:var(--bone-2);
+  font-family:var(--mono);
+  font-size:.72rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+}
+
+/* Inline code & mark */
+.wy-editor code{
+  background:var(--bone-2);
+  padding:.1em .4em;
+  border-radius:2px;
+  font-size:.88em;
+  font-family:var(--mono);
+}
+.wy-editor mark{
+  background:#FFF59D;
+  padding:.05em .2em;
+}
+
+/* HR */
+.wy-editor hr{
+  border:0;
+  border-top:1px solid var(--soot);
+  margin:2rem 0;
+}
+
+/* Tam ekran modu */
+.wy-fullscreen{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:var(--bone);
+  display:flex;
+  flex-direction:column;
+}
+.wy-fullscreen .wy-toolbar{top:0}
+.wy-fullscreen .wy-editor{flex:1;max-height:none;overflow-y:auto}
+.wy-fullscreen .wy-source-view{flex:1;max-height:none}
+body.wy-fullscreen-on{overflow:hidden}
+
+/* Aktif buton (sıralı liste, ortala vb. için ileride) */
+.wy-btn[aria-pressed="true"]{
+  background:var(--soot);
+  color:var(--bone);
+  border-color:var(--soot);
+}
+
+/* Mobil */
+@media(max-width:720px){
+  .wy-toolbar{padding:.2rem;gap:.15rem}
+  .wy-btn{padding:.45rem .55rem;font-size:.78rem;min-width:2rem}
+  .wy-editor{padding:1.5rem 1.25rem;font-size:1.05rem;min-height:360px}
+  .wy-statusbar{font-size:.6rem;padding:.3rem .75rem}
+}
+
+.md-toolbar{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem}
+#md-body{transition:border-color 200ms var(--ease),background 200ms var(--ease)}
+#md-body.drag-over{border-color:var(--cobalt);background:var(--bone-2)}
+

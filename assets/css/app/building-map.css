@@ -1,0 +1,587 @@
+/* ════════════════════════════════════════════════════════════════════
+ * Building Map (/harita) — Atelier estetiği
+ * Tokens: --soot #111, --cobalt #1F3A8A, --bone, --bone-2, --hair, --ash
+ * ════════════════════════════════════════════════════════════════════ */
+
+/* ───────────── Hero ───────────── */
+.map-hero{
+    text-align:left;
+    margin:2.5rem 0 2rem;
+    padding-bottom:1.5rem;
+    border-bottom:1px solid var(--hair);
+}
+.map-eyebrow{
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:var(--tracked-l, .15em);
+    text-transform:uppercase;
+    color:var(--cobalt);
+    margin:0 0 .65rem;
+    font-weight:700;
+}
+.map-hero h1{
+    font-family:var(--serif);
+    font-size:clamp(2rem, 5vw, 3.5rem);
+    line-height:1.05;
+    margin:0 0 .5rem;
+    color:var(--soot);
+    letter-spacing:-.015em;
+}
+.map-hero .lead{
+    max-width:62ch;
+    color:var(--ash);
+    font-size:1.05rem;
+    line-height:1.55;
+    margin:0;
+}
+.map-hero .muted{ color:var(--ash-2, #888888); }
+
+/* ───────────── Filter chips ───────────── */
+.map-filters{
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+    margin:0 0 1.5rem;
+    padding:0;
+}
+.map-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    padding:.45rem .9rem;
+    background:var(--bone-2);
+    border:1px solid var(--hair);
+    border-radius:999px;
+    font-family:var(--sans);
+    font-size:.85rem;
+    color:var(--soot);
+    cursor:pointer;
+    transition:all 200ms var(--ease, ease);
+    font-weight:500;
+}
+.map-chip:hover{
+    border-color:var(--soot);
+    background:var(--bone);
+}
+.map-chip.is-active{
+    background:var(--soot);
+    color:#ffffff;
+    border-color:var(--soot);
+}
+.map-chip.is-active .map-chip-count{
+    background:rgba(255,255,255,.18);
+    color:#ffffff;
+}
+.map-chip-count{
+    background:rgba(17,17,17,.06);
+    color:var(--ash);
+    font-family:var(--mono);
+    font-size:.7rem;
+    padding:.1rem .45rem;
+    border-radius:999px;
+    min-width:1.4rem;
+    text-align:center;
+    font-weight:600;
+}
+
+/* ───────────── Map stage ───────────── */
+.map-stage{
+    margin:0 0 2rem;
+    position:relative;
+}
+.building-map{
+    width:100%;
+    height:62vh;
+    min-height:480px;
+    max-height:720px;
+    border:1px solid var(--hair);
+    background:var(--bone-2);
+    position:relative;
+    overflow:hidden;
+}
+.map-hint{
+    margin:.85rem 0 0;
+    font-family:var(--mono);
+    font-size:.72rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ash);
+    display:flex;
+    align-items:center;
+    gap:.4rem;
+}
+.map-hint-icon{
+    display:inline-block;
+    color:var(--cobalt);
+    font-weight:700;
+    transform:rotate(90deg);
+}
+
+/* Loading indicator (map yüklenirken görünür, Leaflet init'le kaybolur) */
+.map-loading{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:.5rem;
+    z-index:1;
+}
+.map-loading-dot{
+    width:8px;
+    height:8px;
+    background:var(--cobalt);
+    border-radius:50%;
+    opacity:.4;
+    animation:map-pulse 1.2s ease-in-out infinite;
+}
+.map-loading-dot:nth-child(2){ animation-delay:.2s; }
+.map-loading-dot:nth-child(3){ animation-delay:.4s; }
+@keyframes map-pulse{
+    0%, 100% { opacity:.3; transform:scale(.8); }
+    50%      { opacity:1;  transform:scale(1.1); }
+}
+.building-map .leaflet-container{ background:var(--bone-2); }
+
+/* ───────────── Leaflet popup override (Atelier'ye uydur) ───────────── */
+.leaflet-popup-content-wrapper{
+    border-radius:3px !important;
+    box-shadow:0 8px 28px rgba(17,17,17,.16) !important;
+    padding:0 !important;
+    background:var(--bone) !important;
+    border:1px solid var(--hair) !important;
+}
+.leaflet-popup-content{
+    margin:0 !important;
+    padding:0 !important;
+    font-family:var(--serif) !important;
+    color:var(--soot) !important;
+    width:240px !important;
+}
+.leaflet-popup-tip{
+    background:var(--bone) !important;
+    border:1px solid var(--hair) !important;
+}
+.map-popup{
+    padding:0;
+}
+.map-popup img{
+    display:block;
+    width:100%;
+    height:130px;
+    object-fit:cover;
+    border-bottom:1px solid var(--hair);
+}
+.map-popup-body{
+    padding:.85rem 1rem 1rem;
+}
+.map-popup-role{
+    display:block;
+    font-family:var(--mono);
+    font-size:.62rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--cobalt);
+    margin-bottom:.35rem;
+    font-weight:700;
+}
+.map-popup-name{
+    font-family:var(--serif);
+    font-size:1.05rem;
+    color:var(--soot);
+    font-weight:600;
+    line-height:1.2;
+    margin:0 0 .35rem;
+    letter-spacing:-.01em;
+}
+.map-popup-meta{
+    font-family:var(--sans);
+    font-size:.8rem;
+    color:var(--ash);
+    margin:0 0 .75rem;
+}
+.map-popup-cta{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--cobalt);
+    font-weight:700;
+    text-decoration:none;
+    padding-bottom:1px;
+    border-bottom:1px solid var(--cobalt);
+}
+.map-popup-cta:hover{
+    color:var(--soot);
+    border-bottom-color:var(--soot);
+}
+
+/* Leaflet kontrolleri Atelier'ye uydur */
+.leaflet-control-zoom a{
+    background:var(--bone) !important;
+    color:var(--soot) !important;
+    border-color:var(--hair) !important;
+    font-family:var(--serif) !important;
+    font-weight:600 !important;
+}
+.leaflet-control-zoom a:hover{
+    background:var(--soot) !important;
+    color:#ffffff !important;
+}
+.leaflet-control-attribution{
+    background:rgba(250,247,242,.9) !important;
+    font-family:var(--mono) !important;
+    font-size:.62rem !important;
+    color:var(--ash) !important;
+}
+.leaflet-control-attribution a{
+    color:var(--cobalt) !important;
+}
+
+/* ───────────── Empty state ───────────── */
+.map-empty{
+    margin:1.5rem 0;
+    padding:3rem 1.5rem;
+    text-align:center;
+    background:var(--bone-2);
+    border:1px dashed var(--hair);
+}
+.map-empty-mark{
+    font-family:var(--serif);
+    font-size:3rem;
+    color:var(--cobalt);
+    margin:0 0 .5rem;
+    line-height:1;
+    opacity:.5;
+}
+.map-empty h2{
+    font-family:var(--serif);
+    font-size:1.5rem;
+    color:var(--soot);
+    margin:0 0 .75rem;
+}
+.map-empty p{
+    color:var(--ash);
+    max-width:46ch;
+    margin:0 auto .5rem;
+    line-height:1.5;
+}
+.map-empty code{
+    background:var(--bone);
+    padding:.1em .35em;
+    font-family:var(--mono);
+    font-size:.88em;
+}
+
+/* ───────────── List section (below map) ───────────── */
+.map-list-section{
+    margin:3rem 0 4rem;
+    padding-top:2rem;
+    border-top:1px solid var(--hair);
+}
+.block-title-wrap{
+    margin-bottom:1.5rem;
+}
+.map-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+    gap:1.5rem;
+}
+.map-list-item{
+    display:flex;
+    flex-direction:column;
+    text-decoration:none;
+    color:inherit;
+    background:var(--bone);
+    border:1px solid var(--hair);
+    transition:border-color 220ms var(--ease, ease),
+               transform 220ms var(--ease, ease),
+               box-shadow 220ms var(--ease, ease);
+    overflow:hidden;
+}
+.map-list-item:hover{
+    border-color:var(--cobalt);
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(17,17,17,.07);
+}
+.map-list-item.is-dim{
+    opacity:.25;
+    pointer-events:none;
+}
+.map-list-cover{
+    aspect-ratio:16 / 10;
+    overflow:hidden;
+    background:var(--bone-2);
+}
+.map-list-cover img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition:transform 400ms ease;
+}
+.map-list-item:hover .map-list-cover img{ transform:scale(1.04); }
+.map-list-cover-empty{
+    display:grid;
+    place-items:center;
+    color:var(--cobalt);
+    font-family:var(--serif);
+    font-size:3rem;
+    opacity:.25;
+}
+.map-list-body{
+    padding:1rem 1.1rem 1.25rem;
+}
+.map-list-role{
+    display:block;
+    font-family:var(--mono);
+    font-size:.62rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--cobalt);
+    margin-bottom:.4rem;
+    font-weight:700;
+}
+.map-list-title{
+    font-family:var(--serif);
+    font-size:1.15rem;
+    line-height:1.25;
+    margin:0 0 .4rem;
+    color:var(--soot);
+    font-weight:600;
+    letter-spacing:-.005em;
+}
+.map-list-meta{
+    margin:0;
+    font-size:.85rem;
+    color:var(--ash);
+    line-height:1.4;
+}
+.map-list-meta .muted{ color:var(--ash-2, #999999); margin:0 .15em; }
+
+/* ───────────── Mobile ───────────── */
+@media (max-width:880px){
+    .building-map{ height:55vh; min-height:380px; }
+    .map-list{ grid-template-columns:repeat(2, 1fr); gap:1rem; }
+    .map-filters{ overflow-x:auto; flex-wrap:nowrap; padding-bottom:.4rem; }
+    .map-chip{ flex-shrink:0; }
+}
+@media (max-width:560px){
+    .building-map{ height:50vh; min-height:340px; }
+    .map-list{ grid-template-columns:1fr; }
+    .map-hero h1{ font-size:1.9rem; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * Admin tanı paneli (sadece /harita sayfasında, admin için)
+ * ════════════════════════════════════════════════════════════════════ */
+.map-admin-diag{
+    margin:2.5rem 0 4rem;
+    padding:2rem;
+    background:var(--bone-2);
+    border:1px solid var(--hair);
+    border-left:3px solid var(--cobalt);
+}
+.map-admin-diag-head{
+    margin-bottom:1.5rem;
+}
+.map-admin-eyebrow{
+    font-family:var(--mono);
+    font-size:.7rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--cobalt);
+    margin:0 0 .35rem;
+    font-weight:700;
+}
+.map-admin-title{
+    font-family:var(--serif);
+    font-size:1.5rem;
+    margin:0 0 .35rem;
+    color:var(--soot);
+    letter-spacing:-.01em;
+}
+.map-admin-diag-head .muted{
+    margin:0;
+    font-size:.92rem;
+    color:var(--ash);
+}
+
+.map-admin-stats{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:1rem;
+    margin-bottom:1.5rem;
+}
+.map-admin-stat{
+    background:var(--bone);
+    border:1px solid var(--hair);
+    padding:1rem 1.1rem;
+}
+.map-admin-stat-warn{
+    border-left:3px solid #B0241D;
+}
+.map-admin-stat-label{
+    display:block;
+    font-family:var(--mono);
+    font-size:.62rem;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+    color:var(--ash);
+    margin-bottom:.4rem;
+    font-weight:700;
+}
+.map-admin-stat-value{
+    display:block;
+    font-family:var(--serif);
+    font-size:1.85rem;
+    line-height:1;
+    color:var(--soot);
+    margin-bottom:.35rem;
+    font-weight:600;
+}
+.map-admin-stat small{
+    font-size:.8rem;
+    color:var(--ash);
+}
+
+.map-admin-list{
+    background:var(--bone);
+    border:1px solid var(--hair);
+    padding:1.25rem;
+    margin-bottom:1.5rem;
+}
+.map-admin-list-title{
+    font-family:var(--serif);
+    font-size:1.05rem;
+    margin:0 0 .85rem;
+    padding-bottom:.5rem;
+    border-bottom:1px solid var(--hair-2);
+    color:var(--soot);
+}
+.map-admin-list ul{
+    list-style:none;
+    padding:0;
+    margin:0;
+}
+.map-admin-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    padding:.65rem 0;
+    border-bottom:1px solid var(--hair-2);
+}
+.map-admin-list li:last-child .map-admin-row{ border-bottom:0; }
+.map-admin-row strong{
+    font-family:var(--serif);
+    font-size:1rem;
+    color:var(--soot);
+}
+.map-admin-tags{
+    display:flex;
+    gap:.35rem;
+    margin-top:.25rem;
+}
+.map-admin-actions{
+    display:flex;
+    gap:.25rem;
+    flex-wrap:wrap;
+}
+
+.map-admin-help{
+    background:var(--bone);
+    border:1px dashed var(--hair);
+    padding:1.25rem;
+}
+.map-admin-help p{
+    margin:0 0 .65rem;
+    color:var(--soot);
+}
+.map-admin-help ol{
+    margin:.65rem 0;
+    padding-left:1.25rem;
+    color:var(--ash);
+    line-height:1.55;
+}
+.map-admin-help ol li{ margin-bottom:.35rem; }
+.map-admin-help code{
+    background:var(--bone-2);
+    padding:.05em .35em;
+    font-family:var(--mono);
+    font-size:.85em;
+    color:var(--soot);
+}
+.map-admin-help a{
+    color:var(--cobalt);
+    text-decoration:none;
+    border-bottom:1px dotted var(--cobalt);
+}
+.map-admin-help .muted{ font-size:.85rem; margin:.5rem 0 0; }
+
+@media (max-width:880px){
+    .map-admin-stats{ grid-template-columns:1fr; }
+    .map-admin-row{ flex-direction:column; align-items:flex-start; }
+}
+
+/* ─────────── Admin Debug Tablosu ─────────── */
+.map-admin-debug{
+    margin-top:1.5rem;
+    background:var(--bone);
+    border:1px dashed var(--hair);
+    padding:1rem 1.25rem;
+}
+.map-admin-debug > summary{
+    cursor:pointer;
+    font-family:var(--mono);
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ash);
+    padding:.25rem 0;
+    user-select:none;
+}
+.map-admin-debug > summary:hover{ color:var(--cobalt); }
+.map-admin-debug[open] > summary{ margin-bottom:.85rem; }
+.map-admin-debug p{ margin:.5rem 0; font-size:.85rem; color:var(--ash); }
+.map-admin-debug kbd{
+    background:var(--bone-2);
+    border:1px solid var(--hair);
+    border-radius:3px;
+    padding:.05em .4em;
+    font-family:var(--mono);
+    font-size:.85em;
+    color:var(--soot);
+}
+.map-admin-debug code{
+    background:var(--bone-2);
+    padding:.05em .3em;
+    font-family:var(--mono);
+    font-size:.8em;
+    color:var(--soot);
+}
+.map-admin-debug-tbl{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:.5rem;
+    font-size:.85rem;
+}
+.map-admin-debug-tbl th,
+.map-admin-debug-tbl td{
+    text-align:left;
+    padding:.4rem .6rem;
+    border-bottom:1px solid var(--hair);
+}
+.map-admin-debug-tbl th{
+    font-family:var(--mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--ash);
+    font-weight:600;
+    background:var(--bone-2);
+}
+.map-admin-debug-tbl td code{
+    font-size:.8em;
+}

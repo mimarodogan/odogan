@@ -1,0 +1,11 @@
+# PHPStan baseline — pre-existing reportlar burada listelenir.
+#
+# Yeniden üretmek için (require-dev kurulduktan sonra):
+#   composer require --dev phpstan/phpstan
+#   vendor/bin/phpstan analyse --generate-baseline phpstan-baseline.neon
+#
+# CI baseline'lı mod kullanır (composer analyse). Baseline'a giren error'lar
+# rapor edilmez; YENİ hatalar fail eder. Eski borç adım adım silinip
+# baseline'dan çıkarılır.
+parameters:
+    ignoreErrors: []

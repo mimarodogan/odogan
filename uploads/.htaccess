@@ -1,0 +1,33 @@
+# Public uploads — serve as static files only. Never execute as script.
+# Defense-in-depth: even if a polyglot file is uploaded, Apache/mod_php
+# must not run it.
+
+Options -ExecCGI -Indexes
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .pht .phps .inc
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .pht .phps .inc
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|pht|inc|cgi|pl|py|rb|sh|bash)$">
+    Require all denied
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block .htaccess overrides inside subdirs
+AllowOverride None
+
+# Force download for HTML/SVG to neutralize stored XSS payloads in user files
+<FilesMatch "\.(html?|svg|xml)$">
+    Header set Content-Disposition "attachment"
+    Header set X-Content-Type-Options "nosniff"
+</FilesMatch>
+
+# Long-lived cache for images
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/png  "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/avif "access plus 30 days"
+</IfModule>

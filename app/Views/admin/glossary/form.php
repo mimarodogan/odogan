@@ -1,0 +1,135 @@
+<?php
+/**
+ * Mimari Sözlük terim formu — Atelier post-editor patternine uyumlu.
+ * @var array $item
+ */
+\App\Core\View::layout('base');
+
+$isEdit = !empty($item['id']);
+$action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozluk');
+?>
+
+<section class="hero post-editor-hero">
+    <div>
+        <p class="post-editor-meta">
+            <a href="<?= esc(url('/admin/sozluk')) ?>" class="muted">← Tüm Terimler</a>
+        </p>
+        <h1><?= $isEdit ? 'Terimi Düzenle' : 'Yeni Terim' ?></h1>
+        <p class="post-editor-meta">
+            <?php if ($isEdit): ?>
+                <span class="badge <?= !empty($item['is_active']) ? 'badge-published' : 'badge-draft' ?>">
+                    <?= !empty($item['is_active']) ? 'Aktif' : 'Gizli' ?>
+                </span>
+                <span class="muted">·</span>
+                <span class="muted">/sozluk/<?= esc((string) ($item['slug'] ?? '')) ?></span>
+            <?php else: ?>
+                <span class="badge badge-draft">Yeni</span>
+            <?php endif; ?>
+        </p>
+    </div>
+    <?php require dirname(__DIR__, 2) . '/partials/flash.php'; ?>
+</section>
+
+<form method="post" action="<?= esc($action) ?>" class="post-editor" id="glossary-form">
+    <?= csrf_field() ?>
+
+    <header class="post-editor-head">
+        <input type="text"
+               name="term"
+               class="post-title-input"
+               required minlength="2" maxlength="180"
+               placeholder="Terim (örn: Konsol kiriş)…"
+               value="<?= esc((string) ($item['term'] ?? '')) ?>">
+    </header>
+
+    <div class="post-editor-grid">
+        <div class="post-editor-main">
+
+            <section class="pe-section">
+                <h2 class="pe-section-title">Tanım</h2>
+                <p class="pe-section-hint">Kısa, açıklayıcı tanım. HTML kullanabilirsin — resim, link, alıntı, liste.</p>
+                <span class="visually-hidden" id="rich-body-label">Tanım</span>
+                <textarea id="rich-body"
+                          name="definition"
+                          rows="14"
+                          required minlength="10" maxlength="10000"
+                          data-format="html"
+                          aria-labelledby="rich-body-label"><?= esc((string) ($item['definition'] ?? '')) ?></textarea>
+                <input type="hidden" name="body_format" value="html">
+            </section>
+
+            <section class="pe-section">
+                <h2 class="pe-section-title">Sınıflandırma</h2>
+                <p class="pe-section-hint">Sözlüğü filtrelerken ve ilgili terimleri önerirken kullanılır.</p>
+                <label>
+                    <span>Kategori</span>
+                    <input type="text" name="category" maxlength="80"
+                           value="<?= esc((string) ($item['category'] ?? '')) ?>"
+                           placeholder="örn: Strüktür, Yapı Elemanı, BIM">
+                </label>
+                <label>
+                    <span>Eş Anlamlılar (virgülle)</span>
+                    <input type="text" name="aliases" maxlength="500"
+                           value="<?= esc((string) ($item['aliases'] ?? '')) ?>"
+                           placeholder="örn: konsol, balkon konsolu">
+                    <small class="muted">Yazılarda bu kelimeler geçtiğinde de bu terime tooltip bağlanır.</small>
+                </label>
+            </section>
+
+            <section class="pe-section">
+                <h2 class="pe-section-title">Kaynaklar</h2>
+                <p class="pe-section-hint">Akademik dayanak için kaynak listesi.</p>
+                <label class="pe-label-hidden">
+                    <span class="visually-hidden">Kaynaklar</span>
+                    <input type="text" name="references" maxlength="500"
+                           value="<?= esc((string) ($item['references'] ?? '')) ?>"
+                           placeholder="https://kaynak.com; Kitap Adı (Yazar, Yıl)">
+                </label>
+                <p class="pe-helper">Birden fazla kaynak için noktalı virgülle (<code>;</code>) ayır.</p>
+            </section>
+
+        </div>
+
+        <aside class="post-editor-side">
+
+            <section class="pe-card">
+                <h2 class="pe-section-title">Yayınla</h2>
+                <label class="checkbox">
+                    <input type="hidden" name="is_active" value="0">
+                    <input type="checkbox" name="is_active" value="1" <?= !empty($item['is_active']) ? 'checked' : '' ?>>
+                    <span>Aktif (sözlükte görünür)</span>
+                </label>
+                <p class="pe-helper">Pasif terimler public sayfada görünmez ama yazıdaki tooltip referansları korunur.</p>
+                <div class="pe-actions">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <?= $isEdit ? 'Güncelle' : 'Ekle' ?>
+                    </button>
+                </div>
+            </section>
+
+            <?php if ($isEdit): ?>
+            <section class="pe-card">
+                <h2 class="pe-section-title">URL</h2>
+                <label>
+                    <span>Slug</span>
+                    <input type="text" name="slug" maxlength="120"
+                           value="<?= esc((string) ($item['slug'] ?? '')) ?>">
+                </label>
+                <p class="pe-helper">Public URL: <code>/sozluk/<?= esc((string) $item['slug']) ?></code></p>
+            </section>
+            <?php endif; ?>
+
+            <section class="pe-card">
+                <h2 class="pe-section-title">İpucu</h2>
+                <p class="pe-helper">
+                    Sözlük terimleri yazılarda otomatik tooltip olarak işlenir.
+                    Aliasları doğru yazarsan kelime geçtiğinde okur tanımı görmek için
+                    altı çizili kelimeye dokunabilir.
+                </p>
+            </section>
+
+        </aside>
+    </div>
+</form>
+
+<script src="<?= esc(asset('js/editor.js')) ?>" defer></script>

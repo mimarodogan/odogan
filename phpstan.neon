@@ -1,0 +1,14 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+    excludePaths:
+        - app/Views/*
+        - app/Helpers/*
+    ignoreErrors:
+        # PHP function bağımlılığı yumuşat (dotenv, sentry vb. opsiyonel paketler)
+        - '#Function \\(Sentry|Dotenv)\\\\.+ not found#'
+    treatPhpDocTypesAsCertain: false

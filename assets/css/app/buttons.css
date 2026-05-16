@@ -1,0 +1,37 @@
+/* ════════════════════════════════════════════════════════════════════
+   buttons.css — .btn variants (primary · danger · ghost)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════ BUTTONS ═══════════════════════════════════ */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:.6rem;
+  background:transparent;
+  border:1px solid var(--soot);
+  color:var(--soot);
+  padding:.85rem 1.5rem;
+  font-family:var(--mono);
+  font-size:.72rem;
+  font-weight:500;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  cursor:pointer;
+  text-decoration:none;
+  line-height:1;
+  white-space:nowrap;
+  border-radius:0;
+  position:relative;
+  transition:background 200ms var(--ease),color 200ms var(--ease),border-color 200ms var(--ease);
+}
+.btn:hover{background:var(--soot);color:var(--bone);text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:0;box-shadow:0 0 0 2px var(--bone),0 0 0 4px var(--cobalt)}
+.btn-primary{background:var(--soot);color:var(--bone);border-color:var(--soot)}
+.btn-primary:hover{background:var(--cobalt);border-color:var(--cobalt);color:var(--bone)}
+.btn-danger{background:transparent;color:var(--err);border-color:var(--err)}
+.btn-danger:hover{background:var(--err);color:var(--bone);border-color:var(--err)}
+.btn-ghost{border-color:var(--hair-2);color:var(--ash)}
+.btn-ghost:hover{border-color:var(--soot);background:transparent;color:var(--soot)}
+.form-actions{display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem}
+

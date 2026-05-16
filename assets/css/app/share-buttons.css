@@ -1,0 +1,147 @@
+/* Sosyal paylaşım butonları
+ * Yatay (post sonu) ve dikey (sticky desktop) varyantları
+ */
+
+.share-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.5rem;
+  margin:2rem 0;
+  padding:1rem 0;
+  border-top:1px solid var(--c-border, #d8d2c4);
+  border-bottom:1px solid var(--c-border, #d8d2c4);
+}
+
+.share-label{
+  font-family:var(--mono);
+  font-size:.75rem;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot);
+  margin-right:.5rem;
+}
+
+.share-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  background:transparent;
+  border:1px solid var(--c-border, #d8d2c4);
+  color:var(--soot);
+  font-family:var(--serif);
+  font-size:1rem;
+  font-weight:600;
+  text-decoration:none;
+  cursor:pointer;
+  transition:background 180ms var(--ease), color 180ms var(--ease), transform 120ms var(--ease);
+}
+.share-btn:hover{
+  background:var(--cobalt);
+  color:#ffffff;
+  border-color:var(--cobalt);
+  text-decoration:none;
+  transform:translateY(-1px);
+}
+.share-btn.share-copied{
+  background:#2f6a3e !important;
+  color:#ffffff !important;
+  border-color:#2f6a3e !important;
+}
+
+/* (Eski sticky vertical paylaş kaldırıldı — paylaş yalnızca yazı altında görünür.) */
+
+/* ════════════════════════ KAYDET (Save Post — Tier 5) ═══════════════
+   Atelier — diğer share butonlarıyla aynı çizgide; "saved" → cobalt fill. */
+.share-save{
+  transition:color 200ms var(--ease), background 200ms var(--ease);
+}
+.share-save.is-saved{
+  background:var(--cobalt);
+  color:#ffffff;
+  border-color:var(--cobalt);
+}
+.share-save.is-saved:hover{
+  background:var(--cobalt-2);
+}
+.share-save .save-icon{
+  line-height:1;
+  transition:transform 200ms var(--ease);
+}
+.share-save:active .save-icon{ transform:scale(1.2); }
+
+/* Header'da "Kaydedilenler" linki — diğer nav linkleri patern. */
+.nav-saved{
+  display:inline-flex;
+  align-items:center;
+  gap:.35rem;
+  position:relative;
+}
+.nav-saved .saved-badge{
+  background:var(--cobalt);
+  color:#ffffff;
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:var(--tracked);
+  font-weight:600;
+  padding:.05rem .35rem;
+  min-width:1.2rem;
+  text-align:center;
+  line-height:1.4;
+}
+.nav-saved .saved-badge[hidden]{ display:none; }
+
+/* /kaydedilenler sayfa — Atelier style */
+.page-saved{ margin-bottom:5rem; }
+.page-saved-head{
+  text-align:left;
+  margin:2rem 0 3rem;
+  padding-bottom:2rem;
+  border-bottom:1px solid var(--soot);
+}
+.page-saved-head::before{
+  content:"OKUMA LİSTESİ";
+  display:block;
+  font-family:var(--mono);
+  font-size:.66rem;
+  letter-spacing:var(--tracked-l);
+  text-transform:uppercase;
+  color:var(--ash);
+  margin-bottom:.75rem;
+}
+.page-saved-head h1{
+  font-family:var(--serif);
+  font-size:clamp(2rem,4vw,2.8rem);
+  font-weight:600;
+  margin:0 0 .75rem;
+  letter-spacing:-.025em;
+  line-height:1.05;
+}
+.page-saved-head p.muted{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:1.05rem;
+  color:var(--soot-2);
+  margin:0;
+}
+.mag-card-saved{ position:relative; }
+.saved-remove{
+  background:transparent;
+  border:1px solid var(--hair-2);
+  color:var(--ash);
+  padding:.3rem .65rem;
+  cursor:pointer;
+  font-family:var(--mono);
+  font-size:.65rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  font-weight:500;
+  transition:color 200ms var(--ease), border-color 200ms var(--ease);
+}
+.saved-remove:hover{
+  border-color:var(--vermilion);
+  color:var(--vermilion);
+}

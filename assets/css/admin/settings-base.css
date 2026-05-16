@@ -1,0 +1,111 @@
+/* ════════════════════════════════════════════════════════════════════
+   settings-base.css — Site ayarları formu (temel layout)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────  Site Ayarları formu  ────────────────── */
+.settings-form{display:flex;flex-direction:column;gap:2.5rem;max-width:780px;margin:1rem 0 3rem}
+.settings-group{
+  border:1px solid var(--soot);
+  padding:1.75rem 2rem 2rem;
+  background:var(--bone);
+  position:relative;
+}
+.settings-group legend{
+  padding:0 .65rem;
+  font-family:var(--mono);
+  font-size:.7rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked-l);
+  color:var(--soot);
+  background:var(--bone);
+}
+.settings-hint{
+  font-size:.9rem;
+  color:var(--ash);
+  line-height:1.5;
+  margin:0 0 1.5rem;
+  font-style:italic;
+}
+.settings-fields{display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.settings-fields > label{
+  display:flex;
+  flex-direction:column;
+  gap:.45rem;
+}
+.settings-fields > label > span{
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot);
+}
+.settings-fields input[type="text"],
+.settings-fields input[type="number"],
+.settings-fields textarea{
+  width:100%;
+  border:0;
+  border-bottom:1px solid var(--hair-2);
+  background:transparent;
+  padding:.55rem 0;
+  font:inherit;
+  color:var(--soot);
+  transition:border-color 200ms var(--ease);
+}
+.settings-fields input:focus,
+.settings-fields textarea:focus{
+  border-bottom-color:var(--cobalt);
+}
+.settings-fields input:focus:not(:focus-visible),
+.settings-fields textarea:focus:not(:focus-visible){
+  outline:0;
+}
+.settings-fields input:focus-visible,
+.settings-fields textarea:focus-visible{
+  outline:2px solid var(--cobalt);
+  outline-offset:2px;
+}
+.settings-fields textarea{resize:vertical;min-height:5rem;line-height:1.5}
+.settings-fields small{color:var(--ash);font-size:.75rem;margin-top:.15rem}
+.settings-toggle{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  padding:.65rem .85rem;
+  border:1px solid var(--hair-2);
+  background:var(--bone-2);
+  cursor:pointer;
+  font-family:var(--mono);
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot);
+  transition:border-color 200ms var(--ease),background 200ms var(--ease);
+}
+.settings-toggle:hover{border-color:var(--cobalt)}
+.settings-toggle input[type="checkbox"]{
+  appearance:none;
+  width:42px;
+  height:22px;
+  background:var(--hair-2);
+  border-radius:11px;
+  position:relative;
+  cursor:pointer;
+  transition:background 200ms var(--ease);
+  flex-shrink:0;
+}
+.settings-toggle input[type="checkbox"]::before{
+  content:"";
+  position:absolute;
+  top:2px;
+  left:2px;
+  width:18px;
+  height:18px;
+  background:var(--bone);
+  border-radius:50%;
+  transition:transform 200ms var(--ease);
+}
+.settings-toggle input[type="checkbox"]:checked{background:var(--cobalt)}
+

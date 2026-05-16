@@ -1,0 +1,44 @@
+/vendor/
+/.env
+
+# Runtime storage — .htaccess hariç hepsi ignore
+/storage/cache/*
+!/storage/cache/.gitkeep
+!/storage/cache/.htaccess
+/storage/logs/*
+!/storage/logs/.gitkeep
+!/storage/logs/.htaccess
+
+# Yüklenen medyalar (kullanıcı içeriği)
+/public/uploads/*
+!/public/uploads/.gitkeep
+/uploads/[0-9]*
+/uploads/!(.htaccess|.gitkeep)
+
+# OS / editor / build artifacts
+.DS_Store
+._*
+Thumbs.db
+*.bak
+*.orig
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.log
+
+# Node / frontend tooling
+/node_modules/
+
+# Deployment paketleri (60MB+ — repo'ya girmesin)
+# Source map'ler (*.map) DAHİL DEĞİL — onlar prod'a deploy edilmeli ki
+# Sentry / browser devtools sembolize stack trace üretebilsin.
+Arşiv*.zip
+Ar*iv*.zip
+*.zip
+
+# CSS/JS build outputs (kaynak partials'tan otomatik üretilir)
+/assets/css/*.min.css
+/assets/js/*.min.js
+!/assets/css/.gitkeep

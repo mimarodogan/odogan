@@ -1,0 +1,449 @@
+/* ════════════════════════════════════════════════════════════════════
+   polish.css — v2 polish · Atelier refinements (üstteki kuralları override eder)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════
+   ATELIER — Admin · v2 polish
+   Tek seferlik refine: browser reset, sıkı grid, mikro etkileşimler,
+   sticky save bar, accent çizgiler, table zebra. Spec'i son tanım kazansın
+   diye dosyanın sonunda.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* — Browser default reset (fieldset/legend/form) ——————————————————————— */
+.admin-main fieldset{
+  border:0;
+  margin:0;
+  padding:0;
+  min-width:0;
+}
+.admin-main legend{
+  display:block;
+  width:auto;
+  padding:0;
+  color:inherit;
+  font-size:inherit;
+  font-weight:inherit;
+}
+
+/* — Page head — her admin sayfasının üst başlığı için tutarlı pattern — */
+.admin-main .hero{
+  margin:0 0 2.5rem;
+  padding:0 0 1.5rem;
+  border-bottom:1px solid var(--soot);
+  position:relative;
+}
+.admin-main .hero::before{
+  content:"§ §";
+  position:absolute;
+  top:-.2rem;
+  right:0;
+  font-family:var(--mono);
+  font-size:.66rem;
+  letter-spacing:var(--tracked-l);
+  color:var(--cobalt);
+  opacity:.6;
+}
+.admin-main .hero h1{
+  font-family:var(--serif);
+  font-size:clamp(2rem,3.4vw,2.8rem);
+  font-weight:600;
+  letter-spacing:-.03em;
+  line-height:1;
+  margin:0 0 .55rem;
+}
+.admin-main .hero .lead{
+  color:var(--ash);
+  font-family:var(--sans);
+  font-style:normal;
+  font-size:1rem;
+  margin:0;
+  max-width:60ch;
+  line-height:1.45;
+}
+
+/* — Settings form refinement —————————————————————————————————————————— */
+.settings-form{
+  max-width:920px;
+  display:flex;
+  flex-direction:column;
+  gap:2rem;
+  margin:0 0 7rem; /* sticky bar için boşluk */
+  padding:0;
+}
+.settings-form fieldset.settings-group{
+  border:1px solid var(--hair-2);
+  background:var(--bone);
+  padding:0;
+  position:relative;
+}
+.settings-form fieldset.settings-group::before{
+  /* sol kenarda cobalt accent — fokus/active hissi */
+  content:"";
+  position:absolute;
+  left:-1px;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:var(--cobalt);
+  opacity:0;
+  transition:opacity 240ms var(--ease);
+}
+.settings-form fieldset.settings-group:hover::before,
+.settings-form fieldset.settings-group:focus-within::before{opacity:1}
+
+.settings-form legend{
+  margin:0;
+  padding:1.25rem 2rem .65rem;
+  font-family:var(--serif);
+  font-size:1.3rem;
+  font-weight:600;
+  letter-spacing:-.015em;
+  color:var(--soot);
+  border:0;
+  background:transparent;
+  width:100%;
+  text-transform:none;
+}
+.settings-form legend::before{
+  content:"";
+  display:inline-block;
+  width:6px;
+  height:6px;
+  background:var(--cobalt);
+  margin-right:.7rem;
+  vertical-align:middle;
+  transform:rotate(45deg) translateY(-1px);
+}
+.settings-hint{
+  margin:0;
+  padding:0 2rem .25rem;
+  font-family:var(--sans);
+  font-size:.85rem;
+  font-style:normal;
+  color:var(--ash);
+  line-height:1.5;
+  max-width:60ch;
+}
+.settings-fields{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+  gap:1.5rem 2rem;
+  padding:1.5rem 2rem 2rem;
+  border-top:1px solid var(--hair);
+  margin-top:1.25rem;
+}
+.settings-fields > label{
+  display:flex !important;
+  flex-direction:column;
+  gap:.4rem;
+  margin:0;
+  min-width:0;
+}
+.settings-fields > label > span{
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot);
+}
+.settings-fields input[type="text"],
+.settings-fields input[type="number"],
+.settings-fields textarea{
+  display:block;
+  width:100%;
+  border:0;
+  border-bottom:1px solid var(--hair-2);
+  background:transparent;
+  padding:.55rem 0;
+  font:inherit;
+  font-size:.98rem;
+  color:var(--soot);
+  border-radius:0;
+  transition:border-color 200ms var(--ease),background 200ms var(--ease),padding 200ms var(--ease);
+}
+.settings-fields input[type="text"]:hover,
+.settings-fields input[type="number"]:hover,
+.settings-fields textarea:hover{border-bottom-color:var(--soot)}
+.settings-fields input[type="text"]:focus,
+.settings-fields input[type="number"]:focus,
+.settings-fields textarea:focus{
+  border-bottom:2px solid var(--cobalt);
+  caret-color:var(--cobalt);
+  padding-bottom:calc(.55rem - 1px);
+}
+.settings-fields input[type="text"]:focus:not(:focus-visible),
+.settings-fields input[type="number"]:focus:not(:focus-visible),
+.settings-fields textarea:focus:not(:focus-visible){
+  outline:0;
+}
+.settings-fields input[type="text"]:focus-visible,
+.settings-fields input[type="number"]:focus-visible,
+.settings-fields textarea:focus-visible{
+  outline:2px solid var(--cobalt);
+  outline-offset:2px;
+}
+.settings-fields input[type="text"]::placeholder,
+.settings-fields textarea::placeholder{color:var(--ash-2)}
+.settings-fields textarea{
+  resize:vertical;
+  min-height:5rem;
+  line-height:1.55;
+}
+.settings-fields small{
+  color:var(--ash);
+  font-size:.75rem;
+  line-height:1.45;
+  margin-top:.2rem;
+}
+
+/* Toggle satırı — kendi kart hissi */
+.settings-fields .settings-toggle{
+  grid-column:1 / -1;
+}
+
+/* Sticky save bar */
+.settings-form .form-actions,
+.admin-main .form-actions.sticky{
+  position:sticky;
+  bottom:0;
+  z-index:5;
+  background:linear-gradient(to top, var(--bone) 60%, rgba(250,247,242,0));
+  padding:1.25rem 0;
+  margin-top:2rem;
+  display:flex;
+  gap:1rem;
+  flex-wrap:wrap;
+}
+
+/* — Dashboard kartları (büyük rakamlar + accent) —————————————————————— */
+.dash-stat{
+  position:relative;
+  overflow:hidden;
+}
+.dash-stat::before{
+  /* tepedeki cobalt çizgi — hover'da uzar */
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  height:3px;
+  width:24px;
+  background:var(--cobalt);
+  transition:width 320ms var(--ease);
+}
+.dash-stat:hover::before{width:100%}
+.dash-stat .ds-value{
+  font-feature-settings:"tnum","lnum";
+}
+
+/* Recent activity listeleri için subtle ankraj */
+.dr-title{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+}
+.dr-title::after{
+  content:"§";
+  color:var(--cobalt);
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:.9em;
+  opacity:.6;
+  margin-left:.4rem;
+}
+.dr-item{transition:padding-left 260ms var(--ease),background 260ms var(--ease)}
+.dr-item:hover{padding-left:.5rem;background:var(--ink-soft)}
+
+/* — Sidebar nav: active state + section başlık aralığı ——————————————— */
+.admin-nav .ns-title{
+  margin-top:1.4rem;
+}
+.admin-nav .ns-title:first-child{margin-top:0}
+.admin-nav a{
+  position:relative;
+  transition:background 200ms var(--ease),color 200ms var(--ease),padding-left 200ms var(--ease);
+}
+.admin-nav a::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:var(--cobalt);
+  transform:scaleY(0);
+  transform-origin:top;
+  transition:transform 240ms var(--ease);
+}
+.admin-nav a:hover{background:var(--ink-soft);color:var(--cobalt)}
+.admin-nav a[aria-current="page"]{
+  background:var(--ink-soft);
+  color:var(--cobalt);
+  font-weight:500;
+}
+.admin-nav a[aria-current="page"]::before{transform:scaleY(1)}
+.admin-nav a[aria-current="page"] .ns-glyph{color:var(--cobalt)}
+
+/* Sub-link (ns-sub) — Bakım altındaki Yedekler/Migrasyonlar gibi */
+.admin-nav a.ns-sub{
+  padding-left:2.6rem;
+  font-size:.82rem;
+  color:var(--ash);
+}
+.admin-nav a.ns-sub .ns-glyph{
+  font-size:.85em;
+  opacity:.7;
+}
+.admin-nav a.ns-sub:hover,
+.admin-nav a.ns-sub[aria-current="page"]{
+  color:var(--cobalt);
+}
+@media(max-width:720px){
+  .admin-nav a.ns-sub{padding-left:2.2rem;font-size:.85rem}
+}
+
+/* — Üst bar — marka damar + minor parlatma ———————————————————————————— */
+.admin-bar{
+  box-shadow:0 1px 0 rgba(17,17,17,.04);
+}
+.ab-brand strong{
+  position:relative;
+}
+.ab-cta{
+  background:var(--soot);
+  color:var(--bone);
+  padding:.45rem .85rem !important;
+  transition:background 200ms var(--ease);
+}
+.ab-cta:hover{background:var(--cobalt);color:var(--bone)}
+
+/* — Tablolar — zebra, hover, sıkı tipografi ——————————————————————————— */
+.admin-main .table{
+  width:100%;
+  border-collapse:collapse;
+  font-family:var(--sans);
+  font-size:.95rem;
+  margin:.5rem 0 2rem;
+}
+.admin-main .table thead th{
+  text-align:left;
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+  background:transparent;
+  padding:1rem .9rem;
+  border-bottom:1px solid var(--soot);
+  white-space:nowrap;
+}
+.admin-main .table tbody td{
+  padding:.85rem .9rem;
+  border-bottom:1px solid var(--hair);
+  vertical-align:middle;
+  color:var(--soot);
+}
+.admin-main .table tbody tr{transition:background 220ms var(--ease)}
+.admin-main .table tbody tr:nth-child(odd){background:transparent}
+.admin-main .table tbody tr:nth-child(even){background:rgba(17,17,17,.018)}
+.admin-main .table tbody tr:hover{background:var(--ink-soft)}
+.admin-main .table input[type="text"],
+.admin-main .table input[type="number"],
+.admin-main .table select{
+  background:transparent;
+  border:0;
+  border-bottom:1px solid var(--hair-2);
+  padding:.4rem 0;
+  font:inherit;
+  font-size:.92rem;
+  color:var(--soot);
+  width:100%;
+  min-width:120px;
+  border-radius:0;
+  transition:border-color 200ms var(--ease);
+}
+.admin-main .table input:focus,
+.admin-main .table select:focus{
+  border-bottom-color:var(--cobalt);
+}
+.admin-main .table input:focus:not(:focus-visible),
+.admin-main .table select:focus:not(:focus-visible){
+  outline:0;
+}
+.admin-main .table input:focus-visible,
+.admin-main .table select:focus-visible{
+  outline:2px solid var(--cobalt);
+  outline-offset:2px;
+}
+.admin-main .table .btn{padding:.55rem .85rem;font-size:.66rem}
+
+/* — Form (genel) — sayfa altı new-item formları —————————————————————— */
+.admin-main .form-wide,
+.admin-main .form{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:1.5rem 2rem;
+  max-width:100%;
+  background:var(--bone);
+  border:1px solid var(--hair-2);
+  padding:1.75rem 2rem;
+  margin-top:1.5rem;
+}
+.admin-main .form > label,
+.admin-main .form-wide > label{
+  display:flex;
+  flex-direction:column;
+  gap:.45rem;
+  margin:0;
+  min-width:0;
+}
+.admin-main .form > label > span,
+.admin-main .form-wide > label > span{
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot);
+}
+.admin-main .form > button[type="submit"],
+.admin-main .form-wide > button[type="submit"]{
+  grid-column:1 / -1;
+  justify-self:flex-start;
+  margin-top:.5rem;
+}
+
+/* — Section başlık (h2 sayfa içi) ——————————————————————————————————— */
+.admin-main h2{
+  font-family:var(--serif);
+  font-size:1.5rem;
+  font-weight:600;
+  letter-spacing:-.02em;
+  margin:3rem 0 1rem;
+  padding-bottom:.65rem;
+  border-bottom:1px solid var(--hair);
+  position:relative;
+}
+.admin-main h2::before{
+  content:"";
+  display:inline-block;
+  width:5px;
+  height:5px;
+  background:var(--cobalt);
+  margin-right:.6rem;
+  vertical-align:middle;
+  transform:rotate(45deg);
+}
+
+/* — Empty states ————————————————————————————————————————————————————— */
+.admin-main .empty-state{
+  text-align:center;
+  padding:4rem 2rem;
+  border:1px dashed var(--hair-2);
+  color:var(--ash);
+  font-family:var(--serif);
+  font-size:1.1rem;
+  font-style:italic;
+}

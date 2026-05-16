@@ -1,0 +1,72 @@
+/* Print stylesheet — kullanıcı Cmd+P bastığında temiz, okunur çıktı */
+@media print {
+  /* Gizle: header, admin sidebar, sticky bileşenler, ilgili widget'lar */
+  .site-header,
+  .admin-bar,
+  .admin-shell aside,
+  .admin-shell .admin-sidebar,
+  .admin-side,
+  .related-block,
+  .share-buttons,
+  .pagination,
+  .comment-form,
+  #yorumlar,
+  .reading-progress,
+  .read-progress,
+  .header-search,
+  .nav,
+  .breadcrumb-nav,
+  .post-tags,
+  footer.muted { display: none !important; }
+
+  /* Sayfa boyutları */
+  @page {
+    size: a4;
+    margin: 2cm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: Georgia, 'Times New Roman', serif !important;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  .main, .container, .post {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .post h1 { font-size: 24pt; margin-top: 0; break-after: avoid; }
+  .post h2 { font-size: 16pt; break-after: avoid; }
+  .post h3 { font-size: 13pt; break-after: avoid; }
+  .post p, .post li { font-size: 11pt; }
+
+  /* Görsel boyutları + sayfa atlama */
+  .post img, .post figure {
+    max-width: 100% !important;
+    break-inside: avoid;
+  }
+
+  /* Linklerin URL'lerini parantez içinde göster (PDF için faydalı) */
+  .post a[href]:not([href^="#"])::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #555555;
+    overflow-wrap: break-word;
+  }
+
+  /* Hata: arka plan rengini bastır */
+  * {
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* SSS ve diğer bloklar */
+  .faq, .author-section {
+    break-inside: avoid;
+  }
+}

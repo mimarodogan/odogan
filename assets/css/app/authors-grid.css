@@ -1,0 +1,86 @@
+/* ════════════════════════════════════════════════════════════════════
+   authors-grid.css — Yazarlar sayfası — dairesel avatar grid (kendi mobile dahil)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────── AUTHORS GRID — CIRCULAR ─────────────────── */
+.authors-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:3rem 2rem;
+  margin-top:3rem;
+  padding-top:3rem;
+  border-top:1px solid var(--soot);
+}
+.author-circle{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  text-decoration:none;
+  color:var(--soot);
+  gap:.65rem;
+  transition:transform 300ms var(--ease);
+}
+.author-circle:hover{text-decoration:none;transform:translateY(-3px)}
+.ac-avatar{
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  overflow:hidden;
+  background:var(--bone-2);
+  border:2px solid var(--soot);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:border-color 240ms var(--ease),transform 600ms var(--ease);
+  position:relative;
+}
+.author-circle:hover .ac-avatar{
+  border-color:var(--cobalt);
+  transform:scale(1.04);
+}
+.ac-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  filter:grayscale(.15) contrast(1.04);
+  transition:filter 400ms var(--ease);
+}
+.author-circle:hover .ac-avatar img{filter:grayscale(0) contrast(1.04)}
+.ac-initial{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:3.2rem;
+  color:var(--soot);
+  line-height:1;
+}
+.ac-name{
+  font-family:var(--serif);
+  font-size:1.15rem;
+  font-weight:600;
+  letter-spacing:-.015em;
+  color:var(--soot);
+  margin-top:.4rem;
+  line-height:1.2;
+  transition:color 200ms var(--ease);
+}
+.author-circle:hover .ac-name{color:var(--cobalt)}
+.ac-headline{
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:500;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+  max-width:18ch;
+  line-height:1.35;
+}
+@media(max-width:640px){
+  .authors-grid{grid-template-columns:repeat(2,1fr);gap:2.25rem 1.25rem;padding-top:2rem;margin-top:2rem}
+  .ac-avatar{width:110px;height:110px}
+  .ac-initial{font-size:2.5rem}
+  .ac-name{font-size:1rem}
+}
+
+

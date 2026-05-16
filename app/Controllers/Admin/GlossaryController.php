@@ -1,0 +1,126 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Controllers\Admin;
+
+use App\Core\Request;
+use App\Core\Response;
+use App\Models\Glossary;
+use App\Services\Sanitizer;
+
+/**
+ * Admin → Mimari Sözlük yönetimi (Tier 7 — Architecture niche).
+ */
+final class GlossaryController
+{
+    private static function gate(): ?Response
+    {
+        if (!function_exists('feature') || !feature('glossary_enabled')) {
+            return Response::notFound();
+        }
+        return null;
+    }
+
+    public function index(Request $req): Response
+    {
+        if ($g = self::gate()) return $g;
+        return view('admin.glossary.index', [
+            'title' => 'Mimari Sözlük',
+            'list'  => Glossary::all(),
+        ]);
+    }
+
+    public function create(Request $req): Response
+    {
+        if ($g = self::gate()) return $g;
+        return view('admin.glossary.form', [
+            'title' => 'Yeni Terim',
+            'item'  => [
+                'id' => null, 'term' => '', 'slug' => '', 'definition' => '',
+                'category' => '', 'aliases' => '', 'references' => '', 'is_active' => 1,
+            ],
+        ]);
+    }
+
+    public function edit(Request $req, array $args): Response
+    {
+        if ($g = self::gate()) return $g;
+        $id = (int) ($args['id'] ?? 0);
+        $item = Glossary::findById($id);
+        if (!$item) return Response::notFound();
+        return view('admin.glossary.form', [
+            'title' => 'Terim Düzenle — ' . $item['term'],
+            'item'  => $item,
+        ]);
+    }
+
+    public function store(Request $req): Response
+    {
+        if ($g = self::gate()) return $g;
+        $patch = self::validateInput($req, $err);
+        if ($err) {
+            flash('error', $err);
+            return Response::redirect(url('/admin/sozluk/yeni'));
+        }
+        $id = Glossary::create($patch);
+        flash('success', 'Terim eklendi.');
+        return Response::redirect(url('/admin/sozluk/' . $id . '/duzenle'));
+    }
+
+    public function update(Request $req, array $args): Response
+    {
+        if ($g = self::gate()) return $g;
+        $id = (int) ($args['id'] ?? 0);
+        $item = Glossary::findById($id);
+        if (!$item) return Response::notFound();
+
+        $patch = self::validateInput($req, $err);
+        if ($err) {
+            flash('error', $err);
+            return Response::redirect(url('/admin/sozluk/' . $id . '/duzenle'));
+        }
+        // slug değişti mi
+        $newSlug = trim((string) $req->input('slug', ''));
+        if ($newSlug !== '' && $newSlug !== $item['slug']) {
+            $patch['slug'] = $newSlug;
+        }
+        Glossary::update($id, $patch);
+        flash('success', 'Terim güncellendi.');
+        return Response::redirect(url('/admin/sozluk/' . $id . '/duzenle'));
+    }
+
+    public function destroy(Request $req, array $args): Response
+    {
+        if ($g = self::gate()) return $g;
+        $id = (int) ($args['id'] ?? 0);
+        Glossary::delete($id);
+        flash('success', 'Terim silindi.');
+        return Response::redirect(url('/admin/sozluk'));
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private static function validateInput(Request $req, ?string &$err): array
+    {
+        $err = null;
+        $term = trim((string) $req->input('term', ''));
+        if (mb_strlen($term) < 2) {
+            $err = 'Terim en az 2 karakter olmalı.';
+            return [];
+        }
+        $def = trim((string) $req->input('definition', ''));
+        if (mb_strlen($def) < 10) {
+            $err = 'Tanım en az 10 karakter olmalı.';
+            return [];
+        }
+        return [
+            'term'        => mb_substr($term, 0, 180),
+            'definition'  => Sanitizer::clean($def),
+            'category'    => mb_substr(trim((string) $req->input('category', '')), 0, 80),
+            'aliases'     => mb_substr(trim((string) $req->input('aliases', '')), 0, 500),
+            'references'  => mb_substr(trim((string) $req->input('references', '')), 0, 500),
+            'is_active'   => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
+        ];
+    }
+}

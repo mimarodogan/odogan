@@ -1,0 +1,101 @@
+/* ════════════════════════════════════════════════════════════════════
+   cookie-consent.css — Atelier · KVKK çerez onay banner'ı
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Banner — sayfa sonunda sabit, hairline soot çizgi ile bone üzerinde.
+   max-width 720px + auto margin → desktop'ta merkezde dar bir şerit;
+   mobile'da edge-to-edge. Hidden attribute → JS init etmeden görünmez. */
+.cookie-consent{
+  position:fixed;
+  left:50%;
+  bottom:1.5rem;
+  width:calc(100% - 3rem);
+  max-width:720px;
+  background:var(--bone);
+  border-top:2px solid var(--soot);
+  border-left:1px solid var(--hair);
+  border-right:1px solid var(--hair);
+  border-bottom:1px solid var(--hair);
+  box-shadow:0 8px 32px rgba(17,17,17,.12);
+  z-index:9000;
+  opacity:0;
+  transform:translate(-50%, 1rem);
+  transition:opacity 240ms var(--ease), transform 240ms var(--ease);
+}
+.cookie-consent[hidden]{display:none}
+.cookie-consent.is-visible{opacity:1;transform:translate(-50%, 0)}
+
+.cookie-consent-inner{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:1.5rem;
+  align-items:center;
+  padding:1.25rem 1.5rem;
+}
+
+/* — Sol sütun: metin —————————————————————————————————————————————— */
+.cookie-consent-body{min-width:0}
+.cookie-consent-title{
+  font-family:var(--serif);
+  font-size:1.05rem;
+  font-weight:600;
+  color:var(--soot);
+  margin:0 0 .35rem;
+  letter-spacing:.005em;
+}
+.cookie-consent-text{
+  font-family:var(--sans);
+  font-size:.85rem;
+  line-height:1.55;
+  color:var(--soot-2);
+  margin:0;
+}
+.cookie-consent-text strong{color:var(--soot);font-weight:600}
+.cookie-consent-link{margin:.5rem 0 0;font-family:var(--sans);font-size:.78rem}
+.cookie-consent-link a{
+  color:var(--cobalt);
+  text-decoration:underline;
+  text-underline-offset:3px;
+  text-decoration-thickness:1px;
+}
+.cookie-consent-link a:hover{color:var(--cobalt-2)}
+
+/* — Sağ sütun: butonlar ————————————————————————————————————————— */
+.cookie-consent-buttons{
+  display:flex;
+  flex-direction:column;
+  gap:.6rem;
+  flex-shrink:0;
+}
+.cookie-btn{
+  padding:.7rem 1.25rem;
+  font-size:.7rem;
+  min-width:160px;
+  justify-content:center;
+}
+
+/* — Mobile (≤ 600px) ————————————————————————————————————————————
+   Tek kolona düş, full-width butonlar, sabit alt kenar. */
+@media (max-width: 600px){
+  .cookie-consent{
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    max-width:none;
+    transform:translateY(1rem);
+    border-left:0;
+    border-right:0;
+    border-bottom:0;
+  }
+  .cookie-consent.is-visible{transform:translateY(0)}
+  .cookie-consent-inner{
+    grid-template-columns:1fr;
+    gap:1rem;
+    padding:1rem 1.25rem 1.25rem;
+  }
+  .cookie-consent-buttons{flex-direction:row;width:100%}
+  .cookie-btn{flex:1;min-width:0}
+  .cookie-consent-title{font-size:.95rem}
+  .cookie-consent-text{font-size:.8rem}
+}

@@ -1,0 +1,123 @@
+/* ════════════════════════════════════════════════════════════════════
+   settings-extra.css — Select stilleri · Mail test formu
+   ════════════════════════════════════════════════════════════════════ */
+
+
+/* — Mobile ————————————————————————————————————————————————————————— */
+/* Settings <select> — input'larla tutarlı borderless underline */
+.settings-fields select{
+  display:block;
+  width:100%;
+  border:0;
+  border-bottom:1px solid var(--hair-2);
+  background:transparent;
+  padding:.55rem 0;
+  font:inherit;
+  font-size:.98rem;
+  color:var(--soot);
+  border-radius:0;
+  cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path fill='%231F3A8A' d='M0 0l6 8 6-8z'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right .25rem center;
+  background-size:10px;
+  padding-right:1.5rem;
+  transition:border-color 200ms var(--ease);
+}
+.settings-fields select:hover{border-bottom-color:var(--soot)}
+.settings-fields select:focus{border-bottom:2px solid var(--cobalt);padding-bottom:calc(.55rem - 1px)}
+.settings-fields select:focus:not(:focus-visible){outline:0}
+.settings-fields select:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+.settings-fields input[type="password"]{
+  display:block;
+  width:100%;
+  border:0;
+  border-bottom:1px solid var(--hair-2);
+  background:transparent;
+  padding:.55rem 0;
+  font:inherit;
+  font-size:.98rem;
+  color:var(--soot);
+  border-radius:0;
+  letter-spacing:.1em;
+  transition:border-color 200ms var(--ease),padding 200ms var(--ease);
+}
+.settings-fields input[type="password"]:focus{border-bottom:2px solid var(--cobalt);padding-bottom:calc(.55rem - 1px);letter-spacing:normal}
+.settings-fields input[type="password"]:focus:not(:focus-visible){outline:0}
+.settings-fields input[type="password"]:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+
+/* Mail Test bölümü */
+.mail-test{
+  max-width:680px;
+  margin:3rem 0 5rem;
+  padding:2rem;
+  border:1px solid var(--hair-2);
+  background:var(--bone-2);
+  position:relative;
+}
+.mail-test::before{
+  content:"📨 TEST";
+  position:absolute;
+  top:-.6rem;
+  left:1.5rem;
+  background:var(--bone-2);
+  padding:0 .6rem;
+  font-family:var(--mono);
+  font-size:.62rem;
+  letter-spacing:var(--tracked-l);
+  font-weight:600;
+  color:var(--ash);
+}
+.mail-test h2{
+  margin-top:0;
+  font-family:var(--serif);
+  font-size:1.3rem;
+}
+.mail-test-form{
+  display:flex;
+  gap:1rem;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin-top:1rem;
+}
+.mail-test-form label{
+  flex:1;
+  min-width:240px;
+  display:flex;
+  flex-direction:column;
+  gap:.4rem;
+}
+.mail-test-form label > span{
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+}
+.mail-test-form input{
+  width:100%;
+  border:0;
+  border-bottom:1px solid var(--hair-2);
+  background:transparent;
+  padding:.55rem 0;
+  font:inherit;
+  color:var(--soot);
+}
+.mail-test-form input:focus{border-bottom:2px solid var(--cobalt);caret-color:var(--cobalt)}
+.mail-test-form input:focus:not(:focus-visible){outline:0}
+.mail-test-form input:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+
+@media(max-width:720px){
+  .settings-fields{padding:1.25rem 1.25rem 1.5rem;gap:1.25rem}
+  .settings-form legend{padding:1rem 1.25rem .5rem;font-size:1.1rem}
+  .settings-hint{padding:0 1.25rem .25rem;font-size:.8rem}
+  .admin-main .hero{margin-bottom:1.5rem}
+  .admin-main .hero h1{font-size:1.6rem}
+  .admin-main .form,
+  .admin-main .form-wide{padding:1.25rem;gap:1.25rem}
+  .mail-test{padding:1.5rem 1.25rem;margin:2rem 0 4rem}
+  .mail-test-form{flex-direction:column;align-items:stretch}
+  .mail-test-form label{width:100%}
+}
+

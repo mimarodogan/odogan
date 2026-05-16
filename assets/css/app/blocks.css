@@ -1,0 +1,384 @@
+/* ════════════════════════════════════════════════════════════════════
+   blocks.css — block-title · two-col · rank-list · showcase-list · read-progress
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════ TWO COL ═══════════════════════════════════ */
+.two-col{display:grid;gap:3rem;grid-template-columns:1fr;margin-top:2rem}
+@media(min-width:900px){.two-col{grid-template-columns:1fr 1fr;gap:4rem}}
+
+/* ════════════════════════ RANK LIST ═════════════════════════════════ */
+.rank-list{
+  padding:0;
+  margin:0;
+  counter-reset:rank;
+  list-style:none;
+  display:grid;
+  gap:0;
+  border-top:1px solid var(--hair);
+}
+.rank-list li{
+  counter-increment:rank;
+  padding:1.5rem 0;
+  border-bottom:1px solid var(--hair);
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:baseline;
+  gap:2rem;
+  background:transparent;
+  transition:padding-left 300ms var(--ease),background 300ms var(--ease);
+}
+.rank-list li:hover{background:var(--ink-soft);padding-left:.75rem}
+.rank-list li::before{
+  content:counter(rank,decimal-leading-zero);
+  color:var(--cobalt);
+  font-weight:500;
+  font-family:var(--mono);
+  font-variant-numeric:tabular-nums;
+  font-size:.85rem;
+  letter-spacing:var(--tracked);
+  align-self:center;
+}
+.rank-list a{
+  color:var(--soot);
+  font-weight:500;
+  text-decoration:none;
+  font-family:var(--serif);
+  font-size:1.2rem;
+  letter-spacing:-.015em;
+  line-height:1.15;
+}
+.rank-list a:hover{color:var(--cobalt);text-decoration:none}
+
+/* ════════════════════════ SHOWCASE LIST ═════════════════════════════ */
+.showcase{margin-top:1.75rem}
+.showcase h3{
+  font-family:var(--serif);
+  font-size:1.35rem;
+  font-weight:600;
+  display:flex;
+  align-items:baseline;
+  gap:.5rem;
+  letter-spacing:-.02em;
+  margin:0 0 1rem;
+  padding-bottom:.75rem;
+  border-bottom:1px solid var(--hair);
+}
+.showcase-list{list-style:none;padding:0;margin:0;display:grid;gap:0}
+.showcase-list li{padding:.95rem 0;border-bottom:1px solid var(--hair)}
+.showcase-list li:last-child{border-bottom:0}
+.showcase-list a{color:var(--soot);text-decoration:none;font-family:var(--serif);font-size:1.05rem;font-weight:500;letter-spacing:-.015em}
+.showcase-list a:hover{color:var(--cobalt);text-decoration:none}
+
+/* ════════════════════════ TAG CHIPS ════════════════════════════════ */
+.post-tags{
+  margin:2rem 0 1.5rem;
+  display:flex;
+  flex-wrap:wrap;
+  gap:.5rem;
+  align-items:center;
+}
+.tag-chip{
+  display:inline-block;
+  padding:.3rem .8rem;
+  font-size:.75rem;
+  font-family:var(--mono);
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  background:var(--c-card-bg, #ffffff);
+  color:var(--cobalt);
+  border:1px solid var(--c-border, #d8d2c4);
+  border-radius:999px;
+  text-decoration:none;
+  transition:background 180ms var(--ease), color 180ms var(--ease);
+}
+.tag-chip:hover{
+  background:var(--cobalt);
+  color:#ffffff;
+  text-decoration:none;
+}
+
+/* ════════════════════════ READ PROGRESS ═════════════════════════════ */
+.read-progress{
+  position:fixed;
+  top:0;
+  left:0;
+  height:2px;
+  width:0;
+  background:var(--cobalt);
+  z-index:9999;
+  transition:width 60ms linear;
+  pointer-events:none;
+}
+
+
+/* ════════════════════════ EDİTÖRÜN SEÇİMİ (Tier 5) ══════════════════
+   Atelier — eyebrow vurgusu ve hairline rozet. */
+.block-editors-picks .block-title{
+  position:relative;
+}
+.mag-card-pick{ position:relative; }
+.mag-card-pick .pick-badge{
+  position:absolute;
+  top:1rem;
+  right:1rem;
+  font-family:var(--mono);
+  font-size:.6rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:#ffffff;
+  background:var(--cobalt);
+  padding:.25rem .5rem;
+  z-index:2;
+  pointer-events:none;
+  font-weight:600;
+}
+.mag-card-pick .pick-badge::after{ content:" · seçim"; }
+
+/* ════════════════════════ SERİ DETAY (Tier 5) ═══════════════════════
+   Atelier — numara serif, hairline list. */
+.series-hero{
+  text-align:left;
+  margin:2rem 0 3rem;
+  padding-bottom:2rem;
+  border-bottom:1px solid var(--soot);
+}
+.series-hero::before{
+  content:"KOLEKSİYON · DİZİ";
+  display:block;
+  font-family:var(--mono);
+  font-size:.66rem;
+  letter-spacing:var(--tracked-l);
+  text-transform:uppercase;
+  color:var(--ash);
+  margin-bottom:.75rem;
+}
+.series-hero h1{
+  font-family:var(--serif);
+  font-size:clamp(2rem,4vw,3rem);
+  font-weight:600;
+  margin:0 0 .75rem;
+  letter-spacing:-.025em;
+  line-height:1.05;
+}
+.series-hero .lead{
+  max-width:var(--read);
+  margin:0;
+  color:var(--soot-2);
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:1.15rem;
+}
+.series-meta{
+  font-family:var(--mono);
+  font-size:.7rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--ash);
+  margin-top:1rem;
+}
+
+.series-ol{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+}
+.series-li{
+  display:grid;
+  grid-template-columns:4rem 1fr;
+  gap:2rem;
+  align-items:start;
+  padding:2rem 0;
+  border-bottom:1px solid var(--hair);
+}
+.series-li:last-child{ border-bottom:0; }
+.series-num{
+  font-family:var(--serif);
+  font-size:2.2rem;
+  font-weight:600;
+  color:var(--cobalt);
+  text-align:right;
+  line-height:1;
+  letter-spacing:-.03em;
+}
+.series-num::before{
+  content:"№ ";
+  font-family:var(--mono);
+  font-size:.7rem;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+  font-weight:400;
+  vertical-align:top;
+  margin-right:.15em;
+}
+.series-item{
+  display:grid;
+  grid-template-columns:200px 1fr;
+  gap:1.5rem;
+  align-items:start;
+}
+.series-cover{ display:block; }
+.series-cover img{
+  width:100%;
+  height:auto;
+  display:block;
+}
+.series-text .cat-pill{ margin-bottom:.5rem; }
+.series-title{
+  font-family:var(--serif);
+  margin:.25rem 0 .65rem;
+  font-size:1.4rem;
+  font-weight:600;
+  line-height:1.2;
+  letter-spacing:-.015em;
+}
+.series-title a{
+  color:var(--soot);
+  text-decoration:none;
+  background-image:linear-gradient(var(--cobalt),var(--cobalt));
+  background-position:0 100%;
+  background-repeat:no-repeat;
+  background-size:0 1px;
+  transition:background-size 240ms var(--ease);
+}
+.series-title a:hover{
+  background-size:100% 1px;
+  color:var(--cobalt);
+}
+.series-excerpt{
+  margin:0 0 .75rem;
+  color:var(--soot-2);
+  font-family:var(--serif);
+  font-size:.98rem;
+  line-height:1.55;
+}
+.series-meta-row{
+  font-family:var(--mono);
+  font-size:.68rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--ash);
+}
+.series-meta-row a{ color:var(--cobalt); text-decoration:none; }
+.series-meta-row a:hover{ text-decoration:underline; }
+@media(max-width:680px){
+  .series-li{ grid-template-columns:1fr; gap:.75rem; }
+  .series-num{ text-align:left; font-size:1.6rem; }
+  .series-item{ grid-template-columns:1fr; gap:1rem; }
+}
+@media(max-width:680px){
+  .series-li{ grid-template-columns:1fr; gap:.5rem; }
+  .series-num{ text-align:left; font-size:1.8rem; }
+  .series-item{ grid-template-columns:1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * Anasayfa — Son Projeler bloğu (Tier 9.1)
+ * Trend yazıların ALTINDA, 3 kart yatay (mobile 1 kolon)
+ * ═══════════════════════════════════════════════════════════ */
+.block-home-projects{ margin-top:3rem; }
+.home-projects-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:1rem;
+    flex-wrap:wrap;
+}
+.home-projects-all{
+    font-family:var(--mono);
+    font-size:.78rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--cobalt);
+    text-decoration:none;
+    border-bottom:1px dotted var(--cobalt);
+    padding-bottom:1px;
+    transition:color .15s, border-color .15s;
+}
+.home-projects-all:hover{
+    color:var(--soot);
+    border-bottom-color:var(--soot);
+    border-bottom-style:solid;
+}
+.home-projects-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:1.5rem;
+    margin-top:1.5rem;
+}
+.home-project-card{ display:block; }
+.home-project-link{
+    display:block;
+    text-decoration:none;
+    color:inherit;
+    transition:transform .2s;
+}
+.home-project-link:hover{ transform:translateY(-3px); }
+.home-project-cover{
+    aspect-ratio:4 / 3;
+    background:var(--bone-2);
+    overflow:hidden;
+    border:1px solid var(--hair);
+    margin-bottom:.85rem;
+}
+.home-project-cover img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition:transform .4s ease;
+}
+.home-project-link:hover .home-project-cover img{
+    transform:scale(1.04);
+}
+.home-project-cover-empty{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--ash);
+    font-family:var(--serif);
+    font-size:2.5rem;
+}
+.home-project-body{ padding:0 .15rem; }
+.home-project-type{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:.66rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.14em;
+    color:var(--cobalt);
+    border:1px solid var(--cobalt);
+    padding:.18rem .5rem;
+    margin-bottom:.55rem;
+    border-radius:2px;
+}
+.home-project-link:hover .home-project-type{
+    background:var(--cobalt);
+    color:var(--bone);
+}
+.home-project-title{
+    font-family:var(--serif);
+    font-size:1.2rem;
+    line-height:1.25;
+    margin:.1rem 0 .4rem;
+    color:var(--soot);
+    font-weight:500;
+}
+.home-project-meta{
+    font-family:var(--mono);
+    font-size:.78rem;
+    color:var(--ash);
+    margin:0;
+}
+
+@media (max-width:880px){
+    .home-projects-grid{ grid-template-columns:repeat(2, 1fr); gap:1.25rem; }
+}
+@media (max-width:560px){
+    .home-projects-grid{ grid-template-columns:1fr; gap:1.5rem; }
+    .home-projects-head{ flex-direction:column; align-items:flex-start; gap:.5rem; }
+    .home-project-title{ font-size:1.1rem; }
+}

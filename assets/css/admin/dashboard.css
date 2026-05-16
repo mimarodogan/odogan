@@ -1,0 +1,274 @@
+/* ════════════════════════════════════════════════════════════════════
+   dashboard.css — Dashboard · istatistik kartları · son aktiviteler
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────── ADMIN DASHBOARD ─────────────────────────── */
+.dash-stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:0;
+  border-top:1px solid var(--soot);
+  border-left:1px solid var(--soot);
+  margin:2rem 0 3rem;
+}
+.dash-stat{
+  display:flex;
+  flex-direction:column;
+  gap:.55rem;
+  padding:1.5rem 1.75rem;
+  border-right:1px solid var(--soot);
+  border-bottom:1px solid var(--soot);
+  background:var(--bone);
+  transition:background 240ms var(--ease);
+}
+.dash-stat:hover{background:var(--bone-2)}
+.ds-label{
+  font-family:var(--mono);
+  font-size:.66rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+}
+.ds-value{
+  font-family:var(--serif);
+  font-size:clamp(2.4rem,4vw,3.2rem);
+  font-weight:600;
+  line-height:1;
+  color:var(--soot);
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.ds-meta{
+  font-size:.85rem;
+  color:var(--ash);
+  line-height:1.45;
+}
+.ds-meta a{color:var(--cobalt);text-decoration:none}
+.ds-meta a:hover{text-decoration:underline}
+.ds-meta strong{color:var(--err)}
+.ds-link{
+  margin-top:auto;
+  font-family:var(--mono);
+  font-size:.68rem;
+  font-weight:500;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot);
+  text-decoration:none;
+  padding-top:.75rem;
+  border-top:1px solid var(--hair);
+}
+.ds-link:hover{color:var(--cobalt);text-decoration:none}
+
+.dash-recent{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:2.5rem;
+  margin-top:2rem;
+}
+.dr-col{display:flex;flex-direction:column;gap:.8rem}
+.dr-title{
+  font-family:var(--serif);
+  font-size:1.25rem;
+  font-weight:600;
+  margin:0 0 .5rem;
+  padding-bottom:.65rem;
+  border-bottom:1px solid var(--soot);
+  letter-spacing:-.015em;
+}
+.dr-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+}
+.dr-item{
+  display:flex;
+  flex-direction:column;
+  gap:.25rem;
+  padding:.85rem 0;
+  border-bottom:1px solid var(--hair);
+}
+.dr-item:last-child{border-bottom:0}
+.dr-main{
+  font-family:var(--serif);
+  font-size:1rem;
+  font-weight:500;
+  color:var(--soot);
+  text-decoration:none;
+  line-height:1.35;
+}
+a.dr-main:hover{color:var(--cobalt);text-decoration:none}
+.dr-sub{
+  font-family:var(--mono);
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  flex-wrap:wrap;
+}
+.dr-sub a{color:var(--ash);text-decoration:none}
+.dr-sub a:hover{color:var(--cobalt)}
+.dr-sub .badge{font-size:.58rem;padding:.15rem .4rem}
+
+
+/* ════════════════════════ DASHBOARD WIDGETS (Tier 5) ════════════════ */
+.dash-period-form{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  margin-top:1rem;
+}
+.dash-period-form select{
+  padding:.4rem .7rem;
+  border:1px solid var(--hair, #e7e1d7);
+  border-radius:4px;
+  background:#ffffff;
+  font-size:.9rem;
+}
+.dash-widgets{
+  margin:2.5rem 0 2rem;
+}
+.dw-section-title{
+  font-family:var(--serif);
+  font-size:1.15rem;
+  font-weight:600;
+  color:var(--soot);
+  margin:0 0 1rem;
+  padding-bottom:.5rem;
+  border-bottom:1px solid var(--hair);
+  letter-spacing:-.015em;
+}
+.dw-delta-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:1rem;
+  margin-bottom:1.5rem;
+}
+.dw-delta{
+  background:#ffffff;
+  border:1px solid var(--hair-2);
+  border-top:3px solid var(--cobalt);
+  padding:1.1rem 1.2rem;
+  display:flex;
+  flex-direction:column;
+  gap:.35rem;
+}
+.dw-delta .dw-label{
+  font-family:var(--mono);
+  font-size:.75rem;                /* arttırıldı */
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--soot);                /* tam koyu — görsel olarak net */
+  font-weight:700;                  /* boldlanır */
+  margin-bottom:.15rem;
+}
+.dw-delta .dw-value{
+  font-family:var(--serif);
+  font-size:2rem;
+  font-weight:600;
+  line-height:1;
+  color:var(--cobalt);
+  letter-spacing:-.025em;
+}
+.dw-delta small{
+  font-size:.85rem;
+  color:var(--soot-2);
+  font-family:var(--sans);
+}
+.dw-delta small a{
+  color:var(--cobalt);
+  text-decoration:underline;
+  font-weight:600;
+}
+
+.dw-spark-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1rem;
+  margin-bottom:1.5rem;
+}
+@media(max-width:760px){ .dw-spark-row{ grid-template-columns:1fr; } }
+.dw-spark{
+  background:#ffffff;
+  border:1px solid var(--hair-2);
+  padding:1.1rem 1.2rem;
+}
+.dw-spark-title{
+  font-family:var(--mono);
+  font-size:.75rem;                /* arttırıldı */
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--soot);                /* tam koyu */
+  margin:0 0 .85rem;
+  font-weight:700;
+  border-bottom:1px solid var(--hair);
+  padding-bottom:.5rem;
+}
+.dw-bars{
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  height:60px;
+  margin-bottom:.5rem;
+}
+.dw-bar{
+  flex:1 1 auto;
+  background:var(--cobalt);
+  min-height:2px;
+  opacity:.85;
+  transition:opacity 150ms;
+}
+.dw-bars-alt .dw-bar{ background:#a16207; opacity:.8; }
+.dw-bar:hover{ opacity:1; }
+.dw-spark-note{
+  font-size:.72rem;
+  margin:.5rem 0 0;
+  color:var(--soot-2);
+  font-family:var(--mono);
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  font-weight:600;
+}
+
+.dw-leaders{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1rem;
+}
+@media(max-width:760px){ .dw-leaders{ grid-template-columns:1fr; } }
+.dw-leader{
+  background:#ffffff;
+  border:1px solid var(--hair-2);
+  padding:1.1rem 1.2rem;
+}
+.dw-leader-list{
+  margin:0;
+  padding-left:1.25rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  font-size:.92rem;
+  color:var(--soot);
+}
+.dw-leader-list li::marker{ color:var(--cobalt); font-weight:700; }
+.dw-leader-list li a{
+  font-weight:600;
+  color:var(--soot);
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+  transition:border-color 200ms var(--ease), color 200ms var(--ease);
+}
+.dw-leader-list li a:hover{
+  color:var(--cobalt);
+  border-bottom-color:var(--cobalt);
+}
+.dw-leader-list .muted{
+  font-size:.85rem;
+  color:var(--soot-2);             /* daha koyu, "— 3 yazı, 86 okuma" net okunur */
+}

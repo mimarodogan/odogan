@@ -1,0 +1,56 @@
+/* ════════════════════════════════════════════════════════════════════
+   pagination.css — Kategori (vb.) sayfalama bileşeni
+   ════════════════════════════════════════════════════════════════════ */
+
+.pagination{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    margin:3rem 0 2rem;
+    padding:1.25rem 0;
+    border-top:1px solid var(--hair);
+    border-bottom:1px solid var(--hair);
+    font-family:var(--mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:var(--tracked);
+}
+.pagination-link{
+    color:var(--soot);
+    text-decoration:none;
+    padding:.65rem 1rem;
+    border:1px solid var(--soot);
+    display:inline-flex;
+    align-items:center;
+    transition:background 200ms var(--ease),color 200ms var(--ease);
+    min-height:44px;
+}
+.pagination-link:hover{
+    background:var(--soot);
+    color:var(--bone);
+    text-decoration:none;
+}
+.pagination-disabled{
+    opacity:.3;
+    cursor:not-allowed;
+    border-color:var(--hair-2);
+    pointer-events:none;
+}
+.pagination-status{
+    font-family:var(--serif);
+    font-size:1rem;
+    text-transform:none;
+    letter-spacing:0;
+    color:var(--ash);
+}
+.pagination-status strong{
+    color:var(--soot);
+    font-weight:600;
+    margin-right:.25rem;
+}
+
+@media(max-width:480px){
+    .pagination{flex-direction:column;gap:.85rem}
+    .pagination-link{width:100%;justify-content:center}
+}
