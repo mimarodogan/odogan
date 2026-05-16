@@ -4,6 +4,45 @@ Modern, framework'süz PHP 8.2+ tabanlı **mimari blog ve portfolio CMS'i**.
 [odogan.com.tr](https://odogan.com.tr) için özel geliştirildi — mimari, yapı,
 restorasyon ve mühendislik içerikleri için "atelier" estetiğinde.
 
+## Ekran Görüntüleri
+
+### Anasayfa — featured + magazine grid
+
+<img src="docs/screenshots/home-desktop.webp" alt="Anasayfa: hero featured yazı + atelier magazine grid" width="100%">
+
+### Yazı Sayfası — TOC, share, footnote, reactions
+
+<img src="docs/screenshots/post-desktop.webp" alt="Yazı sayfası: yan TOC, kayan progress bar, footnote tooltip" width="100%">
+
+### Proje Portfolyo
+
+<img src="docs/screenshots/projects-desktop.webp" alt="Projeler: filtre chip'leri + tip bazlı kart grid" width="100%">
+
+### Yapı Haritası — interaktif Leaflet
+
+<img src="docs/screenshots/map-desktop.webp" alt="Yapı haritası: OpenStreetMap üzerinde geo-tagged projeler, filter chip'leri" width="100%">
+
+### Sözlük — alfabetik akordeon
+
+<img src="docs/screenshots/glossary-desktop.webp" alt="Sözlük: harfe göre gruplanmış mimari terimler, FULLTEXT arama" width="100%">
+
+<details>
+<summary><b>Mobile görünümler</b> (tıkla)</summary>
+
+<p align="center">
+  <img src="docs/screenshots/home-mobile.webp" alt="Anasayfa mobile" width="240">
+  <img src="docs/screenshots/post-mobile.webp" alt="Yazı sayfası mobile" width="240">
+  <img src="docs/screenshots/projects-mobile.webp" alt="Projeler mobile" width="240">
+</p>
+<p align="center">
+  <img src="docs/screenshots/map-mobile.webp" alt="Harita mobile" width="240">
+  <img src="docs/screenshots/glossary-mobile.webp" alt="Sözlük mobile" width="240">
+</p>
+
+</details>
+
+> Ekran görüntüleri otomatik üretildi — yenilemek için: `npm run screenshots`
+
 ## Özellikler
 
 ### İçerik Yönetimi
@@ -110,6 +149,7 @@ npm run css:build    # PurgeCSS + cssnano
 npm run js:lint      # ESLint kontrol
 npm run js:format    # Prettier
 npm run js:build     # Terser minify + source map
+npm run screenshots  # Playwright + Sharp ile README ekran görüntüleri
 npm run build        # Tüm pipeline (CSS + JS)
 ```
 
