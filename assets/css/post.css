@@ -100,14 +100,10 @@
 .post-cover img{
   width:100%;
   height:auto;
-  max-height:520px;
-  object-fit:cover;
   display:block;
   border-top:1px solid var(--soot);
   border-bottom:1px solid var(--soot);
-}
-@media(max-width:720px){
-  .post-cover img{max-height:300px}
+  /* Orijinal aspect ratio koru — kırpma yok, atelier estetiği */
 }
 
 /* — Body ——————————————————————————————————————————————————————————— */
