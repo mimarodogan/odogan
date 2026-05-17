@@ -92,7 +92,11 @@
     };
 
     const showEmpty = msg => {
-        const html = `<p class="muted" style="font-size:.85rem">${escapeHtml(msg)}</p>`;
+        // DEBUG: çoklu satırlı mesajları <pre> ile koru
+        const isDebug = msg.indexOf('DEBUG') === 0;
+        const html = isDebug
+            ? `<pre style="font-family:var(--mono);font-size:.7rem;white-space:pre-wrap;word-break:break-all;color:#B0241D;background:#FFF5F5;padding:.5rem;border:1px solid #FFCDD2;margin:0">${escapeHtml(msg)}</pre>`
+            : `<p class="muted" style="font-size:.85rem">${escapeHtml(msg)}</p>`;
         if (seoBox) seoBox.innerHTML = html;
         if (readBox) readBox.innerHTML = html;
     };
@@ -118,11 +122,26 @@
                 credentials: 'same-origin',
                 body: payload(),
             });
+            // Önce text olarak al ki parse fail'de içeriği görebilelim
+            const raw = await r.text();
             let j;
             try {
-                j = await r.json();
+                j = JSON.parse(raw);
             } catch (_) {
-                j = { ok: false, _parse_err: true, _status: r.status };
+                // DEBUG: response'un ilk 300 char'ını ekranda göster
+                j = {
+                    ok: false,
+                    _parse_err: true,
+                    _status: r.status,
+                    _content_type: r.headers.get('content-type') || '?',
+                    _raw_first_300: raw.substring(0, 300),
+                };
+                console.error(
+                    '[ANALYZE parse-err]',
+                    r.status,
+                    r.headers.get('content-type'),
+                    raw.substring(0, 500)
+                );
             }
             if (ticket.aborted) return;
             // 401 — session timeout (AuthMiddleware JSON 401 dönüyor)
@@ -147,11 +166,19 @@
                 return;
             }
             if (!j || !j.ok) {
-                showEmpty(
-                    j && j._parse_err
-                        ? 'Sunucu geçersiz yanıt verdi. Sayfayı yenileyin.'
-                        : 'Bu özellik şu an kapalı veya endpoint ulaşılamıyor.'
-                );
+                if (j && j._parse_err) {
+                    // DEBUG modu: response içeriğini ekranda göster
+                    const dbg =
+                        'DEBUG — HTTP ' +
+                        j._status +
+                        ' · ' +
+                        j._content_type +
+                        '\nİçerik (ilk 300 char): ' +
+                        (j._raw_first_300 || '(boş)');
+                    showEmpty(dbg);
+                } else {
+                    showEmpty('Bu özellik şu an kapalı veya endpoint ulaşılamıyor.');
+                }
                 return;
             }
             if (j.seo) renderSeo(j.seo);
