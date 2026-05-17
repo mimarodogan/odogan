@@ -50,7 +50,8 @@ final class SeoScoreService
             $tScore = 15;
         } elseif (($tlen >= 18 && $tlen < 25) || ($tlen > 75 && $tlen <= 90)) {
             $tScore = 10;
-        } elseif ($tlen >= 10 || $tlen > 90) {
+        } elseif ($tlen >= 10) {
+            // 10-17 veya 91+ — zayıf ama puan var (önceki elseif'ler 18-24 ve 76-90'ı yakaladı)
             $tScore = 5;
         } else {
             $tScore = 0;
