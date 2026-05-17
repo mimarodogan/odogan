@@ -14,6 +14,18 @@ final class AuthMiddleware
         if (AuthService::check()) {
             return $next($req);
         }
+
+        // AJAX / JSON istekleri için HTML redirect yerine JSON 401 dön.
+        // CsrfMiddleware ile tutarlı pattern — fetch() çağrıları JSON parse
+        // hatası almaz, frontend "Oturum süresi doldu" mesajı gösterebilir.
+        if ($req->isAjax() || str_contains((string) $req->header('accept'), 'application/json')) {
+            return Response::json([
+                'ok'      => false,
+                'error'   => 'unauthenticated',
+                'message' => 'Oturum süresi doldu — sayfayı yenileyip tekrar giriş yapın.',
+            ], 401);
+        }
+
         flash('error', 'Bu sayfayı görmek için giriş yapmalısınız.');
         // Only remember internal, same-origin paths — never user-controlled URLs.
         $path = (string) ($req->path ?? '/');

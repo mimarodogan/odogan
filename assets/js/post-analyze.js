@@ -122,9 +122,21 @@
             try {
                 j = await r.json();
             } catch (_) {
-                j = { ok: false, _parse_err: true };
+                j = { ok: false, _parse_err: true, _status: r.status };
             }
             if (ticket.aborted) return;
+            // 401 — session timeout (AuthMiddleware JSON 401 dönüyor)
+            if (r.status === 401 || (j && j.error === 'unauthenticated')) {
+                showEmpty(
+                    j.message || 'Oturum süresi doldu — sayfayı yenileyip tekrar giriş yapın.'
+                );
+                return;
+            }
+            // 419 — CSRF token süresi doldu
+            if (r.status === 419) {
+                showEmpty('Güvenlik tokenı süresi doldu — sayfayı yenileyin.');
+                return;
+            }
             if (!j || !j.ok) {
                 showEmpty(
                     j && j._parse_err
