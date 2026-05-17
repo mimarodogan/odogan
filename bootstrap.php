@@ -72,8 +72,15 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_httponly', '1');
+    // Server-side session data TTL — PHP default 1440sn (24 dk) çok kısa,
+    // admin uzun yazı yazarken CSRF token kaybolup 419 alıyordu. 4 saat
+    // yeterli pratik bir denge: yazma seansını kapsar, brute-force riskini
+    // de fazla genişletmez.
+    ini_set('session.gc_maxlifetime', '14400');
+    ini_set('session.gc_probability', '1');
+    ini_set('session.gc_divisor', '100');
     session_set_cookie_params([
-        'lifetime' => 0,
+        'lifetime' => 0, // browser kapanınca cookie sil (oturum cookie)
         'path' => '/',
         'domain' => '',
         'secure' => $isHttps || $appEnv === 'production',

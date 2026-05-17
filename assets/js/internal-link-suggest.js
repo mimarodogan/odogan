@@ -72,12 +72,30 @@
             } catch {
                 data = { ok: false, _parse_err: true };
             }
-            if (!data || !data.ok) {
+            // 401 — session timeout
+            if (r.status === 401 || (data && data.error === 'unauthenticated')) {
                 listEl.innerHTML = `<p class="muted" style="font-size:.82rem">${
-                    data && data._parse_err
-                        ? 'Sunucu geçersiz yanıt verdi.'
-                        : 'Bu özellik kapalı veya endpoint ulaşılamıyor.'
+                    data.message || 'Oturum süresi doldu — sayfayı yenileyip tekrar giriş yapın.'
                 }</p>`;
+                return;
+            }
+            // 419 — CSRF token süresi doldu
+            if (r.status === 419) {
+                listEl.innerHTML =
+                    '<p class="muted" style="font-size:.82rem">Güvenlik tokenı süresi doldu — sayfayı yenileyin.</p>';
+                return;
+            }
+            if (!data || !data.ok) {
+                let msg;
+                if (data && data._parse_err) {
+                    msg = 'Sunucu geçersiz yanıt verdi.';
+                } else if (data && data.error === 'disabled') {
+                    msg =
+                        'Bu özellik kapalı. Admin → Ayarlar → Özellikler → "Internal Link Önerisi (editörde)" açın.';
+                } else {
+                    msg = 'Endpoint ulaşılamıyor.';
+                }
+                listEl.innerHTML = `<p class="muted" style="font-size:.82rem">${msg}</p>`;
                 return;
             }
             renderList(data.suggestions || []);
