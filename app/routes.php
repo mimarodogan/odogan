@@ -215,23 +215,28 @@ $router->group('/panel', function ($r) {
     $r->post('/iki-fa/recovery-yenile', [ProfileController::class, 'regenerateRecoveryCodes']);
 
     // Posts (CRUD + submit)
-    $r->get('/yazilar', [PanelPostController::class, 'index']);
-    $r->get('/yazilar/yeni', [PanelPostController::class, 'create']);
-    $r->post('/yazilar', [PanelPostController::class, 'store']);
-    $r->get('/yazilar/{id}/duzenle', [PanelPostController::class, 'edit']);
-    $r->post('/yazilar/{id}', [PanelPostController::class, 'update']);
-    $r->post('/yazilar/{id}/auto-save', [PanelPostController::class, 'autoSave']);
-    $r->post('/yazilar/analiz', [PanelPostController::class, 'analyze']);
-    $r->get('/yazilar/yazar-ara', [PanelPostController::class, 'authorSearch']);
+    // KRİTİK: Router first-match-wins çalışıyor → SPESİFİK route'lar
+    // (literal path'li) {id} catch-all route'larından ÖNCE register edilmeli.
+    // Aksi halde POST /yazilar/analiz → /yazilar/{id} ile match → update()
+    // controller'a giderdi (id="analiz" parse fail → 404).
 
-    // Bulk + Quick edit + Link suggest (Tier 5)
-    $r->post('/yazilar/toplu', [PanelPostController::class, 'bulk']);
-    $r->post('/yazilar/{id}/hizli-guncelle', [PanelPostController::class, 'quickUpdate']);
-    $r->post('/yazilar/onerile', [PanelPostController::class, 'suggestLinks']);
-    $r->post('/yazilar/{id}/sil', [PanelPostController::class, 'destroy']);
+    // ─── SPESİFİK route'lar (literal path) — ÖNCE ─────────────────────
+    $r->get('/yazilar',                 [PanelPostController::class, 'index']);
+    $r->get('/yazilar/yeni',            [PanelPostController::class, 'create']);
+    $r->get('/yazilar/yazar-ara',       [PanelPostController::class, 'authorSearch']);
+    $r->post('/yazilar',                [PanelPostController::class, 'store']);
+    $r->post('/yazilar/analiz',         [PanelPostController::class, 'analyze']);
+    $r->post('/yazilar/onerile',        [PanelPostController::class, 'suggestLinks']);
+    $r->post('/yazilar/toplu',          [PanelPostController::class, 'bulk']);
 
-    // Tier 9 — Approval workflow (yazar tarafı: gönder)
-    $r->post('/yazilar/{id}/gonder', [EditorApprovalController::class, 'submit']);
+    // ─── CATCH-ALL {id} route'ları — SONRA ───────────────────────────
+    $r->get('/yazilar/{id}/duzenle',           [PanelPostController::class, 'edit']);
+    $r->post('/yazilar/{id}/auto-save',        [PanelPostController::class, 'autoSave']);
+    $r->post('/yazilar/{id}/hizli-guncelle',   [PanelPostController::class, 'quickUpdate']);
+    $r->post('/yazilar/{id}/sil',              [PanelPostController::class, 'destroy']);
+    $r->post('/yazilar/{id}/gonder',           [EditorApprovalController::class, 'submit']);
+    // En generic POST en sona — diğer literal POST'ları kapatmasın
+    $r->post('/yazilar/{id}',                  [PanelPostController::class, 'update']);
 
     // Tier 9.2 — Projects CRUD (Author/Editor/Admin, controller'da yetki kontrolü)
     $r->get('/projeler',                  [AdminProjectController::class, 'index']);
