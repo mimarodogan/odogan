@@ -137,6 +137,15 @@
                 showEmpty('Güvenlik tokenı süresi doldu — sayfayı yenileyin.');
                 return;
             }
+            // 500 — sunucu hatası (controller exception)
+            if (r.status === 500 || (j && j.error === 'server_error')) {
+                showEmpty(
+                    'Sunucu hatası: ' +
+                        (j.message || 'bilinmeyen hata') +
+                        ' — admin Loglar (editorial) kanalını kontrol edin.'
+                );
+                return;
+            }
             if (!j || !j.ok) {
                 showEmpty(
                     j && j._parse_err

@@ -187,21 +187,31 @@ final class PostController
         if (!function_exists('feature') || !feature('internal_link_suggest')) {
             return Response::json(['ok' => false, 'error' => 'disabled'], 404);
         }
-        $body = (string) $req->input('body', '');
-        $excludeId = (int) $req->input('post_id', 0);
-        $excludeId = $excludeId > 0 ? $excludeId : null;
-        $suggestions = \App\Services\PostSuggestionService::findSimilar($body, $excludeId, 5);
-        $out = [];
-        foreach ($suggestions as $s) {
-            $out[] = [
-                'id' => $s['id'],
-                'title' => $s['title'],
-                'url' => url('/' . $s['category_slug'] . '/' . $s['slug']),
-                'category' => $s['category_name'],
-                'score' => $s['score'],
-            ];
+        try {
+            $body = (string) $req->input('body', '');
+            $excludeId = (int) $req->input('post_id', 0);
+            $excludeId = $excludeId > 0 ? $excludeId : null;
+            $suggestions = \App\Services\PostSuggestionService::findSimilar($body, $excludeId, 5);
+            $out = [];
+            foreach ($suggestions as $s) {
+                $out[] = [
+                    'id' => $s['id'],
+                    'title' => $s['title'],
+                    'url' => url('/' . $s['category_slug'] . '/' . $s['slug']),
+                    'category' => $s['category_name'],
+                    'score' => $s['score'],
+                ];
+            }
+            return Response::json(['ok' => true, 'suggestions' => $out]);
+        } catch (\Throwable $e) {
+            \App\Services\Logger::error('panel.post.suggest_links.exception', [
+                'msg'   => $e->getMessage(),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 2000),
+                'body_len' => isset($body) ? mb_strlen($body) : 0,
+            ], 'editorial');
+            return Response::json(['ok' => false, 'error' => 'server_error', 'message' => $e->getMessage()], 500);
         }
-        return Response::json(['ok' => true, 'suggestions' => $out]);
     }
 
     /**
@@ -213,25 +223,35 @@ final class PostController
         if (!feature('seo_score_enabled') && !feature('readability_enabled')) {
             return Response::json(['ok' => false, 'error' => 'disabled'], 404);
         }
-        $post = [
-            'title' => trim((string) $req->input('title', '')),
-            'slug'  => trim((string) $req->input('slug', '')),
-            'excerpt' => trim((string) $req->input('excerpt', '')),
-            'body' => (string) $req->input('body', ''),
-            'body_format' => (string) $req->input('body_format', 'html'),
-            'meta_title' => trim((string) $req->input('meta_title', '')),
-            'meta_description' => trim((string) $req->input('meta_description', '')),
-        ];
+        try {
+            $post = [
+                'title' => trim((string) $req->input('title', '')),
+                'slug'  => trim((string) $req->input('slug', '')),
+                'excerpt' => trim((string) $req->input('excerpt', '')),
+                'body' => (string) $req->input('body', ''),
+                'body_format' => (string) $req->input('body_format', 'html'),
+                'meta_title' => trim((string) $req->input('meta_title', '')),
+                'meta_description' => trim((string) $req->input('meta_description', '')),
+            ];
 
-        $out = ['ok' => true];
-        if (feature('seo_score_enabled')) {
-            $out['seo'] = \App\Services\SeoScoreService::score($post);
+            $out = ['ok' => true];
+            if (feature('seo_score_enabled')) {
+                $out['seo'] = \App\Services\SeoScoreService::score($post);
+            }
+            if (feature('readability_enabled')) {
+                $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($post['body'])));
+                $out['readability'] = \App\Services\ReadabilityService::atesman($plain);
+            }
+            return Response::json($out);
+        } catch (\Throwable $e) {
+            \App\Services\Logger::error('panel.post.analyze.exception', [
+                'msg'   => $e->getMessage(),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 2000),
+                'body_len' => isset($post['body']) ? mb_strlen($post['body']) : 0,
+            ], 'editorial');
+            return Response::json(['ok' => false, 'error' => 'server_error', 'message' => $e->getMessage()], 500);
         }
-        if (feature('readability_enabled')) {
-            $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($post['body'])));
-            $out['readability'] = \App\Services\ReadabilityService::atesman($plain);
-        }
-        return Response::json($out);
     }
 
     /**

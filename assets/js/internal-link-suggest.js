@@ -85,6 +85,13 @@
                     '<p class="muted" style="font-size:.82rem">Güvenlik tokenı süresi doldu — sayfayı yenileyin.</p>';
                 return;
             }
+            // 500 — sunucu hatası (controller exception)
+            if (r.status === 500 || (data && data.error === 'server_error')) {
+                listEl.innerHTML = `<p class="muted" style="font-size:.82rem">Sunucu hatası: ${esc(
+                    data.message || 'bilinmeyen hata'
+                )} — admin Loglar (editorial) kanalını kontrol edin.</p>`;
+                return;
+            }
             if (!data || !data.ok) {
                 let msg;
                 if (data && data._parse_err) {
