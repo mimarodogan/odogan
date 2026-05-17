@@ -31,8 +31,9 @@ final class AssetMinifier
         if (!in_array($ext, ['css', 'js'], true)) {
             return url($rel);
         }
+        // Eğer doğrudan .min.css/.min.js verildiyse → mtime-based query string ile döndür
         if (str_ends_with($rel, '.min.' . $ext)) {
-            return url($rel);
+            return url($rel) . '?v=' . filemtime($abs);
         }
         $minRel = preg_replace('#\.' . $ext . '$#', '.min.' . $ext, $rel) ?? $rel;
         $minAbs = Config::publicRoot() . '/' . $minRel;
@@ -47,7 +48,10 @@ final class AssetMinifier
                 return url($rel);
             }
         }
-        return url($minRel);
+        // Cache-busting — .htaccess 30-gün cache header'ı olduğu için browser
+        // eski versiyonu tutar; mtime query string her rebuild'de değişir →
+        // URL fresh kabul edilir, kullanıcı hard-refresh zorunda kalmaz.
+        return url($minRel) . '?v=' . filemtime($minAbs);
     }
 
     /**
@@ -112,7 +116,8 @@ final class AssetMinifier
                 // fall through — bundle still returns URL even if rebuild failed
             }
         }
-        return url($outRel);
+        // Cache-busting — bkz. asset() açıklaması
+        return url($outRel) . (is_file($outAbs) ? '?v=' . filemtime($outAbs) : '');
     }
 
     public static function minifyCss(string $css): string
