@@ -35,38 +35,67 @@ final class SeoScoreService
     {
         $parts = [];
 
-        // 1) Title length
+        // 1) Title length — Modern aralık (Türkçe + Google 2024+ SERP standardı)
+        //   30-65 char ideal (mobile-first, kesilmez)
+        //   25-30 + 65-75 iyi
+        //   18-25 + 75-90 orta
+        //   <18 + >90 zayıf
         $title = trim((string) ($post['title'] ?? ''));
         $tlen = mb_strlen($title);
-        $tScore = ($tlen >= 50 && $tlen <= 60) ? 20
-                : (($tlen >= 35 && $tlen <= 70) ? 12
-                : (($tlen >= 20 && $tlen <= 90) ? 6 : 0));
+        if ($tlen === 0) {
+            $tScore = 0;
+        } elseif ($tlen >= 30 && $tlen <= 65) {
+            $tScore = 20;
+        } elseif (($tlen >= 25 && $tlen < 30) || ($tlen > 65 && $tlen <= 75)) {
+            $tScore = 15;
+        } elseif (($tlen >= 18 && $tlen < 25) || ($tlen > 75 && $tlen <= 90)) {
+            $tScore = 10;
+        } elseif ($tlen >= 10 || $tlen > 90) {
+            $tScore = 5;
+        } else {
+            $tScore = 0;
+        }
         $parts[] = [
             'name' => 'Başlık uzunluğu',
-            'score' => $tScore, 'max' => 20, 'ok' => $tScore >= 12,
+            'score' => $tScore, 'max' => 20, 'ok' => $tScore >= 15,
             'tip' => $tlen === 0
                 ? 'Başlık boş.'
-                : ($tlen < 50
-                    ? "Başlık {$tlen} karakter — 50-60 ideal aralık (SERP'te kesilmesin)."
-                    : ($tlen > 60
-                        ? "Başlık {$tlen} karakter — Google'da kesilebilir, 60 altı önerilir."
-                        : 'Başlık ideal uzunlukta ✓')),
+                : ($tlen >= 30 && $tlen <= 65
+                    ? "Başlık {$tlen} karakter — ideal aralıkta ✓"
+                    : ($tlen < 30
+                        ? "Başlık {$tlen} karakter — biraz daha uzatabilirsin (30-65 ideal, anahtar kelime için yer var)."
+                        : "Başlık {$tlen} karakter — Google SERP'te kesilebilir (65 üzeri risk)."
+                    )),
         ];
 
-        // 2) Meta description
+        // 2) Meta description — Modern aralık
+        //   120-160 ideal (Google snippet width 160 civarı)
+        //   90-120 + 160-200 iyi
+        //   60-90 + 200-250 orta
+        //   <60 + >250 zayıf
         $desc = trim((string) ($post['meta_description'] ?? '')) ?: trim((string) ($post['excerpt'] ?? ''));
         $dlen = mb_strlen($desc);
-        $dScore = ($dlen >= 150 && $dlen <= 160) ? 20
-                : (($dlen >= 120 && $dlen <= 180) ? 12
-                : (($dlen >= 70 && $dlen <= 200) ? 6 : 0));
+        if ($dlen === 0) {
+            $dScore = 0;
+        } elseif ($dlen >= 120 && $dlen <= 160) {
+            $dScore = 20;
+        } elseif (($dlen >= 90 && $dlen < 120) || ($dlen > 160 && $dlen <= 200)) {
+            $dScore = 15;
+        } elseif (($dlen >= 60 && $dlen < 90) || ($dlen > 200 && $dlen <= 250)) {
+            $dScore = 10;
+        } else {
+            $dScore = 5;
+        }
         $parts[] = [
             'name' => 'Meta açıklama',
-            'score' => $dScore, 'max' => 20, 'ok' => $dScore >= 12,
+            'score' => $dScore, 'max' => 20, 'ok' => $dScore >= 15,
             'tip' => $dlen === 0
-                ? 'Meta açıklama boş — yazıdan otomatik üretilir ama elle yazmak daha iyi.'
-                : ($dlen < 150 ? "Açıklama {$dlen} karakter — 150-160 ideal."
-                : ($dlen > 160 ? "Açıklama {$dlen} karakter — Google'da kesilebilir."
-                : 'Açıklama ideal ✓')),
+                ? 'Meta açıklama boş — yazıdan otomatik üretilir ama elle yazmak SERP CTR\'ını artırır.'
+                : ($dlen >= 120 && $dlen <= 160
+                    ? "Açıklama {$dlen} karakter — ideal ✓"
+                    : ($dlen < 120
+                        ? "Açıklama {$dlen} karakter — biraz uzatabilirsin (120-160 ideal)."
+                        : "Açıklama {$dlen} karakter — Google'da kesilebilir (160 üzeri risk).")),
         ];
 
         // 3) Slug
