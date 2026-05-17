@@ -173,6 +173,9 @@
                         j._status +
                         ' · ' +
                         j._content_type +
+                        '\nURL: ' + url +
+                        '\nMethod: POST' +
+                        '\nCSRF len: ' + (csrf ? csrf.length : 0) +
                         '\nİçerik (ilk 300 char): ' +
                         (j._raw_first_300 || '(boş)');
                     showEmpty(dbg);
