@@ -1055,7 +1055,8 @@
 /* ════════════════════════ COMMENT THREADING (Tier 8) ═════════════════ */
 /* ════════════════════════ YORUMLAR — modern ════════════════════════ */
 .comments-section{
-  margin-top:3.5rem;
+  max-width:920px;            /* yazı gövdesiyle aynı genişlik */
+  margin:3.5rem auto 0;       /* sayfada ortala */
   padding-top:2.5rem;
   border-top:1px solid var(--soot);
 }
@@ -1239,7 +1240,10 @@
   border-color:var(--cobalt);
   box-shadow:0 0 0 3px color-mix(in srgb, var(--cobalt) 15%, transparent);
 }
-.comment-form textarea{ resize:vertical; min-height:110px; line-height:1.6; }
+.comment-form textarea{ resize:vertical; min-height:150px; line-height:1.65; }
+@media(min-width:721px){
+  .comment-form textarea{ min-height:220px; }   /* masaüstünde daha büyük metin editörü */
+}
 .comment-form-foot{
   display:flex;
   align-items:center;
@@ -1281,6 +1285,8 @@
   font-size:inherit;
   text-decoration:underline;
 }
+/* hidden attribute'u korunsun — display:flex onu ezmesin (yanıt modu kapalıyken gizli) */
+.comment-replying-to[hidden]{ display:none; }
 .comment-hp{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
 
 @media(max-width:680px){
