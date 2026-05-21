@@ -51,22 +51,35 @@ if ($_gaIdHint !== ''): ?>
 // Controller `$preload_image` set ederse buraya gelir; aksi halde otomatik tespit.
 if (!$_inAdmin) {
     $_preloadImg = $preload_image ?? null;
+    // Preload sizes, <picture> sizes ile AYNI olmalı ki tarayıcı aynı varyantı seçsin.
+    $_preloadSizes = '(max-width: 768px) 100vw, 1200px';
     if (!$_preloadImg) {
         // Yazı sayfası: $post['cover_image']
         if (!empty($post['cover_image'])) {
             $_preloadImg = (string) $post['cover_image'];
+            $_preloadSizes = '(max-width: 720px) 100vw, 720px';   // post.php cover ile aynı
         }
         // Anasayfa hero: $featured['cover_image']
         elseif (!empty($featured['cover_image'])) {
             $_preloadImg = (string) $featured['cover_image'];
+            $_preloadSizes = '(max-width: 768px) 100vw, 1200px';  // home hero ile aynı
         }
     }
     if ($_preloadImg) {
-        $_preloadUrl = preg_match('#^https?://#i', $_preloadImg)
-            ? $_preloadImg
-            : url($_preloadImg);
+        $_pIsAbs = (bool) preg_match('#^https?://#i', $_preloadImg);
+        $_pToUrl = static fn(string $p): string => $_pIsAbs ? $p : url($p);
+        // Responsive preload — picture_from_path ile AYNI varyant pattern ({base}-{w}.webp).
+        // Böylece preload, <picture> srcset'iyle aynı dosyayı seçer: mobilde 320/768
+        // varyantı iner (orijinal 1280+ değil) → ~224 KiB tasarruf, çift indirme yok.
+        $_pExt  = strtolower(pathinfo($_preloadImg, PATHINFO_EXTENSION));
+        $_pBase = substr($_preloadImg, 0, -(strlen($_pExt) + 1));
+        $_pSrcset = [];
+        foreach ([320, 768, 1280] as $_w) {
+            $_pSrcset[] = esc($_pToUrl("{$_pBase}-{$_w}.webp")) . " {$_w}w";
+        }
+        $_pFallback = esc($_pToUrl("{$_pBase}-1280.webp"));
         ?>
-<link rel="preload" as="image" href="<?= esc($_preloadUrl) ?>" fetchpriority="high">
+<link rel="preload" as="image" href="<?= $_pFallback ?>" imagesrcset="<?= implode(', ', $_pSrcset) ?>" imagesizes="<?= esc($_preloadSizes) ?>" fetchpriority="high">
         <?php
     }
 }
