@@ -43,6 +43,11 @@ final class EmailVerificationController
             'email_verified_at'        => date('Y-m-d H:i:s'),
             'email_verification_token' => null,
         ];
+        // Email doğrulama zorunlu akışı: 'pending' hesabı 'active' yap.
+        // Yalnızca pending → active; banned/active durumlarına dokunma.
+        if (($user['status'] ?? '') === 'pending') {
+            $patch['status'] = 'active';
+        }
         try {
             Database::instance()->update('users', $patch + ['email_verification_expires_at' => null],
                 'id = :wid', [':wid' => (int) $user['id']]);

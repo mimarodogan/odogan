@@ -107,7 +107,10 @@ final class AuthService
             'email' => $email,
             'password_hash' => self::hash($password),
             'role' => $defaultRole,
-            'status' => 'active',
+            // Email doğrulama zorunlu — hesap 'pending' başlar; /dogrula/{token}
+            // tıklanınca 'active' olur. Doğrulanmadan login/panel erişimi yok.
+            // Bu, gerçek gmail/hotmail kullanan botları da durdurur (link tıklanamaz).
+            'status' => 'pending',
             'email_verification_token' => $token,
             'profile_json' => json_encode((object) [], JSON_UNESCAPED_UNICODE),
         ];
@@ -120,8 +123,8 @@ final class AuthService
         }
 
         self::sendVerificationEmail($email, $name, $token);
-        self::login($id);
-        return ['ok' => true, 'user_id' => $id];
+        // ÖNEMLİ: login() YAPILMAZ — hesap doğrulanana kadar pending kalır.
+        return ['ok' => true, 'user_id' => $id, 'pending_verification' => true];
     }
 
     public static function sendVerificationEmail(string $email, string $name, string $token): void
@@ -207,7 +210,23 @@ final class AuthService
             return ['ok' => false, 'errors' => ['email' => 'E-posta veya parola hatalı.']];
         }
 
-        if (($user['status'] ?? 'active') !== 'active') {
+        $uStatus = $user['status'] ?? 'active';
+        if ($uStatus !== 'active') {
+            // Pending + e-posta doğrulanmamış → kayıt yapmış ama doğrulamamış.
+            // Doğru parolayı bildiği için (buraya ancak parola eşleşince gelinir)
+            // ona yardımcı ol: doğrulama bağlantısını yeniden gönder (saatte 3'e
+            // kadar) ve net yönlendirme yap. Enumeration riski yok — parola gerekli.
+            if ($uStatus === 'pending' && empty($user['email_verified_at'])) {
+                $rl = RateLimiter::hit('email_resend:user:' . (int) $user['id'], 3, 3600);
+                if ($rl['ok']) {
+                    $token = self::regenerateVerifyToken((int) $user['id']);
+                    self::sendVerificationEmail((string) $user['email'], (string) $user['name'], $token);
+                }
+                return ['ok' => false, 'errors' => [
+                    'email' => 'Giriş yapabilmek için önce e-posta adresinizi doğrulayın. '
+                        . 'Doğrulama bağlantısını e-postanıza (yeniden) gönderdik — gelen kutunuzu ve spam klasörünü kontrol edin.',
+                ]];
+            }
             return ['ok' => false, 'errors' => ['email' => 'Hesabınız etkin değil.']];
         }
         if (self::needsRehash((string) $user['password_hash'])) {

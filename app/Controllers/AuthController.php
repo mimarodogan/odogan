@@ -202,8 +202,9 @@ final class AuthController
             flash('success', 'Hesabınız yoksa doğrulama bağlantısı gönderildi. Lütfen e-postanızı kontrol edin.');
             return Response::redirect(url('/giris'));
         }
-        flash('success', 'Hesabınız oluşturuldu. Doğrulama bağlantısı için e-postanızı kontrol edin.');
-        return Response::redirect(url('/panel'));
+        flash('success', 'Hesabınız oluşturuldu! Giriş yapabilmek için e-postanıza gönderdiğimiz '
+            . 'doğrulama bağlantısına tıklayın. (Bağlantı 72 saat geçerlidir, spam klasörünü de kontrol edin.)');
+        return Response::redirect(url('/giris'));
     }
 
     public function logout(Request $req): Response
