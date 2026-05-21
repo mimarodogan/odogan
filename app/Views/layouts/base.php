@@ -84,6 +84,9 @@ if ($_inAdmin) {
         <?= \App\Core\View::yield('content') ?>
     </main>
     <?php require $_partials . '/public-footer.php'; ?>
+    <button type="button" class="back-to-top" aria-label="Sayfa başına dön" title="Yukarı çık" hidden>
+        <span aria-hidden="true">↑</span>
+    </button>
 <?php endif; ?>
 
 <?php if ($_inAdmin) require $_partials . '/admin-drawer-script.php'; ?>

@@ -191,18 +191,18 @@ $_siteTagline = (string) \App\Models\Setting::get('site_tagline', '', 'general')
 
 <div class="two-col">
     <?php if ($most_read): ?>
-    <section>
-        <h2 class="block-title">En Çok Okunanlar</h2>
+    <details class="block-acc" open>
+        <summary class="block-title">En Çok Okunanlar</summary>
         <ol class="rank-list">
             <?php foreach ($most_read as $p): ?>
                 <li><a href="<?= esc(url('/' . $p['category_slug'] . '/' . $p['slug'])) ?>" title="<?= esc($p['title']) ?>"><?= esc($p['title']) ?></a></li>
             <?php endforeach; ?>
         </ol>
-    </section>
+    </details>
     <?php endif; ?>
     <?php if ($most_commented): ?>
-    <section>
-        <h2 class="block-title">En Çok Yorumlananlar</h2>
+    <details class="block-acc" open>
+        <summary class="block-title">En Çok Yorumlananlar</summary>
         <ol class="rank-list">
             <?php foreach ($most_commented as $p): ?>
                 <li>
@@ -210,13 +210,13 @@ $_siteTagline = (string) \App\Models\Setting::get('site_tagline', '', 'general')
                 </li>
             <?php endforeach; ?>
         </ol>
-    </section>
+    </details>
     <?php endif; ?>
 </div>
 
 <?php if ($showcase): ?>
-<section class="block">
-    <h2 class="block-title">Kategoriler</h2>
+<details class="block-acc block" open>
+    <summary class="block-title">Kategoriler</summary>
     <div class="two-col">
     <?php foreach ($showcase as $sc): ?>
         <div class="showcase">
@@ -232,5 +232,5 @@ $_siteTagline = (string) \App\Models\Setting::get('site_tagline', '', 'general')
         </div>
     <?php endforeach; ?>
     </div>
-</section>
+</details>
 <?php endif; ?>

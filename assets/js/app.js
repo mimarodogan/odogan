@@ -39,3 +39,20 @@
         });
     }
 })();
+
+// Yukarı çık butonu — 600px aşağı kaydırınca görünür, tıklayınca smooth scroll.
+(function () {
+    'use strict';
+    const btn = document.querySelector('.back-to-top');
+    if (!btn) return;
+    const toggle = () => { btn.hidden = window.scrollY <= 600; };
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            ticking = true;
+            window.requestAnimationFrame(() => { toggle(); ticking = false; });
+        }
+    }, { passive: true });
+    toggle();
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+})();

@@ -61,6 +61,34 @@
 }
 .rank-list a:hover .rank-meta{color:var(--ash);}  /* başlık cobalt olurken yorum sayısı gri kalsın */
 
+/* ════════════════ ANASAYFA BLOK ACCORDION (her zaman aç/kapa) ═══════════
+   En Çok Okunanlar / En Çok Yorumlananlar / Kategoriler bölümleri.
+   Footer'dan farklı: hem masaüstü hem mobilde açılır-kapanır, +/− ikonu hep görünür.
+   <details open> ile açık başlar; kullanıcı tıklayıp kapatabilir. */
+.block-acc{ margin:0; }
+.block-acc.block{ margin-top:6rem; }   /* showcase .block boşluğu korunsun */
+.block-acc > summary{
+  list-style:none;
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.block-acc > summary::-webkit-details-marker{ display:none; }
+.block-acc > summary.block-title::after{
+  content:"+";
+  margin-left:auto;            /* başlığı solda bırak, ikonu sağa yasla */
+  padding-left:.6rem;
+  font-family:var(--mono);
+  font-size:1.5rem;
+  font-weight:300;
+  line-height:.8;
+  color:var(--cobalt);
+  align-self:center;
+  transition:color 180ms var(--ease);
+}
+.block-acc[open] > summary.block-title::after{ content:"\2212"; }  /* − */
+.block-acc > summary:hover.block-title::after{ color:var(--soot); }
+
 /* ════════════════════════ SHOWCASE LIST ═════════════════════════════ */
 .showcase{margin-top:1.75rem}
 .showcase h3{
