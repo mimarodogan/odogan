@@ -80,6 +80,8 @@
 /* — Cover ——————————————————————————————————————————————————————————— */
 .post-cover{
   margin:2.5rem 0 4rem;
+  max-width:920px;            /* gövde ile aynı genişlik — full-bleed kapatıldı */
+  width:fit-content;          /* container görsele sarılır → yan boşluk olmaz */
   background:var(--bone-2);
   position:relative;
 }
@@ -98,9 +100,12 @@
   z-index:1;
 }
 .post-cover img{
-  width:100%;
+  width:auto;
+  max-width:100%;
   height:auto;
+  max-height:560px;           /* sayfayı kaplamasın — orantılı küçülür */
   display:block;
+  margin-inline:auto;
   border-top:1px solid var(--soot);
   border-bottom:1px solid var(--soot);
   /* Orijinal aspect ratio koru — kırpma yok, atelier estetiği */
