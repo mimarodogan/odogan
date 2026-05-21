@@ -136,11 +136,36 @@ final class AuthController
 
     public function showRegister(Request $req): Response
     {
+        // Zaman tuzağı için form açılış anını işaretle (bot tespiti).
+        $_SESSION['_reg_started'] = time();
         return view('auth.register', ['title' => 'Kayıt Ol', 'robots' => 'noindex, nofollow']);
     }
 
     public function register(Request $req): Response
     {
+        // ── Bot koruması: Honeypot + zaman tuzağı ────────────────────────────
+        // Botlar formdaki tüm alanları doldurur. Gizli "website" alanı doluysa
+        // → bot. Gerçek kullanıcı bu alanı göremediği için boş bırakır.
+        // Bot'a başarı taklidi yapılır (retry etmesin) ama HESAP OLUŞTURULMAZ.
+        $botIp = RateLimiter::clientIp();
+        if (trim((string) $req->input('website', '')) !== '') {
+            \App\Services\Logger::warning('auth.register.honeypot', ['ip' => $botIp], 'security');
+            flash('success', 'Hesabınız oluşturuldu. Doğrulama bağlantısı için e-postanızı kontrol edin.');
+            return Response::redirect(url('/giris'));
+        }
+        // Zaman tuzağı: form 2 saniyeden hızlı gönderildiyse → bot. (İnsan ismini,
+        // e-postasını, iki parolayı ve onay kutusunu 2 sn'den hızlı dolduramaz.)
+        // Sadece session'da işaret varsa uygula → meşru session-kayıp durumunu mağdur etme.
+        $regStarted = (int) ($_SESSION['_reg_started'] ?? 0);
+        if ($regStarted > 0 && (time() - $regStarted) < 2) {
+            \App\Services\Logger::warning('auth.register.timetrap', [
+                'ip' => $botIp, 'elapsed' => time() - $regStarted,
+            ], 'security');
+            flash('success', 'Hesabınız oluşturuldu. Doğrulama bağlantısı için e-postanızı kontrol edin.');
+            return Response::redirect(url('/giris'));
+        }
+        unset($_SESSION['_reg_started']); // tek kullanımlık
+
         $ip = RateLimiter::clientIp();
         $rl = (array) Config::get('security.rate_limit', []);
         $regCfg = (array) ($rl['register_ip'] ?? ['max' => 5, 'window' => 3600]);

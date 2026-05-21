@@ -13,6 +13,13 @@ foreach (['name','email','password','password_confirm'] as $f) {
     <?php endif; endforeach; ?>
     <form method="post" action="<?= esc(url('/kayit')) ?>" class="form" novalidate>
         <?= csrf_field() ?>
+        <?php /* Bot tuzağı (honeypot) — ekran dışı, gerçek kullanıcı görmez/doldurmaz.
+                 Doluysa sunucu kaydı reddeder. autocomplete=off ile tarayıcı autofill engellenir. */ ?>
+        <div aria-hidden="true" tabindex="-1" style="position:absolute!important;left:-9999px!important;top:auto;width:1px;height:1px;overflow:hidden">
+            <label>Web siteniz (lütfen boş bırakın)
+                <input type="text" name="website" tabindex="-1" autocomplete="off" value="">
+            </label>
+        </div>
         <label>
             <span>Adınız</span>
             <input type="text" name="name" required minlength="2" maxlength="120"
