@@ -82,6 +82,7 @@ $router->get('/health', [HealthController::class, 'index']);
 $router->get('/sitemap.xml',          [SitemapController::class, 'index']);    // Sitemap Index
 $router->get('/sitemap-pages.xml',    [SitemapController::class, 'pages']);    // Static + listing URLs
 $router->get('/sitemap-posts.xml',    [SitemapController::class, 'posts']);    // Posts + cover image
+$router->get('/sitemap-tags.xml',     [SitemapController::class, 'tags']);     // Etiket sayfaları (ayrı)
 $router->get('/sitemap-projects.xml', [SitemapController::class, 'projects']); // Projects + cover + gallery
 $router->get('/sitemap-images.xml',   [SitemapController::class, 'images']);   // Dedicated image sitemap
 $router->get('/robots.txt',           [RobotsController::class, 'index']);

@@ -178,29 +178,39 @@ final class PostController
         $posts = Tag::postsForTag((int) $tag['id'], 30, 0);
         $url = absolute_url('/etiket/' . $slug);
 
+        // Title: "Etiket: X" yerine sadece "X" → layout site adını ekler ("X - Osman Doğan").
+        $tagName = (string) $tag['name'];
+        $count   = (int) ($tag['post_count'] ?? count($posts));
+        // Cümle başı için ilk harfi büyüt (etiketler genelde küçük harf).
+        $ucName  = mb_strtoupper(mb_substr($tagName, 0, 1), 'UTF-8') . mb_substr($tagName, 1, null, 'UTF-8');
+        // Zengin meta description — generic "etiketli yazılar" yerine bağlamlı.
+        $tagDesc = $count >= 1
+            ? sprintf('%s konusundaki %d yazı: mimari ve inşaat mühendisliği perspektifinden analizler, rehberler ve değerlendirmeler.', $ucName, $count)
+            : sprintf('%s konusundaki yazılar — mimari ve inşaat mühendisliği perspektifinden içerikler.', $ucName);
+
         // JSON-LD: WebPage + ItemList (mevcut Schema classes)
         $schema = (new Renderer())
             ->add(Renderer::siteOrganization())
             ->add(Renderer::siteWebsite())
-            ->add(SchemaWebPage::build($url, 'Etiket: ' . $tag['name'], [
+            ->add(SchemaWebPage::build($url, $tagName, [
                 'type' => 'CollectionPage',
-                'description' => '"' . $tag['name'] . '" etiketli ' . (int) $tag['post_count'] . ' yazı',
+                'description' => $tagDesc,
                 'breadcrumb_id' => $url . '#breadcrumb',
             ]))
             ->add(Breadcrumb::build([
                 ['name' => 'Ana Sayfa', 'url' => absolute_url('/')],
-                ['name' => 'Etiket: ' . $tag['name'], 'url' => $url],
+                ['name' => 'Etiket: ' . $tagName, 'url' => $url],
             ], $url . '#breadcrumb'))
             ->add(\App\Services\Schema\ItemList::build(
-                ['name' => 'Etiket: ' . $tag['name'], 'slug' => 'etiket/' . $tag['slug'], 'description' => ''],
+                ['name' => $tagName, 'slug' => 'etiket/' . $tag['slug'], 'description' => ''],
                 $posts,
                 $url,
                 1
             ));
 
         return view('pages.tag', [
-            'title' => 'Etiket: ' . $tag['name'],
-            'description' => '"' . $tag['name'] . '" etiketli yazılar',
+            'title' => $tagName,
+            'description' => $tagDesc,
             'canonical' => $url,
             'schema_jsonld' => $schema->emitCached(
                 'schema:tag:' . $tag['id'] . ':' . date('Y-m-d-H'),
@@ -210,7 +220,7 @@ final class PostController
             'posts' => $posts,
             'breadcrumbs' => [
                 ['name' => 'Ana Sayfa', 'url' => url('/')],
-                ['name' => 'Etiket: ' . $tag['name'], 'url' => $url],
+                ['name' => 'Etiket: ' . $tagName, 'url' => $url],
             ],
         ]);
     }

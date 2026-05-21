@@ -37,6 +37,7 @@ final class SitemapController
             $sitemaps = [
                 ['loc' => url('/sitemap-pages.xml'),    'lastmod' => $now],
                 ['loc' => url('/sitemap-posts.xml'),    'lastmod' => self::latestUpdated('posts', 'status = "published"')],
+                ['loc' => url('/sitemap-tags.xml'),     'lastmod' => self::latestUpdated('tags', 'post_count > 0')],
                 ['loc' => url('/sitemap-projects.xml'), 'lastmod' => self::latestUpdated('projects', 'status = "published"')],
                 ['loc' => url('/sitemap-images.xml'),   'lastmod' => $now],
             ];
@@ -91,13 +92,7 @@ final class SitemapController
         // Authors index
         $urls[] = self::node(url('/yazarlar'), null, '0.5', 'monthly');
 
-        // Tags
-        $tags = Database::instance()->fetchAll(
-            'SELECT slug, updated_at FROM tags WHERE post_count > 0 ORDER BY post_count DESC LIMIT 1000'
-        );
-        foreach ($tags as $t) {
-            $urls[] = self::node(url('/etiket/' . $t['slug']), $t['updated_at'] ?? null, '0.4', 'weekly');
-        }
+        // Tags artık ayrı sitemap'te → /sitemap-tags.xml (buildTagUrls).
 
         // Series (Tier 5)
         if (function_exists('feature') && feature('series_enabled')) {
@@ -133,6 +128,28 @@ final class SitemapController
             }
         }
 
+        return $urls;
+    }
+
+    /**
+     * /sitemap-tags.xml — Etiket sayfaları (ayrı sitemap).
+     */
+    public function tags(Request $req): Response
+    {
+        return $this->cachedXmlResponse('sitemap:tags', function () {
+            return self::wrapUrlset($this->buildTagUrls());
+        });
+    }
+
+    private function buildTagUrls(): array
+    {
+        $urls = [];
+        $tags = Database::instance()->fetchAll(
+            'SELECT slug, updated_at FROM tags WHERE post_count > 0 ORDER BY post_count DESC LIMIT 5000'
+        );
+        foreach ($tags as $t) {
+            $urls[] = self::node(url('/etiket/' . $t['slug']), $t['updated_at'] ?? null, '0.4', 'weekly');
+        }
         return $urls;
     }
 
