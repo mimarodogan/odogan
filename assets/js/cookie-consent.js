@@ -53,6 +53,26 @@
         } catch (e) {}
     };
 
+    /**
+     * GA gtag.js scriptini dinamik yükle — consent-gated (tek sefer).
+     * head-meta.php artık gtag.js'i basmaz; yalnızca onay verilince burada
+     * window.__gaId üzerinden eklenir → ilk yüklemede GA yükü olmaz (perf + KVKK).
+     */
+    let gaLoaded = false;
+    const loadGA = () => {
+        if (gaLoaded) return;
+        const id = window.__gaId;
+        if (!id) return;
+        gaLoaded = true;
+        const s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(id);
+        document.head.appendChild(s);
+        if (typeof window.gtag === 'function') {
+            window.gtag('config', id);
+        }
+    };
+
     /** CustomEvent fırlat — uygulamadaki diğer modüller dinleyebilsin. */
     const dispatchConsent = (value, granted) => {
         try {
@@ -88,6 +108,7 @@
             write(value);
         }
         updateGtagConsent(granted);
+        if (granted) loadGA();   // onay 'all' → GA scriptini şimdi yükle
         dispatchConsent(value, granted);
     };
 
@@ -102,8 +123,12 @@
             return;
         }
 
-        // Banner DOM'da yoksa (örn. admin sayfaları, ayar kapalı) çık.
-        if (!banner) return;
+        // Banner DOM'da yoksa (çerez onayı gerekmiyor — banner kapalı) → GA'yı
+        // doğrudan yükle (consent zorunluluğu yoksa engelleme de yok).
+        if (!banner) {
+            loadGA();
+            return;
+        }
 
         // Banner var ama karar yok → kullanıcıya sor.
         const buttons = banner.querySelectorAll('[data-cookie-consent]');

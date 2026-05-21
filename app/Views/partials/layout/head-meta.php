@@ -241,7 +241,9 @@ if (!$_inAdmin):
     require __DIR__ . '/cookie-consent-init.php';
     ?>
     <?php if ($_gaId !== '' && preg_match('/^[A-Z0-9-]{6,30}$/', $_gaId)): ?>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc($_gaId) ?>"></script>
-    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<?= esc($_gaId) ?>');</script>
+    <?php /* Consent-gated: gtag.js onay verilene kadar YÜKLENMEZ (performans + KVKK).
+             dataLayer + gtag fonksiyonu tanımlanır; gerçek script ve config'i
+             cookie-consent.js, kullanıcı 'all' onayı verince window.__gaId'den ekler. */ ?>
+    <script>window.__gaId=<?= json_encode($_gaId, JSON_UNESCAPED_SLASHES) ?>;window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());</script>
     <?php endif; ?>
 <?php endif; ?>
