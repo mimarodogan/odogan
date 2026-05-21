@@ -46,7 +46,7 @@ endif; ?>
             </div>
 
             <nav class="sf-nav" aria-label="Keşfet">
-                <p class="sf-nav-title">Keşfet</p>
+                <details class="sf-acc"><summary class="sf-nav-title">Keşfet</summary>
                 <ul>
                     <li><a href="<?= esc(url('/yazarlar')) ?>" title="Tüm yazarlar">Yazarlar</a></li>
                     <li><a href="<?= esc(url('/ara')) ?>" title="Site içinde arama">Ara</a></li>
@@ -55,11 +55,12 @@ endif; ?>
                     <?php endif; ?>
                     <li><a href="<?= esc(url('/rss')) ?>" title="RSS beslemesi (feed reader için)">RSS</a></li>
                 </ul>
+                </details>
             </nav>
 
             <?php if ($_showPortfolio): ?>
             <nav class="sf-nav" aria-label="Portfolyo">
-                <p class="sf-nav-title">Portfolyo</p>
+                <details class="sf-acc"><summary class="sf-nav-title">Portfolyo</summary>
                 <ul>
                     <?php if ($_hasProjects): ?>
                         <li><a href="<?= esc(url('/projeler')) ?>" title="Mimari proje portfolyosu">Projeler</a></li>
@@ -71,12 +72,13 @@ endif; ?>
                         <li><a href="<?= esc(url('/sozluk')) ?>" title="Mimari terimler sözlüğü">Mimari Sözlük</a></li>
                     <?php endif; ?>
                 </ul>
+                </details>
             </nav>
             <?php endif; ?>
 
             <?php if (!empty($_legalDocs)): ?>
             <nav class="sf-nav" aria-label="Sözleşmeler">
-                <p class="sf-nav-title">Yasal</p>
+                <details class="sf-acc"><summary class="sf-nav-title">Yasal</summary>
                 <ul>
                     <?php foreach ($_legalDocs as $d): if (!$d['is_active']) continue; ?>
                         <li>
@@ -87,6 +89,7 @@ endif; ?>
                         </li>
                     <?php endforeach; ?>
                 </ul>
+                </details>
             </nav>
             <?php endif; ?>
 

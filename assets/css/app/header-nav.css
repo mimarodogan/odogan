@@ -294,3 +294,45 @@ body.nav-open .nav-toggle span:nth-child(3){transform:translateY(-6px) rotate(-4
   transition:color 200ms var(--ease);
 }
 .sf-nav a:hover{ color:var(--cobalt); }
+
+/* ── Footer accordion: mobilde (≤720px) aç/kapa, desktop'ta hep açık ──
+   <details>/<summary> native; JS yok. Desktop'ta .sf-nav ul author kuralı
+   (display:flex) details'in kapalı-gizleme davranışını ezer → liste hep görünür. */
+.sf-acc{ border:0; }
+.sf-acc > summary{
+  list-style:none;            /* default ▸ üçgen marker'ı kaldır */
+  cursor:default;             /* desktop: tıklama hissi yok */
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+}
+.sf-acc > summary::-webkit-details-marker{ display:none; }  /* Safari marker */
+.sf-acc > summary::after{
+  content:"+";
+  font-family:var(--mono);
+  font-size:1.1rem;
+  line-height:1;
+  color:var(--ash);
+  display:none;               /* desktop'ta gizli — accordion devre dışı */
+}
+.sf-acc[open] > summary::after{ content:"\2212"; }  /* − (minus) */
+
+/* Desktop GARANTİ: details kapalı kalsa bile liste her zaman görünür
+   (accordion yalnızca mobilde aktif). */
+@media(min-width:721px){
+  .sf-acc > ul{ display:flex !important; }
+}
+
+@media(max-width:720px){
+  .sf-acc > summary{
+    cursor:pointer;           /* mobil: tıklanabilir başlık */
+    padding:.65rem 0;
+    margin-bottom:0;
+  }
+  .sf-acc > summary::after{ display:inline-block; }  /* +/− göster */
+  .sf-acc:not([open]) > ul{ display:none; }          /* kapalıyken listeyi gizle */
+  .sf-acc[open] > ul{ margin-top:.25rem; padding-bottom:.5rem; }
+  /* Gruplar arası ince ayraç — dikey listede netlik */
+  .sf-nav + .sf-nav{ border-top:1px solid var(--hair); }
+}
