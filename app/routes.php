@@ -426,6 +426,9 @@ $router->group('/admin', function ($r) {
     $r->get('/newsletter/csv',     [AdminNewsletterController::class, 'exportCsv']);
 }, [AuthMiddleware::class, RbacMiddleware::class . ':admin']);
 
+// Kategoriler listesi — {category} catch-all'dan ÖNCE olmalı (first-match-wins).
+$router->get('/kategoriler', [CategoryController::class, 'index']);
+
 // Silo URL — kategori/içerik (en sona)
 $router->get('/{category}', [CategoryController::class, 'show']);
 $router->get('/{category}/{slug}', [PostController::class, 'show']);

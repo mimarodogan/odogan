@@ -14,6 +14,39 @@ use App\Services\Schema\WebPage as SchemaWebPage;
 
 final class CategoryController
 {
+    /**
+     * /kategoriler — tüm kategoriler + her birindeki yazı sayısı.
+     */
+    public function index(Request $req): Response
+    {
+        $categories = Category::allWithCounts(true);
+
+        $canonical = absolute_url('/kategoriler');
+        $schema = (new Renderer())
+            ->add(Renderer::siteOrganization())
+            ->add(Renderer::siteWebsite())
+            ->add(SchemaWebPage::build($canonical, 'Kategoriler', [
+                'description' => 'Tüm içerik kategorileri ve yazı sayıları.',
+            ]))
+            ->add(Breadcrumb::build([
+                ['name' => 'Ana Sayfa', 'url' => absolute_url('/')],
+                ['name' => 'Kategoriler', 'url' => $canonical],
+            ]));
+        $schemaJson = $schema->emitCached('schema:categories:index', 21600);
+
+        return view('pages.categories', [
+            'title' => 'Kategoriler',
+            'description' => 'Tüm içerik kategorileri ve her birindeki yazı sayısı.',
+            'canonical' => $canonical,
+            'schema_jsonld' => $schemaJson,
+            'breadcrumbs' => [
+                ['name' => 'Ana Sayfa', 'url' => url('/')],
+                ['name' => 'Kategoriler', 'url' => url('/kategoriler')],
+            ],
+            'categories' => $categories,
+        ]);
+    }
+
     public function show(Request $req, array $args): Response
     {
         $slug = (string) ($args['category'] ?? '');

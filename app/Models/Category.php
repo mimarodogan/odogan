@@ -17,6 +17,25 @@ final class Category
         return Database::instance()->fetchAll($sql);
     }
 
+    /**
+     * Tüm kategoriler + her birinde yayımlanmış yazı sayısı (post_count).
+     * Kategoriler listesi sayfası ve menü rozeti için.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function allWithCounts(bool $activeOnly = true): array
+    {
+        $sql = 'SELECT c.*, COUNT(p.id) AS post_count
+                FROM categories c
+                LEFT JOIN posts p
+                       ON p.category_id = c.id AND p.status = "published"';
+        if ($activeOnly) {
+            $sql .= ' WHERE c.is_active = 1';
+        }
+        $sql .= ' GROUP BY c.id ORDER BY c.position ASC, c.name ASC';
+        return Database::instance()->fetchAll($sql);
+    }
+
     public static function findById(int $id): ?array
     {
         return Database::instance()->fetch(

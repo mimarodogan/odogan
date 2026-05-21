@@ -21,7 +21,8 @@ final class HomeController
         $trending = $cache->remember('home:trending', 300, fn() => Post::trending(6, 30), ['home']);
         $mostRead = $cache->remember('home:most-read', 600, fn() => self::mostRead(8), ['home']);
         $mostCommented = $cache->remember('home:most-commented', 600, fn() => Post::mostCommented(6), ['home']);
-        $recent = $cache->remember('home:recent', 120, fn() => Post::recent(10), ['home']);
+        // 12'lik havuz: featured (1) + Editörün Seçimi (≤4) çıkınca "Yeni Yayınlar" için 6 garanti kalır.
+        $recent = $cache->remember('home:recent', 120, fn() => Post::recent(12), ['home']);
         $showcase = $cache->remember('home:showcase', 600, fn() => self::categoryShowcase(4, 4), ['home']);
 
         // Yeni eklenen 3 proje — anasayfa portfolyo cameo'su
@@ -58,6 +59,9 @@ final class HomeController
                 ));
             }
         }
+
+        // "Yeni Yayınlar" bloğu tam 6 yazı gösterir (Trend de Post::trending(6,…) ile 6).
+        $recent = array_slice($recent, 0, 6);
 
         // Layer live Redis counters on top so trending reacts in near-real-time.
         foreach ($trending as &$p) {

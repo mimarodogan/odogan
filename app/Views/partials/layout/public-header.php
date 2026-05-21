@@ -27,6 +27,7 @@ $_brandTag  = (string) \App\Models\Setting::get('site_tagline', '');
         </button>
         <nav id="primary-nav" class="nav" aria-label="Ana navigasyon">
             <a href="<?= esc(url('/')) ?>" title="Anasayfa">Ana Sayfa</a>
+            <a href="<?= esc(url('/kategoriler')) ?>" title="Tüm kategoriler ve yazı sayıları">Kategoriler</a>
             <a href="<?= esc(url('/yazarlar')) ?>" title="Yazarlar listesi">Yazarlar</a>
             <?php if (function_exists('feature') && feature('project_portfolio_enabled')): ?>
                 <a href="<?= esc(url('/projeler')) ?>" title="Mimari proje portfolyosu">Projeler</a>
