@@ -48,6 +48,18 @@
   line-height:1.15;
 }
 .rank-list a:hover{color:var(--cobalt);text-decoration:none}
+/* Yorum sayısı — başlık yanında inline (satır yüksekliği "En Çok Okunanlar" ile eşit kalsın) */
+.rank-meta{
+  font-family:var(--mono);
+  font-size:.7rem;
+  font-weight:500;
+  color:var(--ash);
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  white-space:nowrap;
+  margin-left:.45rem;
+}
+.rank-list a:hover .rank-meta{color:var(--ash);}  /* başlık cobalt olurken yorum sayısı gri kalsın */
 
 /* ════════════════════════ SHOWCASE LIST ═════════════════════════════ */
 .showcase{margin-top:1.75rem}

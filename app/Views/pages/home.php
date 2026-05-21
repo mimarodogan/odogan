@@ -206,8 +206,7 @@ $_siteTagline = (string) \App\Models\Setting::get('site_tagline', '', 'general')
         <ol class="rank-list">
             <?php foreach ($most_commented as $p): ?>
                 <li>
-                    <a href="<?= esc(url('/' . $p['category_slug'] . '/' . $p['slug'])) ?>" title="<?= esc($p['title']) ?>"><?= esc($p['title']) ?></a>
-                    <span class="muted">— <?= (int) $p['comment_count'] ?> yorum</span>
+                    <a href="<?= esc(url('/' . $p['category_slug'] . '/' . $p['slug'])) ?>" title="<?= esc($p['title']) ?>"><?= esc($p['title']) ?><span class="rank-meta">· <?= (int) $p['comment_count'] ?> yorum</span></a>
                 </li>
             <?php endforeach; ?>
         </ol>
