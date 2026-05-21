@@ -79,7 +79,7 @@
 
 /* — Cover ——————————————————————————————————————————————————————————— */
 .post-cover{
-  margin:2.5rem 0 4rem;
+  margin:2.5rem auto 4rem;    /* yatay auto → görsel sayfada ortalanır */
   max-width:920px;            /* gövde ile aynı genişlik — full-bleed kapatıldı */
   width:fit-content;          /* container görsele sarılır → yan boşluk olmaz */
   background:var(--bone-2);
