@@ -1053,75 +1053,242 @@
 }
 
 /* ════════════════════════ COMMENT THREADING (Tier 8) ═════════════════ */
+/* ════════════════════════ YORUMLAR — modern ════════════════════════ */
+.comments-section{
+  margin-top:3.5rem;
+  padding-top:2.5rem;
+  border-top:1px solid var(--soot);
+}
+.comments-head{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  margin-bottom:2rem;
+}
+.comments-title{
+  font-family:var(--serif);
+  font-size:clamp(1.5rem,2.6vw,2rem);
+  font-weight:600;
+  letter-spacing:-.025em;
+  margin:0;
+  color:var(--soot);
+}
+.comments-count{
+  font-family:var(--mono);
+  font-size:.78rem;
+  font-weight:600;
+  color:var(--cobalt);
+  background:var(--bone-2);
+  border:1px solid var(--hair);
+  border-radius:999px;
+  padding:.1rem .7rem;
+  line-height:1.5;
+}
+.comments-empty{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:1.05rem;
+  color:var(--ash);
+  margin:0 0 2.5rem;
+}
 .comments-list{
   list-style:none;
   padding:0;
-  margin:1.5rem 0 0;
+  margin:0 0 2.5rem;
+  display:flex;
+  flex-direction:column;
+  gap:1.5rem;
 }
-.comment-item{
-  margin:1.5rem 0 0;
+.comment-item{ margin:0; padding:0; }
+.comment{
+  display:flex;
+  gap:1rem;
+  align-items:flex-start;
+}
+.comment-avatar{
+  width:42px;
+  height:42px;
+  flex-shrink:0;
+  border-radius:50%;
+  background:var(--cobalt);
+  color:var(--bone);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--serif);
+  font-size:1.15rem;
+  font-weight:600;
+  line-height:1;
+  user-select:none;
+}
+.comment-main{
+  flex:1;
+  min-width:0;
+  background:var(--bone-2);
+  border:1px solid var(--hair);
+  border-radius:10px;
+  padding:.9rem 1.2rem 1rem;
+}
+.comment-meta{
+  display:flex;
+  align-items:baseline;
+  gap:.65rem;
+  flex-wrap:wrap;
+  margin:0 0 .4rem;
+}
+.comment-author{
+  font-family:var(--serif);
+  font-size:1rem;
+  font-weight:600;
+  color:var(--soot);
+  letter-spacing:-.01em;
+}
+.comment-date{
+  font-family:var(--mono);
+  font-size:.64rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--ash);
+}
+.comment-body{
+  font-family:var(--serif);
+  font-size:1.02rem;
+  line-height:1.65;
+  color:var(--soot);
+  margin:0;
+  overflow-wrap:break-word;
+}
+.comment-actions{ margin-top:.55rem; }
+.comment-reply-btn{
+  background:transparent;
+  border:0;
+  color:var(--ash);
+  cursor:pointer;
+  font-family:var(--mono);
+  font-size:.62rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  font-weight:600;
   padding:0;
+  transition:color 180ms var(--ease);
 }
+.comment-reply-btn:hover{ color:var(--cobalt); }
+.comment-replies{
+  list-style:none;
+  padding:0;
+  margin:1.5rem 0 0;
+  display:flex;
+  flex-direction:column;
+  gap:1.5rem;
+}
+/* Reply girinti — sol hairline, derinliğe göre renk */
 .comment-item.is-reply{
   margin-left:1.5rem;
   padding-left:1.25rem;
   border-left:2px solid var(--hair);
 }
-.comment-item.depth-2{ margin-left:3rem; border-left-color:var(--hair-2); }
-.comment-item.depth-3{ margin-left:4.5rem; border-left-color:var(--cobalt); }
-.comment{
-  padding-bottom:1rem;
+.comment-item.is-reply .comment-avatar{ width:34px; height:34px; font-size:.95rem; }
+.comment-item.depth-2{ border-left-color:var(--hair-2); }
+.comment-item.depth-3{ border-left-color:var(--cobalt); }
+
+/* ── Yorum formu ── */
+.comment-form-wrap{
+  background:var(--bone-2);
+  border:1px solid var(--hair);
+  border-radius:12px;
+  padding:1.75rem;
 }
-.comment-meta{
+.comment-form-title{
+  font-family:var(--serif);
+  font-size:1.25rem;
+  font-weight:600;
+  margin:0 0 1.25rem;
+  color:var(--soot);
+}
+.comment-form-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1rem;
+}
+.comment-form label{ display:block; margin-bottom:1rem; }
+.comment-form label > span{
+  display:block;
   font-family:var(--mono);
-  font-size:.7rem;
+  font-size:.64rem;
   letter-spacing:var(--tracked);
   text-transform:uppercase;
   color:var(--ash);
-  margin:0 0 .5rem;
-  display:flex;
-  gap:.75rem;
-  align-items:baseline;
-  flex-wrap:wrap;
+  margin-bottom:.4rem;
 }
-.comment-author{
-  color:var(--soot);
-  font-weight:700;
-}
-.comment-date{ color:var(--ash); }
-.comment-body{
+.comment-form label > span em{ font-style:normal; text-transform:none; opacity:.7; }
+.comment-form input,
+.comment-form textarea{
+  width:100%;
   font-family:var(--serif);
   font-size:1rem;
-  line-height:1.6;
-  color:var(--soot-2);
+  color:var(--soot);
+  background:var(--bone);
+  border:1px solid var(--hair-2);
+  border-radius:8px;
+  padding:.7rem .85rem;
+  transition:border-color 180ms var(--ease),box-shadow 180ms var(--ease);
+}
+.comment-form input:focus,
+.comment-form textarea:focus{
+  outline:0;
+  border-color:var(--cobalt);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--cobalt) 15%, transparent);
+}
+.comment-form textarea{ resize:vertical; min-height:110px; line-height:1.6; }
+.comment-form-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  flex-wrap:wrap;
+  margin-top:.25rem;
+}
+.comment-form-note{
+  font-family:var(--mono);
+  font-size:.64rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--ash);
   margin:0;
+  max-width:30ch;
 }
-.comment-actions{
-  margin-top:.5rem;
+.comment-replying-to{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  background:var(--bone);
+  border-left:2px solid var(--cobalt);
+  padding:.6rem .9rem;
+  margin:0 0 1rem;
+  font-family:var(--mono);
+  font-size:.7rem;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--soot-2);
 }
-.comment-reply-btn{
+.comment-replying-to button{
   background:transparent;
   border:0;
   color:var(--cobalt);
   cursor:pointer;
-  font-family:var(--mono);
-  font-size:.66rem;
-  letter-spacing:var(--tracked);
-  text-transform:uppercase;
-  font-weight:600;
-  padding:0;
+  font-family:inherit;
+  font-size:inherit;
+  text-decoration:underline;
 }
-.comment-reply-btn:hover{ text-decoration:underline; }
-.comment-replies{
-  list-style:none;
-  padding:0;
-  margin:0;
-}
+.comment-hp{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
 
 @media(max-width:680px){
-  .comment-item.is-reply{ margin-left:.75rem; padding-left:.75rem; }
-  .comment-item.depth-2{ margin-left:1.5rem; }
-  .comment-item.depth-3{ margin-left:2.25rem; }
+  .comment-item.is-reply{ margin-left:.75rem; padding-left:.85rem; }
+  .comment-form-row{ grid-template-columns:1fr; gap:0; }
+  .comment-form-wrap{ padding:1.25rem; }
+  .comment-avatar{ width:36px; height:36px; font-size:1rem; }
+  .comment{ gap:.75rem; }
 }
 
 /* ═══════════════════════════════════════════════════════════

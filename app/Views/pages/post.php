@@ -147,6 +147,12 @@
     </footer>
 </article>
 
+<?php
+// Yorumlar — yazının HEMEN altında (prev/next, bio, ilgili yazılar, trend'den önce).
+$post_id = (int) $post['id'];
+require dirname(__DIR__) . '/partials/comments.php';
+?>
+
 <?php if (function_exists('feature') && feature('prev_next_nav_enabled') && !empty($prev_next)):
     require dirname(__DIR__) . '/partials/prev-next-nav.php';
 endif; ?>
@@ -197,8 +203,3 @@ endif; ?>
 <?php if (!empty($trending)):
     require dirname(__DIR__) . '/partials/trending.php';
 endif; ?>
-
-<?php
-$post_id = (int) $post['id'];
-require dirname(__DIR__) . '/partials/comments.php';
-?>

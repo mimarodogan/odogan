@@ -16,24 +16,34 @@ foreach ($comments as $c) {
     }
 }
 
-$_renderComment = function (array $c, int $depth = 0) use (&$_renderComment, &$_byParent, $logged_in): void {
+// Ad baş harfi — avatar dairesi için
+$_initial = static function (string $name): string {
+    $n = trim($name);
+    return $n === '' ? '?' : mb_strtoupper(mb_substr($n, 0, 1), 'UTF-8');
+};
+
+$_renderComment = function (array $c, int $depth = 0) use (&$_renderComment, &$_byParent, $logged_in, $_initial): void {
     $hasReplies = isset($_byParent[(int) $c['id']]);
     $depthClass = $depth > 0 ? ' is-reply depth-' . min($depth, 3) : '';
+    $name = (string) ($c['user_name'] ?: $c['author_name'] ?: 'Misafir');
     ?>
     <li class="comment-item<?= $depthClass ?>" id="comment-<?= (int) $c['id'] ?>">
         <article class="comment">
-            <header class="comment-meta">
-                <strong class="comment-author"><?= esc($c['user_name'] ?: $c['author_name'] ?: 'Misafir') ?></strong>
-                <time class="comment-date" datetime="<?= esc(date('c', strtotime((string) $c['created_at']))) ?>"><?= esc(tr_date($c['created_at'], true)) ?></time>
-            </header>
-            <div class="comment-body"><?= nl2br(esc($c['body'])) ?></div>
-            <footer class="comment-actions">
-                <button type="button" class="comment-reply-btn"
-                        data-reply-to="<?= (int) $c['id'] ?>"
-                        data-reply-name="<?= esc($c['user_name'] ?: $c['author_name'] ?: 'Misafir') ?>">
-                    ↳ Yanıtla
-                </button>
-            </footer>
+            <div class="comment-avatar" aria-hidden="true"><?= esc($_initial($name)) ?></div>
+            <div class="comment-main">
+                <header class="comment-meta">
+                    <strong class="comment-author"><?= esc($name) ?></strong>
+                    <time class="comment-date" datetime="<?= esc(date('c', strtotime((string) $c['created_at']))) ?>"><?= esc(tr_date($c['created_at'], true)) ?></time>
+                </header>
+                <div class="comment-body"><?= nl2br(esc($c['body'])) ?></div>
+                <footer class="comment-actions">
+                    <button type="button" class="comment-reply-btn"
+                            data-reply-to="<?= (int) $c['id'] ?>"
+                            data-reply-name="<?= esc($name) ?>">
+                        ↳ Yanıtla
+                    </button>
+                </footer>
+            </div>
         </article>
         <?php if ($hasReplies): ?>
             <ul class="comment-replies">
@@ -46,8 +56,11 @@ $_renderComment = function (array $c, int $depth = 0) use (&$_renderComment, &$_
     <?php
 };
 ?>
-<section id="yorumlar" class="author-section">
-    <h2>Yorumlar (<?= count($comments) ?>)</h2>
+<section id="yorumlar" class="comments-section">
+    <div class="comments-head">
+        <h2 class="comments-title">Yorumlar</h2>
+        <span class="comments-count"><?= count($comments) ?></span>
+    </div>
 
     <?php if ($s = flash('success_comment')): ?>
         <div class="flash flash-success"><?= esc($s) ?></div>
@@ -57,7 +70,7 @@ $_renderComment = function (array $c, int $depth = 0) use (&$_renderComment, &$_
     <?php endif; ?>
 
     <?php if (!$comments): ?>
-        <p class="muted">İlk yorumu siz yapın.</p>
+        <p class="comments-empty">Henüz yorum yok — ilk yorumu siz yazın.</p>
     <?php else: ?>
         <ul class="comments-list">
             <?php foreach ($_topLevel as $c): ?>
@@ -66,37 +79,44 @@ $_renderComment = function (array $c, int $depth = 0) use (&$_renderComment, &$_
         </ul>
     <?php endif; ?>
 
-    <h3 style="margin-top:1.5rem">Yorum Yaz</h3>
-    <form method="post" action="<?= esc(url('/yorum')) ?>" class="form form-wide comment-form" id="comment-form">
-        <?= csrf_field() ?>
-        <input type="hidden" name="post_id" value="<?= (int) $post_id ?>">
-        <input type="hidden" name="parent_id" id="comment-parent-id" value="">
-        <input type="hidden" name="form_ts" value="<?= time() ?>">
+    <div class="comment-form-wrap">
+        <h3 class="comment-form-title">Yorum Yaz</h3>
+        <form method="post" action="<?= esc(url('/yorum')) ?>" class="form comment-form" id="comment-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="post_id" value="<?= (int) $post_id ?>">
+            <input type="hidden" name="parent_id" id="comment-parent-id" value="">
+            <input type="hidden" name="form_ts" value="<?= time() ?>">
 
-        <p class="comment-replying-to" id="comment-replying-to" hidden role="status" aria-live="polite" style="background:var(--bone-2);padding:.75rem 1rem;border-left:2px solid var(--cobalt);font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:var(--tracked)">
-            <span id="replying-to-text"></span>
-            <button type="button" id="cancel-reply" style="background:transparent;border:0;color:var(--cobalt);cursor:pointer;font-family:inherit;text-decoration:underline">İptal</button>
-        </p>
+            <p class="comment-replying-to" id="comment-replying-to" hidden role="status" aria-live="polite">
+                <span id="replying-to-text"></span>
+                <button type="button" id="cancel-reply">İptal</button>
+            </p>
 
-        <div aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
-            <label>Website (boş bırakın)
-                <input type="text" name="website" tabindex="-1" autocomplete="off" value="">
+            <div aria-hidden="true" class="comment-hp">
+                <label>Website (boş bırakın)
+                    <input type="text" name="website" tabindex="-1" autocomplete="off" value="">
+                </label>
+            </div>
+
+            <?php if (!$logged_in): ?>
+                <div class="comment-form-row">
+                    <label><span>Adınız</span>
+                        <input type="text" name="author_name" required minlength="2" maxlength="120" placeholder="Adınız">
+                    </label>
+                    <label><span>E-posta <em>(yayınlanmaz)</em></span>
+                        <input type="email" name="author_email" required maxlength="190" placeholder="ornek@eposta.com">
+                    </label>
+                </div>
+            <?php endif; ?>
+            <label><span>Yorum</span>
+                <textarea name="body" id="comment-body" rows="4" required minlength="3" maxlength="4000" placeholder="Düşüncelerinizi paylaşın…"></textarea>
             </label>
-        </div>
-        <?php if (!$logged_in): ?>
-            <label><span>Adınız</span>
-                <input type="text" name="author_name" required minlength="2" maxlength="120">
-            </label>
-            <label><span>E-posta (yayınlanmaz)</span>
-                <input type="email" name="author_email" required maxlength="190">
-            </label>
-        <?php endif; ?>
-        <label><span>Yorum</span>
-            <textarea name="body" id="comment-body" rows="4" required minlength="3" maxlength="4000"></textarea>
-        </label>
-        <p class="muted" style="font-size:.85rem">Yorumunuz editör onayından sonra yayınlanır.</p>
-        <button class="btn btn-primary" type="submit">Gönder</button>
-    </form>
+            <div class="comment-form-foot">
+                <p class="comment-form-note">Yorumunuz editör onayından sonra yayınlanır.</p>
+                <button class="btn btn-primary" type="submit">Gönder</button>
+            </div>
+        </form>
+    </div>
 </section>
 
 <script>
