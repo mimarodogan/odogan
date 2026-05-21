@@ -58,29 +58,24 @@ final class CategoryController
             return Response::notFound();
         }
 
-        // Pagination — varsayılan 12 / sayfa, ?sayfa=N ile gez
-        $perPage = (int) \App\Models\Setting::get('posts_per_page', 12, 'content');
-        if ($perPage < 4)  { $perPage = 4;  }
-        if ($perPage > 48) { $perPage = 48; }
-        $page = max(1, (int) $req->input('sayfa', 1));
+        // Pagination — sayfa başına 9 yazı (kullanıcı isteği), path-based: /{category}/2
+        $perPage = 9;
+        // Sayfa numarası: path (/{category}/{page}) öncelikli, ?sayfa= geriye uyumlu fallback.
+        $page = max(1, (int) ($args['page'] ?? $req->input('sayfa', 1)));
 
         $result = Post::listByCategoryPaged((int) $category['id'], $page, $perPage);
         $posts  = $result['posts'];
         $page   = $result['page'];
         $totalPages = $result['total_pages'];
 
-        $baseUrl    = '/' . $category['slug'];
-        $canonical  = $page > 1
-            ? absolute_url($baseUrl . '?sayfa=' . $page)
-            : absolute_url($baseUrl);
-        $prevUrl    = $page > 1
-            ? ($page === 2 ? url($baseUrl) : url($baseUrl . '?sayfa=' . ($page - 1)))
-            : null;
-        $nextUrl    = $page < $totalPages
-            ? url($baseUrl . '?sayfa=' . ($page + 1))
-            : null;
-        $prevAbs    = $prevUrl ? (preg_match('#^https?://#i', $prevUrl) ? $prevUrl : absolute_url($prevUrl)) : null;
-        $nextAbs    = $nextUrl ? (preg_match('#^https?://#i', $nextUrl) ? $nextUrl : absolute_url($nextUrl)) : null;
+        $baseUrl = '/' . $category['slug'];
+        // Path-based sayfa URL'i: sayfa 1 → /{category}, sayfa 2+ → /{category}/N
+        $pageUrl = static fn(int $p): string => $p <= 1 ? $baseUrl : $baseUrl . '/' . $p;
+        $canonical = absolute_url($pageUrl($page));
+        $prevUrl   = $page > 1 ? url($pageUrl($page - 1)) : null;
+        $nextUrl   = $page < $totalPages ? url($pageUrl($page + 1)) : null;
+        $prevAbs   = $prevUrl ? (preg_match('#^https?://#i', $prevUrl) ? $prevUrl : absolute_url($prevUrl)) : null;
+        $nextAbs   = $nextUrl ? (preg_match('#^https?://#i', $nextUrl) ? $nextUrl : absolute_url($nextUrl)) : null;
 
         $startOffset = ($page - 1) * $perPage + 1;
 

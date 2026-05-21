@@ -10,7 +10,7 @@
 <?php if (!$posts): ?>
     <p class="muted">Bu kategoride henüz yayımlanmış içerik yok.</p>
 <?php else: ?>
-<section class="mag-grid">
+<section class="mag-grid mag-grid-fill">
     <?php foreach ($posts as $_idx => $p): $u = url('/' . $category['slug'] . '/' . $p['slug']); ?>
         <article class="mag-card">
             <a class="mag-cover <?= empty($p['cover_image']) ? 'mag-cover-empty' : '' ?>" href="<?= esc($u) ?>" title="<?= esc($p['title']) ?>" aria-label="<?= esc($p['title']) ?>">

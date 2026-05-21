@@ -64,9 +64,12 @@ final class Router
     private function compile(string $pattern): array
     {
         $params = [];
-        $regex = preg_replace_callback('#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#', function ($m) use (&$params) {
+        // {name} → herhangi bir segment; {name:\d+} → özel regex kısıtı (constraint).
+        // Constraint opsiyonel olduğu için mevcut {name} route'lar geriye uyumlu kalır.
+        $regex = preg_replace_callback('#\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^}]+))?\}#', function ($m) use (&$params) {
             $params[] = $m[1];
-            return '(?P<' . $m[1] . '>[^/]+)';
+            $constraint = ($m[2] ?? '') !== '' ? $m[2] : '[^/]+';
+            return '(?P<' . $m[1] . '>' . $constraint . ')';
         }, $pattern);
         return ['#^' . rtrim((string) $regex, '/') . '/?$#', $params];
     }

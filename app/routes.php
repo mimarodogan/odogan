@@ -431,4 +431,7 @@ $router->get('/kategoriler', [CategoryController::class, 'index']);
 
 // Silo URL — kategori/içerik (en sona)
 $router->get('/{category}', [CategoryController::class, 'show']);
+// Kategori sayfalama: /{category}/2, /{category}/3 ... Numeric constraint (\d+)
+// sayesinde /{category}/{slug} yazı detayıyla çakışmaz; bu route ÖNCE gelmeli.
+$router->get('/{category}/{page:\d+}', [CategoryController::class, 'show']);
 $router->get('/{category}/{slug}', [PostController::class, 'show']);
