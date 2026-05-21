@@ -76,6 +76,18 @@ final class Router
 
     public function dispatch(Request $req): Response
     {
+        // Trailing slash normalizasyonu — /sayfa/ → /sayfa (301 kalıcı yönlendirme).
+        // Kök (/) hariç; yalnızca GET/HEAD (POST'ta method değişim riskini önle).
+        // Request::path zaten trim'li olduğu için ham REQUEST_URI'ye bakılır.
+        if ($req->method === 'GET' || $req->method === 'HEAD') {
+            $rawPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+            if (is_string($rawPath) && $rawPath !== '/' && str_ends_with($rawPath, '/')) {
+                $clean = '/' . trim($rawPath, '/');
+                $qs = (string) ($_SERVER['QUERY_STRING'] ?? '');
+                return new Response('', 301, ['Location' => $clean . ($qs !== '' ? '?' . $qs : '')]);
+            }
+        }
+
         foreach ($this->routes as $r) {
             if ($r['method'] !== $req->method && !($r['method'] === 'GET' && $req->method === 'HEAD')) {
                 continue;

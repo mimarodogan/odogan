@@ -106,6 +106,14 @@ $_criticalOn = !$_inAdmin
     && feature('critical_css_enabled');
 if ($_criticalOn) {
     $_criticalCss = (string) \App\Models\Setting::get('critical_css_content', '', 'features');
+    // Setting boşsa → koda gömülü fallback critical CSS (above-the-fold: tokens +
+    // base + header). Admin /admin/critical-css'ten elle içerik girerse o öncelikli.
+    if (trim($_criticalCss) === '') {
+        $_critFallback = dirname(__DIR__, 4) . '/assets/css/critical.css';
+        if (is_file($_critFallback)) {
+            $_criticalCss = (string) file_get_contents($_critFallback);
+        }
+    }
     // Defense-in-depth: admin trusted input bile olsa @import ve url(...)
     // ifadelerini düşür — exfiltration / SSRF / mixed-content yolu kapansın.
     // data:image/... gibi inline data URI'lar tutulur (kontrol altında, leak yok).
