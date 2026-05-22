@@ -41,6 +41,13 @@ final class MediaLibraryController
             $m['variants'] = $m['variants_json']
                 ? (array) json_decode((string) $m['variants_json'], true)
                 : [];
+            // Gösterilen boyut: diskteki gerçek (webp) master dosyası. Eski
+            // kayıtlarda `bytes` orijinal yükleme boyutunu tutuyor olabilir.
+            $abs = Config::publicRoot() . '/' . ltrim((string) $m['path'], '/');
+            $real = @filesize($abs);
+            if ($real !== false) {
+                $m['bytes'] = $real;
+            }
         }
         unset($m);
 

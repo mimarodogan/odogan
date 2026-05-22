@@ -29,6 +29,7 @@
                        placeholder="Alt metin (SEO)" maxlength="255">
                 <p class="muted media-info">
                     <?= (int) $m['width'] ?>×<?= (int) $m['height'] ?>
+                    · <strong><?= esc(strtoupper(pathinfo((string) $m['path'], PATHINFO_EXTENSION))) ?></strong>
                     · <?= esc(fmt_bytes((int) $m['bytes'])) ?>
                     <?php if (!empty($m['uploader_name'])): ?>· <?= esc($m['uploader_name']) ?><?php endif; ?>
                 </p>

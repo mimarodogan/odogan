@@ -142,7 +142,8 @@ final class MediaService
             'mime' => $masterMime,
             'width' => $w,
             'height' => $h,
-            'bytes' => $size,
+            // Diskteki GERÇEK (webp/jpeg master) boyutu — orijinal yükleme boyutu ($size) değil.
+            'bytes' => (int) (@filesize($masterAbs) ?: $size),
             'variants_json' => (string) json_encode($variants, JSON_UNESCAPED_SLASHES),
             'blurhash' => $blurhash,
             'alt' => $alt !== null ? mb_substr($alt, 0, 255) : null,
