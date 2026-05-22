@@ -58,5 +58,47 @@
         el.addEventListener('change', update);
     });
     update();
+
+    // ─── Önizleme linki üret/yenile butonu ───────────────────────────
+    var prevBtn = document.querySelector('.pe-preview-btn');
+    var prevOut = document.querySelector('.pe-preview-result');
+    if (prevBtn && prevOut) {
+        prevBtn.addEventListener('click', function () {
+            var endpoint = prevBtn.getAttribute('data-preview-url');
+            var csrf = prevBtn.getAttribute('data-preview-csrf') || '';
+            if (!endpoint) return;
+            var origText = prevBtn.textContent;
+            prevBtn.disabled = true;
+            prevBtn.textContent = 'Üretiliyor…';
+            var fd = new FormData();
+            fd.append('_csrf', csrf);
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrf, Accept: 'application/json' },
+                credentials: 'same-origin',
+                body: fd
+            })
+            .then(function (r) { return r.json().catch(function () { return null; }); })
+            .then(function (j) {
+                prevOut.hidden = false;
+                if (j && j.ok && j.url) {
+                    prevOut.value = j.url;
+                    prevOut.focus();
+                    prevOut.select();
+                    try { navigator.clipboard && navigator.clipboard.writeText(j.url); } catch (e) {}
+                } else {
+                    prevOut.value = (j && j.error) ? ('Hata: ' + j.error) : 'Link üretilemedi — sayfayı yenileyip tekrar deneyin.';
+                }
+            })
+            .catch(function () {
+                prevOut.hidden = false;
+                prevOut.value = 'Bağlantı hatası.';
+            })
+            .finally(function () {
+                prevBtn.disabled = false;
+                prevBtn.textContent = origText;
+            });
+        });
+    }
 })();
 </script>
