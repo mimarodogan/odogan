@@ -43,7 +43,7 @@ final class MediaLibraryController
                 : [];
             // Gösterilen boyut: diskteki gerçek (webp) master dosyası. Eski
             // kayıtlarda `bytes` orijinal yükleme boyutunu tutuyor olabilir.
-            $abs = Config::publicRoot() . '/' . ltrim((string) $m['path'], '/');
+            $abs = self::pubRoot() . '/' . ltrim((string) $m['path'], '/');
             $real = @filesize($abs);
             if ($real !== false) {
                 $m['bytes'] = $real;
@@ -155,6 +155,23 @@ final class MediaLibraryController
         return url('/panel/medya') . ($page > 1 ? '?page=' . $page : '');
     }
 
+    /**
+     * Web kök dizini. `Config::publicRoot()` bazı üretim sürümlerinde
+     * tanımsız/eski olabildiği için (MediaService de bu yüzden kullanmıyor),
+     * kökü MediaService ile aynı sağlam mantıkla hesaplarız — asla fatal vermez.
+     */
+    private static function pubRoot(): string
+    {
+        $root = method_exists(\App\Core\Config::class, 'root') ? \App\Core\Config::root() : dirname(__DIR__, 3);
+        if (is_file($root . '/index.php')) {
+            return $root;
+        }
+        if (is_file($root . '/public/index.php')) {
+            return $root . '/public';
+        }
+        return $root;
+    }
+
     private static function findOwned(int $id): ?array
     {
         $u = AuthService::user();
@@ -171,7 +188,7 @@ final class MediaLibraryController
 
     private static function deleteFiles(array $row): void
     {
-        $base = Config::publicRoot() . '/';
+        $base = self::pubRoot() . '/';
         @unlink($base . ltrim((string) $row['path'], '/'));
         $variants = $row['variants_json']
             ? (array) json_decode((string) $row['variants_json'], true)
