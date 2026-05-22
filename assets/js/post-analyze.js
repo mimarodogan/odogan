@@ -1,5 +1,6 @@
-// SEO skoru + Okunabilirlik — yazı yazarken debounced live analiz.
-// Sidebar'daki .pe-analyze containerını günceller.
+// Yazı Analizi — yazarken canlı, debounced birleşik içerik notu.
+// Tek halka (A–F) + eksen bölümleri + öncelikli aksiyonlar.
+// Opsiyonel "AI Derin Analiz" butonu (talep-üzerine).
 
 (function () {
     'use strict';
@@ -9,27 +10,30 @@
 
     const url = container.getAttribute('data-analyze-url');
     const csrf = container.getAttribute('data-analyze-csrf');
-    if (!url || !csrf) return;
+    const box = container.querySelector('[data-analyze-box]');
+    if (!url || !csrf || !box) return;
 
-    const titleEl = document.querySelector('input[name="title"]');
-    const slugEl = document.querySelector('input[name="slug"]');
-    const bodyEl = document.getElementById('rich-body'); // hidden textarea
-    const richEditor = document.querySelector('.wy-editor'); // contentEditable div
-    const excerptEl = document.querySelector('textarea[name="excerpt"]');
-    const metaTitleEl = document.querySelector('input[name="meta_title"]');
-    const metaDescEl = document.querySelector('textarea[name="meta_description"]');
+    const $ = sel => document.querySelector(sel);
+    const titleEl = $('input[name="title"]');
+    const slugEl = $('input[name="slug"]');
+    const bodyEl = document.getElementById('rich-body');
+    const richEditor = document.querySelector('.wy-editor');
+    const excerptEl = $('textarea[name="excerpt"]');
+    const metaTitleEl = $('input[name="meta_title"]');
+    const metaDescEl = $('textarea[name="meta_description"]');
+    const focusEl = $('input[name="focus_keyword"]');
+    const secEl = $('input[name="secondary_keywords"]');
+    const catEl = $('select[name="category_id"]');
+    const tagsEl = $('input[name="tags"]');
 
     if (!bodyEl && !richEditor) return;
 
-    // Body içeriği: önce live contentEditable div, yoksa textarea
     const getBody = () => {
         if (richEditor && richEditor.innerHTML) return richEditor.innerHTML;
         if (bodyEl && bodyEl.value) return bodyEl.value;
         return '';
     };
-
-    const seoBox = container.querySelector('[data-seo-box]');
-    const readBox = container.querySelector('[data-read-box]');
+    const val = el => (el ? el.value : '');
 
     let lastFp = '';
     let pending = null;
@@ -37,74 +41,93 @@
     const DELAY = 1500;
 
     const fingerprint = () =>
-        `${titleEl ? titleEl.value : ''}|${slugEl ? slugEl.value : ''}|${getBody().length}|${excerptEl ? excerptEl.value.length : '0'}|${metaTitleEl ? metaTitleEl.value : ''}|${metaDescEl ? metaDescEl.value : ''}`;
+        [val(titleEl), val(slugEl), getBody().length, val(excerptEl).length,
+         val(metaTitleEl), val(metaDescEl), val(focusEl), val(secEl), val(catEl),
+         val(tagsEl), collectExtra().length].join('|');
+
+    // Ayrı bölümlerdeki içeriği (SSS + kaynaklar) analiz gövdesine ekle — yoksa
+    // analiz/AI bu bölümleri görmez ve "eksik" sanır.
+    const collectExtra = () => {
+        let extra = '';
+        document.querySelectorAll('#faq-list .faq-row').forEach(row => {
+            const q = (row.querySelector('[name$="[q]"]') || {}).value || '';
+            const a = (row.querySelector('[name$="[a]"]') || {}).value || '';
+            if (q.trim() || a.trim()) extra += '<h2>' + q + '</h2><p>' + a + '</p>';
+        });
+        let fns = '';
+        document.querySelectorAll('[data-footnotes] [data-fn-row]').forEach(row => {
+            const t = (row.querySelector('[name$="[text]"]') || {}).value || '';
+            const u = (row.querySelector('[name$="[url]"]') || {}).value || '';
+            if (t.trim() || u.trim()) fns += '<li>' + t + (u ? ' ' + u : '') + '</li>';
+        });
+        if (fns) extra += '<h2>Kaynaklar</h2><ul>' + fns + '</ul>';
+        return extra;
+    };
 
     const payload = () => {
         const fd = new FormData();
         fd.append('_csrf', csrf);
-        fd.append('title', titleEl ? titleEl.value : '');
-        fd.append('slug', slugEl ? slugEl.value : '');
-        fd.append('body', getBody());
+        fd.append('title', val(titleEl));
+        fd.append('slug', val(slugEl));
+        fd.append('body', getBody() + collectExtra());
         fd.append('body_format', 'html');
-        fd.append('excerpt', excerptEl ? excerptEl.value : '');
-        fd.append('meta_title', metaTitleEl ? metaTitleEl.value : '');
-        fd.append('meta_description', metaDescEl ? metaDescEl.value : '');
+        fd.append('excerpt', val(excerptEl));
+        fd.append('meta_title', val(metaTitleEl));
+        fd.append('meta_description', val(metaDescEl));
+        fd.append('focus_keyword', val(focusEl));
+        fd.append('secondary_keywords', val(secEl));
+        fd.append('category_id', val(catEl));
+        fd.append('tags', val(tagsEl));
         return fd;
     };
 
     const escapeHtml = s =>
-        String(s).replace(
-            /[&<>"']/g,
-            c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
-        );
+        String(s).replace(/[&<>"']/g, c =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    const renderSeoItem = ({ ok, name, score, max, tip }) => {
-        const icon = ok ? '✓' : '!';
-        const cls = ok ? 'fn-ok' : 'fn-warn';
-        return `<li class="${cls}"><span class="mark">${icon}</span><span class="lbl">${escapeHtml(name)}</span><span class="pts">${score}/${max}</span><div class="tip">${escapeHtml(tip)}</div></li>`;
+    const colorFor = pct => (pct >= 75 ? '#2F6A3E' : pct >= 50 ? '#8C6A12' : '#B0241D');
+
+    const renderPart = p => {
+        const cls = p.ok ? 'ca-ok' : 'ca-warn';
+        const icon = p.ok ? '✓' : '!';
+        return `<li class="${cls}"><span class="mark">${icon}</span>` +
+            `<span class="lbl">${escapeHtml(p.name)}</span>` +
+            `<span class="pts">${p.score}/${p.max}</span>` +
+            `<div class="tip">${escapeHtml(p.tip)}</div></li>`;
     };
 
-    const renderSeo = seo => {
-        if (!seoBox || !seo) return;
-        const pct = seo.max > 0 ? Math.round((seo.score / seo.max) * 100) : 0;
-        const ringColor = pct >= 80 ? '#2F6A3E' : pct >= 50 ? '#8C6A12' : '#B0241D';
-        const parts = (seo.parts || []).map(renderSeoItem).join('');
-        seoBox.innerHTML =
-            `<div class="score-ring" style="--ring-pct:${pct};--ring-col:${ringColor}">` +
-            `<div class="score-val">${seo.score}</div>` +
-            `<div class="score-max">/ ${seo.max}</div>` +
-            `</div><ul class="score-parts">${parts}</ul>`;
+    const renderSection = s => {
+        const open = s.pct < 75 ? ' open' : '';
+        const col = colorFor(s.pct);
+        return `<details class="ca-sec"${open}><summary>` +
+            `<span class="ca-sec-lbl">${escapeHtml(s.label)}</span>` +
+            `<span class="ca-sec-bar"><i style="width:${s.pct}%;background:${col}"></i></span>` +
+            `<span class="ca-sec-pts">${s.score}/${s.max}</span>` +
+            `</summary><ul class="ca-parts">${(s.parts || []).map(renderPart).join('')}</ul></details>`;
     };
 
-    const renderReadability = r => {
-        if (!readBox || !r) return;
-        const { score, category, words, sentences, avg_sentence_words, tip } = r;
-        const col = score >= 70 ? '#2F6A3E' : score >= 50 ? '#8C6A12' : '#B0241D';
-        readBox.innerHTML =
-            `<div class="read-score" style="color:${col}">` +
-            `<strong>${score}</strong><span class="cat">${escapeHtml(category)}</span></div>` +
-            `<dl class="read-stats">` +
-            `<dt>Kelime</dt><dd>${words}</dd>` +
-            `<dt>Cümle</dt><dd>${sentences}</dd>` +
-            `<dt>Ort. kelime/cümle</dt><dd>${avg_sentence_words}</dd>` +
-            `</dl>` +
-            `<p class="muted read-tip">${escapeHtml(tip)}</p>`;
+    const render = a => {
+        if (!a) return;
+        const col = colorFor(a.score);
+        const actions = (a.actions || []).length
+            ? `<div class="ca-actions"><h4>Önce şunları düzelt</h4><ol>` +
+              a.actions.map(t => `<li>${escapeHtml(t)}</li>`).join('') + `</ol></div>`
+            : '';
+        box.innerHTML =
+            `<div class="ca-head">` +
+                `<div class="ca-ring" style="--ca-pct:${a.score};--ca-col:${col}">` +
+                    `<span class="ca-grade" style="color:${col}">${escapeHtml(a.grade)}</span>` +
+                    `<span class="ca-score">${a.score}<small>/100</small></span>` +
+                `</div>${actions}` +
+            `</div>` +
+            `<div class="ca-sections">${(a.sections || []).map(renderSection).join('')}</div>`;
     };
 
-    const showEmpty = msg => {
-        // DEBUG: çoklu satırlı mesajları <pre> ile koru
-        const isDebug = msg.indexOf('DEBUG') === 0;
-        const html = isDebug
-            ? `<pre style="font-family:var(--mono);font-size:.7rem;white-space:pre-wrap;word-break:break-all;color:#B0241D;background:#FFF5F5;padding:.5rem;border:1px solid #FFCDD2;margin:0">${escapeHtml(msg)}</pre>`
-            : `<p class="muted" style="font-size:.85rem">${escapeHtml(msg)}</p>`;
-        if (seoBox) seoBox.innerHTML = html;
-        if (readBox) readBox.innerHTML = html;
-    };
+    const showMsg = msg => { box.innerHTML = `<p class="muted" style="font-size:.85rem">${escapeHtml(msg)}</p>`; };
 
     const tick = async () => {
-        // Eğer body henüz çok kısaysa (anlamsız), nazikçe boş göster
-        if (getBody().trim().length < 50 && (!titleEl || titleEl.value.trim().length < 3)) {
-            showEmpty('Yazmaya başlayın — analiz otomatik güncellenecek.');
+        if (getBody().trim().length < 50 && val(titleEl).trim().length < 3) {
+            showMsg('Yazmaya başlayın — analiz otomatik güncellenecek.');
             return;
         }
         const fp = fingerprint();
@@ -122,87 +145,72 @@
                 credentials: 'same-origin',
                 body: payload(),
             });
-            // Önce text olarak al ki parse fail'de içeriği görebilelim
-            const raw = await r.text();
-            let j;
-            try {
-                j = JSON.parse(raw);
-            } catch (_) {
-                // DEBUG: response'un ilk 300 char'ını ekranda göster
-                j = {
-                    ok: false,
-                    _parse_err: true,
-                    _status: r.status,
-                    _content_type: r.headers.get('content-type') || '?',
-                    _raw_first_300: raw.substring(0, 300),
-                };
-                console.error(
-                    '[ANALYZE parse-err]',
-                    r.status,
-                    r.headers.get('content-type'),
-                    raw.substring(0, 500)
-                );
-            }
             if (ticket.aborted) return;
-            // 401 — session timeout (AuthMiddleware JSON 401 dönüyor)
-            if (r.status === 401 || (j && j.error === 'unauthenticated')) {
-                showEmpty(
-                    j.message || 'Oturum süresi doldu — sayfayı yenileyip tekrar giriş yapın.'
-                );
-                return;
-            }
-            // 419 — CSRF token süresi doldu
-            if (r.status === 419) {
-                showEmpty('Güvenlik tokenı süresi doldu — sayfayı yenileyin.');
-                return;
-            }
-            // 500 — sunucu hatası (controller exception)
-            if (r.status === 500 || (j && j.error === 'server_error')) {
-                showEmpty(
-                    'Sunucu hatası: ' +
-                        (j.message || 'bilinmeyen hata') +
-                        ' — admin Loglar (editorial) kanalını kontrol edin.'
-                );
-                return;
-            }
-            if (!j || !j.ok) {
-                if (j && j._parse_err) {
-                    // DEBUG modu: response içeriğini ekranda göster
-                    const dbg =
-                        'DEBUG — HTTP ' +
-                        j._status +
-                        ' · ' +
-                        j._content_type +
-                        '\nURL: ' + url +
-                        '\nMethod: POST' +
-                        '\nCSRF len: ' + (csrf ? csrf.length : 0) +
-                        '\nİçerik (ilk 300 char): ' +
-                        (j._raw_first_300 || '(boş)');
-                    showEmpty(dbg);
-                } else {
-                    showEmpty('Bu özellik şu an kapalı veya endpoint ulaşılamıyor.');
-                }
-                return;
-            }
-            if (j.seo) renderSeo(j.seo);
-            if (j.readability) renderReadability(j.readability);
+            if (r.status === 401) return showMsg('Oturum süresi doldu — sayfayı yenileyin.');
+            if (r.status === 419) return showMsg('Güvenlik tokenı süresi doldu — sayfayı yenileyin.');
+            const j = await r.json().catch(() => null);
+            if (r.status >= 500) return showMsg('Sunucu hatası — admin Loglar (editorial) kanalını kontrol edin.');
+            if (!j || !j.ok || !j.analysis) return showMsg('Analiz şu an kullanılamıyor.');
+            render(j.analysis);
         } catch (_) {
-            if (!ticket.aborted) showEmpty('Bağlantı hatası — internet kontrolü.');
+            if (!ticket.aborted) showMsg('Bağlantı hatası — internet kontrolü.');
         }
     };
 
-    const schedule = () => {
-        clearTimeout(timer);
-        timer = setTimeout(tick, DELAY);
-    };
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(tick, DELAY); };
 
-    // Initial calc
     setTimeout(tick, 800);
-
-    // Reactive: input event'lerini dinle (contentEditable hem div'de hem textarea'da)
-    [titleEl, slugEl, bodyEl, richEditor, excerptEl, metaTitleEl, metaDescEl].forEach(el => {
-        if (el) el.addEventListener('input', schedule);
-    });
-    // Editor blur sırasında da analiz et — kullanıcı yazmayı bitirdi
+    [titleEl, slugEl, bodyEl, richEditor, excerptEl, metaTitleEl, metaDescEl, focusEl, secEl, catEl, tagsEl]
+        .forEach(el => { if (el) el.addEventListener('input', schedule); });
+    if (catEl) catEl.addEventListener('change', schedule);
     if (richEditor) richEditor.addEventListener('blur', schedule);
+
+    // ─── Opsiyonel AI Derin Analiz ───────────────────────────────
+    const aiBtn = container.querySelector('[data-ai-btn]');
+    const aiBox = container.querySelector('[data-ai-box]');
+    const aiUrl = container.getAttribute('data-ai-url');
+    if (aiBtn && aiBox && aiUrl) {
+        const renderAi = ai => {
+            let h = '';
+            if (ai.verdict) h += `<p class="ca-ai-verdict">${escapeHtml(ai.verdict)}</p>`;
+            if (ai.intent && (ai.intent.match || ai.intent.note))
+                h += `<p class="ca-ai-row"><strong>Arama niyeti:</strong> ${escapeHtml(ai.intent.match || '')} — ${escapeHtml(ai.intent.note || '')}</p>`;
+            if (Array.isArray(ai.gaps) && ai.gaps.length)
+                h += `<div class="ca-ai-block"><strong>Eksik alt-konular:</strong><ul>` +
+                     ai.gaps.map(g => `<li>${escapeHtml(g)}</li>`).join('') + `</ul></div>`;
+            const sg = ai.suggestions || {};
+            if (sg.tldr) h += `<div class="ca-ai-block"><strong>Önerilen TL;DR:</strong><p>${escapeHtml(sg.tldr)}</p></div>`;
+            if (Array.isArray(sg.title) && sg.title.length)
+                h += `<div class="ca-ai-block"><strong>Başlık önerileri:</strong><ul>` +
+                     sg.title.map(t => `<li>${escapeHtml(t)}</li>`).join('') + `</ul></div>`;
+            if (sg.meta) h += `<div class="ca-ai-block"><strong>Meta açıklama:</strong><p>${escapeHtml(sg.meta)}</p></div>`;
+            if (Array.isArray(sg.faq) && sg.faq.length)
+                h += `<div class="ca-ai-block"><strong>SSS önerileri:</strong><ul>` +
+                     sg.faq.map(f => `<li><em>${escapeHtml(f.q || '')}</em> — ${escapeHtml(f.a || '')}</li>`).join('') + `</ul></div>`;
+            aiBox.innerHTML = h || '<p class="muted">AI bir öneri döndürmedi.</p>';
+        };
+        aiBtn.addEventListener('click', async () => {
+            aiBtn.disabled = true;
+            const orig = aiBtn.textContent;
+            aiBtn.textContent = '⏳ İnceleniyor…';
+            aiBox.hidden = false;
+            aiBox.innerHTML = '<p class="muted" style="font-size:.85rem">AI yazıyı inceliyor… (birkaç saniye)</p>';
+            try {
+                const r = await fetch(aiUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrf, Accept: 'application/json' },
+                    credentials: 'same-origin',
+                    body: payload(),
+                });
+                const j = await r.json().catch(() => null);
+                if (j && j.ok && j.ai) renderAi(j.ai);
+                else aiBox.innerHTML = `<p class="ca-err">${escapeHtml((j && j.message) || 'AI analizi başarısız.')}</p>`;
+            } catch (_) {
+                aiBox.innerHTML = '<p class="ca-err">Bağlantı hatası.</p>';
+            } finally {
+                aiBtn.disabled = false;
+                aiBtn.textContent = orig;
+            }
+        });
+    }
 })();

@@ -82,6 +82,7 @@ final class SettingsController
             'comment_admin_mail'      => ['type' => 'bool', 'label' => 'Yorum Geldiğinde Admin\'e Mail'],
             'seo_score_enabled'       => ['type' => 'bool', 'label' => 'SEO Skoru (yazarken)'],
             'readability_enabled'     => ['type' => 'bool', 'label' => 'Okunabilirlik Puanı (Türkçe)'],
+            'ai_analysis_enabled'     => ['type' => 'bool', 'label' => 'AI Derin Analiz (yazarken, talep-üzerine — Claude API gerekir)'],
             'author_application'      => ['type' => 'bool', 'label' => 'Yazar Başvuru Sayfası (/yazar-ol)'],
             // Tier 7
             'clap_enabled'             => ['type' => 'bool', 'label' => 'Clap (Beğeni Sistemi)'],
@@ -126,6 +127,7 @@ final class SettingsController
             'org_legal_name'    => ['type' => 'string', 'label' => 'Resmî / Tüzel Ad (Site Adı\'ndan farklıysa)'],
             'org_founding_date' => ['type' => 'string', 'label' => 'Kuruluş Tarihi (YYYY-MM-DD)'],
             'org_founder'       => ['type' => 'string', 'label' => 'Kurucu / Sahip (kişi adı)'],
+            'principal_author_slug' => ['type' => 'string', 'label' => 'Ana Yazar Profili (slug) — kişi şeması (Person) ana sayfaya ve Organization.founder\'a @id ile bağlanır. Örn: osman-dogan'],
             'org_street_address'=> ['type' => 'string', 'label' => 'Sokak / Cadde Adresi'],
             'org_city'          => ['type' => 'string', 'label' => 'Şehir (örn. İstanbul)'],
             'org_postal_code'   => ['type' => 'string', 'label' => 'Posta Kodu'],
@@ -134,6 +136,12 @@ final class SettingsController
             'org_phone'         => ['type' => 'string', 'label' => 'İletişim Telefon (+90...)'],
             'org_license_url'   => ['type' => 'string', 'label' => 'Telif Lisansı URL (örn. CC BY-NC 4.0)'],
             'org_copyright_holder' => ['type' => 'string', 'label' => 'Telif Sahibi (varsayılan: Site Adı)'],
+        ],
+        // AI Derin Analiz — Faz 5. Anahtar boşsa .env ANTHROPIC_API_KEY kullanılır.
+        // ai_analysis_enabled (features) açık + anahtar varsa editörde buton görünür.
+        'ai' => [
+            'ai_model'          => ['type' => 'string', 'label' => 'AI Model (boş = claude-haiku-4-5)'],
+            'anthropic_api_key' => ['type' => 'string', 'label' => 'Claude API Anahtarı (boşsa .env ANTHROPIC_API_KEY kullanılır)'],
         ],
     ];
 

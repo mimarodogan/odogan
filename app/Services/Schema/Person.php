@@ -49,11 +49,12 @@ final class Person
 
         $node['knowsLanguage'] = self::languages($profile['languages'] ?? []);
         $node['alumniOf'] = self::alumni($profile['education'] ?? []);
+        $node['hasCredential'] = self::credentials($profile['certificates'] ?? []);
         $current = self::currentJob($profile['experience'] ?? []);
         if ($current) {
             $node['worksFor'] = $current;
         }
-        $sameAs = self::sameAs($profile['social'] ?? []);
+        $sameAs = self::sameAs($profile['social'] ?? [], $profile['profiles'] ?? []);
         if ($sameAs) {
             $node['sameAs'] = $sameAs;
         }
@@ -98,24 +99,77 @@ final class Person
     private static function currentJob(array $list): ?array
     {
         foreach ($list as $job) {
-            if (!empty($job['current']) && !empty($job['company'])) {
-                $node = ['@type' => 'Organization', 'name' => (string) $job['company']];
-                if (!empty($job['role'])) {
-                    $node['description'] = (string) $job['role'];
-                }
-                return $node;
+            if (empty($job['current']) || empty($job['company'])) {
+                continue;
             }
+            $node = ['@type' => 'Organization', 'name' => (string) $job['company']];
+            // Kurumun web adresi girilmişse @id ile cross-link kurulur. Yoast/
+            // RankMath konvansiyonu: {origin}/#organization. Karşı sitenin
+            // Organization node'u aynı @id'yi taşıyorsa Google iki varlığı birleştirir
+            // (örn. https://onalti.com.tr → https://onalti.com.tr/#organization).
+            $url = trim((string) ($job['url'] ?? ''));
+            if ($url !== '' && preg_match('#^https?://#i', $url)) {
+                $node['@id'] = self::orgId($url);
+                $node['url'] = $url;
+            }
+            if (!empty($job['role'])) {
+                $node['description'] = (string) $job['role'];
+            }
+            return $node;
         }
         return null;
     }
 
-    private static function sameAs(array $social): array
+    /** Kurum ana-sayfa URL'inden kanonik Organization @id üretir. */
+    private static function orgId(string $url): string
+    {
+        $parts = parse_url($url);
+        if (!empty($parts['scheme']) && !empty($parts['host'])) {
+            $origin = $parts['scheme'] . '://' . $parts['host'];
+            if (!empty($parts['port'])) {
+                $origin .= ':' . (string) $parts['port'];
+            }
+            return $origin . '/#organization';
+        }
+        return rtrim($url, '/') . '/#organization';
+    }
+
+    /** certificates → EducationalOccupationalCredential[] (ruhsat/sertifika = E-E-A-T). */
+    private static function credentials(array $list): array
     {
         $out = [];
-        foreach ($social as $url) {
-            $url = trim((string) $url);
+        foreach ($list as $c) {
+            $name = trim((string) ($c['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+            $node = ['@type' => 'EducationalOccupationalCredential', 'name' => $name];
+            $issuer = trim((string) ($c['issuer'] ?? ''));
+            if ($issuer !== '') {
+                $node['credentialCategory'] = 'certificate';
+                $node['recognizedBy'] = ['@type' => 'Organization', 'name' => $issuer];
+            }
+            $url = trim((string) ($c['url'] ?? ''));
             if ($url !== '' && preg_match('#^https?://#i', $url)) {
-                $out[] = $url;
+                $node['url'] = $url;
+            }
+            if (!empty($c['year']) && (int) $c['year'] > 1900) {
+                $node['dateCreated'] = (string) (int) $c['year'];
+            }
+            $out[] = $node;
+        }
+        return $out;
+    }
+
+    private static function sameAs(array $social, array $profiles = []): array
+    {
+        $out = [];
+        foreach ([$social, $profiles] as $list) {
+            foreach ($list as $url) {
+                $url = trim((string) $url);
+                if ($url !== '' && preg_match('#^https?://#i', $url)) {
+                    $out[] = $url;
+                }
             }
         }
         return array_values(array_unique($out));

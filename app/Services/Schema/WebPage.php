@@ -71,6 +71,12 @@ final class WebPage
             $node['mainEntity'] = ['@id' => $opts['main_entity_id']];
         }
 
+        // Sayfanın konusu olan varlık (örn. ana sayfa → site sahibi Person).
+        // Kişisel marka sitesinde güçlü E-E-A-T sinyali: "bu sayfa bu kişi hakkında".
+        if (!empty($opts['about_id'])) {
+            $node['about'] = ['@id' => $opts['about_id']];
+        }
+
         // Potential ReadAction — sayfaya erişim modeli
         $node['potentialAction'] = [
             '@type'  => 'ReadAction',

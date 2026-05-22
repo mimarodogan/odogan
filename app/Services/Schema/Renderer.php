@@ -107,10 +107,20 @@ final class Renderer
             $node['foundingDate'] = $founding;
         }
 
-        // Founder
+        // Founder — kurucu/sahip kişi. `principal_author_slug` ayarlıysa, kişinin
+        // kanonik Person varlığına @id ile bağlanır. Böylece ana sayfa, yazar ve
+        // yazı sayfalarındaki Person node'u ile tek bir varlıkta birleşir
+        // (E-E-A-T entity konsolidasyonu). Slug boşsa eski davranış (sade isim) korunur.
         $founder = trim((string) \App\Models\Setting::get('org_founder', '', 'organization'));
         if ($founder !== '') {
-            $node['founder'] = ['@type' => 'Person', 'name' => $founder];
+            $f = ['@type' => 'Person', 'name' => $founder];
+            $slug = trim((string) \App\Models\Setting::get('principal_author_slug', '', 'organization'));
+            if ($slug !== '' && function_exists('absolute_url')) {
+                $authorUrl = absolute_url('/yazar/' . $slug);
+                $f['@id'] = $authorUrl . '#person';
+                $f['url'] = $authorUrl;
+            }
+            $node['founder'] = $f;
         }
 
         // Address

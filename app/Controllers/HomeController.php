@@ -70,16 +70,37 @@ final class HomeController
         unset($p);
         usort($trending, fn($a, $b) => $b['live_views'] <=> $a['live_views']);
 
-        // JSON-LD: Organization + WebSite (SearchAction) + WebPage
+        // JSON-LD: Organization + WebSite (SearchAction) + WebPage + (varsa) ana yazar Person
         $homeUrl = absolute_url('/');
         $siteName = (string) \App\Models\Setting::get('site_name', \App\Core\Config::get('APP_NAME', 'Otorite Yayin'));
+
+        // Ana yazar (entity home) — principal_author_slug ayarlıysa kanonik Person
+        // node'u ana sayfaya eklenir, WebPage.about bu kişiye bağlanır ve
+        // Organization.founder aynı @id'yi referanslar → tek varlıkta birleşir (E-E-A-T).
+        $principalPerson = null;
+        $aboutId = null;
+        $principalCacheTag = '';
+        $principalSlug = trim((string) \App\Models\Setting::get('principal_author_slug', '', 'organization'));
+        if ($principalSlug !== '') {
+            $principalUser = \App\Models\User::findBySlug($principalSlug);
+            if ($principalUser !== null && ($principalUser['status'] ?? '') === 'active') {
+                $principalProfile = \App\Services\ProfileService::decode($principalUser['profile_json'] ?? null);
+                $authorUrl = absolute_url('/yazar/' . $principalSlug);
+                $principalPerson = \App\Services\Schema\Person::build($principalUser, $principalProfile, $authorUrl);
+                $aboutId = $authorUrl . '#person';
+                $principalCacheTag = (string) ($principalUser['updated_at'] ?? '');
+            }
+        }
+
         $schema = (new SchemaRenderer())
             ->add(SchemaRenderer::siteOrganization())
             ->add(SchemaRenderer::siteWebsite())
-            ->add(SchemaWebPage::build($homeUrl, $siteName, [
+            ->add(SchemaWebPage::build($homeUrl, $siteName, array_filter([
                 'description' => (string) \App\Models\Setting::get('site_description', ''),
-            ]))
-            ->emitCached('schema:home:' . date('Y-m-d-H'), 3600);  // saatlik bucket
+                'about_id'    => $aboutId,
+            ])))
+            ->add($principalPerson)
+            ->emitCached('schema:home:' . $principalCacheTag . ':' . date('Y-m-d-H'), 3600);  // saatlik bucket
 
         // Ana sayfa OG image: featured yazının kapağı → yoksa site default_og_image
         $_homeOgImage = !empty($featured['cover_image'])

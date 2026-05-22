@@ -22,6 +22,7 @@
         <figcaption>
             <form method="post" action="<?= esc(url('/panel/medya/' . $m['id'])) ?>" class="media-edit">
                 <?= csrf_field() ?>
+                <input type="hidden" name="page" value="<?= (int) ($page ?? 1) ?>">
                 <input type="text" name="title" value="<?= esc((string) $m['original_name']) ?>"
                        placeholder="Başlık" maxlength="255">
                 <input type="text" name="alt" value="<?= esc((string) ($m['alt'] ?? '')) ?>"
@@ -39,6 +40,7 @@
             <form method="post" action="<?= esc(url('/panel/medya/' . $m['id'] . '/sil')) ?>"
                   onsubmit="return confirm('Bu görseli ve tüm varyantlarını kalıcı sil?');">
                 <?= csrf_field() ?>
+                <input type="hidden" name="page" value="<?= (int) ($page ?? 1) ?>">
                 <button class="btn btn-danger" type="submit">Sil</button>
             </form>
         </figcaption>

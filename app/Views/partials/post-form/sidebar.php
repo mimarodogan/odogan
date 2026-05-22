@@ -98,20 +98,38 @@ $_revisions = $revisions ?? [];
     </section>
     <?php endif; ?>
 
+    <section class="pe-card pe-keyword">
+        <h2 class="pe-section-title">🎯 Odak Anahtar Kelime</h2>
+        <p class="pe-section-hint">Bu yazının hedeflediği ana arama terimi. Yazı Analizi, Türkçe kök-eşleşmeyle başlık/giriş/alt-başlık/meta/görsel ve yoğunluğu buna göre puanlar.</p>
+        <label>
+            <span class="visually-hidden">Odak anahtar kelime</span>
+            <input type="text" name="focus_keyword" maxlength="190"
+                   placeholder="örn: kentsel dönüşüm"
+                   value="<?= esc((string) ($post['focus_keyword'] ?? '')) ?>">
+        </label>
+        <label>
+            <span>İkincil kelimeler (virgülle)</span>
+            <input type="text" name="secondary_keywords" maxlength="500"
+                   placeholder="örn: imar planı, hak sahipliği, riskli yapı"
+                   value="<?= esc((string) ($post['secondary_keywords'] ?? '')) ?>">
+        </label>
+    </section>
+
     <?php if (function_exists('feature') && (feature('seo_score_enabled') || feature('readability_enabled'))): ?>
     <section class="pe-card pe-analyze"
              data-analyze-container
              data-analyze-url="<?= esc(url('/panel/yazilar/analiz')) ?>"
-             data-analyze-csrf="<?= esc(csrf_token()) ?>">
+             data-analyze-csrf="<?= esc(csrf_token()) ?>"
+             data-ai-url="<?= esc(url('/panel/yazilar/ai-analiz')) ?>"
+             data-ai-enabled="<?= (function_exists('feature') && feature('ai_analysis_enabled')) ? '1' : '0' ?>">
         <h2 class="pe-section-title">📊 Yazı Analizi</h2>
-        <?php if (feature('seo_score_enabled')): ?>
-        <div class="pe-analyze-box" data-seo-box>
-            <p class="muted" style="font-size:.85rem">SEO skoru hesaplanıyor…</p>
+        <div class="pe-analyze-box" data-analyze-box>
+            <p class="muted" style="font-size:.85rem">Yazmaya başlayın — analiz otomatik güncellenecek.</p>
         </div>
-        <?php endif; ?>
-        <?php if (feature('readability_enabled')): ?>
-        <div class="pe-analyze-box" data-read-box style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--hair)">
-            <p class="muted" style="font-size:.85rem">Okunabilirlik hesaplanıyor…</p>
+        <?php if (function_exists('feature') && feature('ai_analysis_enabled')): ?>
+        <div class="pe-ai-block">
+            <button type="button" class="pe-btn pe-ai-btn" data-ai-btn>✨ AI Derin Analiz</button>
+            <div class="pe-ai-result" data-ai-box hidden></div>
         </div>
         <?php endif; ?>
     </section>

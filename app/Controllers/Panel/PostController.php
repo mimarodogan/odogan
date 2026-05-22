@@ -232,17 +232,30 @@ final class PostController
                 'body_format' => (string) $req->input('body_format', 'html'),
                 'meta_title' => trim((string) $req->input('meta_title', '')),
                 'meta_description' => trim((string) $req->input('meta_description', '')),
+                'focus_keyword' => trim((string) $req->input('focus_keyword', '')),
+                'secondary_keywords' => trim((string) $req->input('secondary_keywords', '')),
+                'tags' => trim((string) $req->input('tags', '')),
             ];
 
-            $out = ['ok' => true];
-            if (feature('seo_score_enabled')) {
-                $out['seo'] = \App\Services\SeoScoreService::score($post);
+            // Bağlam: yazarın uzmanlık alanları (E-E-A-T konu eşleşmesi) + kategori adı.
+            $expertise = [];
+            $user = AuthService::user();
+            if ($user) {
+                $profile = \App\Services\ProfileService::decode($user['profile_json'] ?? null);
+                $expertise = (array) ($profile['expertise'] ?? []);
             }
-            if (feature('readability_enabled')) {
-                $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($post['body'])));
-                $out['readability'] = \App\Services\ReadabilityService::atesman($plain);
+            $categoryName = '';
+            $catId = (int) $req->input('category_id', 0);
+            if ($catId > 0 && ($cat = \App\Models\Category::findById($catId)) !== null) {
+                $categoryName = (string) ($cat['name'] ?? '');
             }
-            return Response::json($out);
+
+            $analysis = \App\Services\ContentAnalysisService::analyze($post, [
+                'expertise'     => $expertise,
+                'category_name' => $categoryName,
+            ]);
+
+            return Response::json(['ok' => true, 'analysis' => $analysis]);
         } catch (\Throwable $e) {
             \App\Services\Logger::error('panel.post.analyze.exception', [
                 'msg'   => $e->getMessage(),
@@ -251,6 +264,43 @@ final class PostController
                 'body_len' => isset($post['body']) ? mb_strlen($post['body']) : 0,
             ], 'editorial');
             return Response::json(['ok' => false, 'error' => 'server_error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * AI Derin Analiz — talep-üzerine (Faz 5). Kural tabanlı analizin yapamadığı
+     * öznel katmanı (niyet, içerik boşluğu, öneri) Claude API ile üretir.
+     * Varsayılan kapalı; API anahtarı yoksa güvenli şekilde reddeder.
+     */
+    public function analyzeAi(Request $req): Response
+    {
+        if (!feature('ai_analysis_enabled')) {
+            return Response::json(['ok' => false, 'error' => 'disabled'], 404);
+        }
+        if (!\App\Services\AiAnalysisService::isEnabled()) {
+            return Response::json(['ok' => false, 'message' => 'AI analizi etkin değil veya API anahtarı tanımlı değil.'], 400);
+        }
+        try {
+            $post = [
+                'title' => trim((string) $req->input('title', '')),
+                'body' => (string) $req->input('body', ''),
+                'meta_description' => trim((string) $req->input('meta_description', '')),
+                'focus_keyword' => trim((string) $req->input('focus_keyword', '')),
+                'secondary_keywords' => trim((string) $req->input('secondary_keywords', '')),
+                'tags' => trim((string) $req->input('tags', '')),
+            ];
+            $categoryName = '';
+            $catId = (int) $req->input('category_id', 0);
+            if ($catId > 0 && ($cat = \App\Models\Category::findById($catId)) !== null) {
+                $categoryName = (string) ($cat['name'] ?? '');
+            }
+            $ai = \App\Services\AiAnalysisService::analyze($post, ['category_name' => $categoryName]);
+            return Response::json(['ok' => true, 'ai' => $ai]);
+        } catch (\Throwable $e) {
+            \App\Services\Logger::error('panel.post.ai_analyze.exception', [
+                'msg' => $e->getMessage(),
+            ], 'editorial');
+            return Response::json(['ok' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

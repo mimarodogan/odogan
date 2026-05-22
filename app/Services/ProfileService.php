@@ -13,8 +13,9 @@ namespace App\Services;
  *   "expertise": ["..."],            // -> Person.knowsAbout
  *   "languages": [{"code","name","level"}],   // -> Person.knowsLanguage
  *   "education": [{"institution","degree","field","year_start","year_end"}], // -> alumniOf
- *   "experience": [{"company","role","year_start","year_end","current"}],    // -> worksFor / hasOccupation
- *   "social": {"website","twitter","linkedin","github","youtube"}            // -> sameAs
+ *   "experience": [{"company","role","url","year_start","year_end","current"}], // -> worksFor (current → @id cross-link)
+ *   "social": {"website","twitter","linkedin","github","youtube"},           // -> sameAs
+ *   "profiles": ["https://..."]                                              // -> sameAs (serbest doğrulama profilleri)
  * }
  */
 final class ProfileService
@@ -33,6 +34,7 @@ final class ProfileService
             'experience' => [],
             'certificates' => [],
             'social' => array_fill_keys(self::SOCIAL_KEYS, ''),
+            'profiles' => [],
         ];
     }
 
@@ -104,9 +106,19 @@ final class ProfileService
                 continue;
             }
             $current = !empty($exp['current']);
+            // Kurum web adresi — doluysa Person.worksFor @id cross-link kurar
+            // (örn. https://onalti.com.tr → @id https://onalti.com.tr/#organization).
+            $url = trim((string) ($exp['url'] ?? ''));
+            if ($url !== '' && !preg_match('#^https?://#i', $url)) {
+                $url = 'https://' . ltrim($url, '/');
+            }
+            if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL) === false) {
+                $url = '';
+            }
             $out['experience'][] = [
                 'company' => $company,
                 'role' => self::trimStr($exp['role'] ?? '', 160),
+                'url' => $url,
                 'year_start' => self::yearOrNull($exp['year_start'] ?? null),
                 'year_end' => $current ? null : self::yearOrNull($exp['year_end'] ?? null),
                 'current' => $current,
@@ -128,6 +140,25 @@ final class ProfileService
                 continue;
             }
             $out['social'][$key] = $val;
+        }
+
+        // Serbest doğrulama profilleri (sameAs) — kişinin başka sitelerdeki
+        // sayfaları (örn. şirket ekip sayfası, ORCID, Wikipedia). Geçersiz/boş
+        // satırlar sessizce atılır; en fazla 15 benzersiz URL.
+        foreach ((array) ($input['profiles'] ?? []) as $p) {
+            $p = trim((string) $p);
+            if ($p === '') {
+                continue;
+            }
+            if (!preg_match('#^https?://#i', $p)) {
+                $p = 'https://' . ltrim($p, '/');
+            }
+            if (filter_var($p, FILTER_VALIDATE_URL) !== false && !in_array($p, $out['profiles'], true)) {
+                $out['profiles'][] = $p;
+            }
+            if (count($out['profiles']) >= 15) {
+                break;
+            }
         }
 
         return [$out, $errors];

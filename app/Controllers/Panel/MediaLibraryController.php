@@ -111,7 +111,7 @@ final class MediaLibraryController
             'original_name' => mb_substr(trim((string) $req->input('title', $row['original_name'])), 0, 255),
         ], 'id = :wid', [':wid' => $id]);
         flash('success', 'Görsel bilgileri güncellendi.');
-        return Response::redirect(url('/panel/medya'));
+        return Response::redirect(self::backUrl($req));
     }
 
     public function destroy(Request $req, array $args): Response
@@ -125,7 +125,7 @@ final class MediaLibraryController
         Database::instance()->delete('media', 'id = :wid', [':wid' => $id]);
         Logger::warning('media.deleted', ['id' => $id, 'path' => $row['path']], 'media');
         flash('success', 'Görsel silindi.');
-        return Response::redirect(url('/panel/medya'));
+        return Response::redirect(self::backUrl($req));
     }
 
     /**
@@ -139,6 +139,13 @@ final class MediaLibraryController
             return ['', []];
         }
         return [' WHERE m.user_id = :uid ', [':uid' => $u['id'] ?? 0]];
+    }
+
+    /** Düzenleme/silme sonrası bulunulan sayfaya geri dön (sayfalama korunur). */
+    private static function backUrl(Request $req): string
+    {
+        $page = max(1, (int) $req->input('page', 1));
+        return url('/panel/medya') . ($page > 1 ? '?page=' . $page : '');
     }
 
     private static function findOwned(int $id): ?array

@@ -87,6 +87,34 @@ $is2fa = ((int) ($user['totp_enabled'] ?? 0)) === 1;
             </section>
 
             <section class="pe-section">
+                <h2 class="pe-section-title">Eğitim</h2>
+                <p class="pe-section-hint">Mezun olduğunuz kurumlar — <code>Person.alumniOf</code> (EducationalOrganization) olarak şemaya eklenir; E-E-A-T için akademik dayanak. En fazla 4 satır; kurum adı boş satırlar kaydedilmez.</p>
+                <?php
+                $edus = $profile['education'] ?? [];
+                for ($i = 0; $i < 4; $i++):
+                    $ed = $edus[$i] ?? ['institution'=>'','degree'=>'','field'=>'','year_start'=>'','year_end'=>''];
+                ?>
+                    <div class="pe-edu-row">
+                        <input type="text" name="profile[education][<?= $i ?>][institution]"
+                               placeholder="Kurum (örn. Uludağ Üniversitesi)" maxlength="160"
+                               value="<?= esc((string) ($ed['institution'] ?? '')) ?>">
+                        <input type="text" name="profile[education][<?= $i ?>][degree]"
+                               placeholder="Derece (örn. Lisans)" maxlength="120"
+                               value="<?= esc((string) ($ed['degree'] ?? '')) ?>">
+                        <input type="text" name="profile[education][<?= $i ?>][field]"
+                               placeholder="Alan (örn. Mimarlık)" maxlength="120"
+                               value="<?= esc((string) ($ed['field'] ?? '')) ?>">
+                        <input type="number" name="profile[education][<?= $i ?>][year_start]"
+                               placeholder="Başl." min="1900" max="2100"
+                               value="<?= esc((string) ($ed['year_start'] ?? '')) ?>">
+                        <input type="number" name="profile[education][<?= $i ?>][year_end]"
+                               placeholder="Bitiş" min="1900" max="2100"
+                               value="<?= esc((string) ($ed['year_end'] ?? '')) ?>">
+                    </div>
+                <?php endfor; ?>
+            </section>
+
+            <section class="pe-section">
                 <h2 class="pe-section-title">Sertifikalar</h2>
                 <p class="pe-section-hint">Aldığınız eğitim/sertifikalar — en fazla 5 satır. Boş bırakılan satırlar kaydedilmez.</p>
                 <?php
@@ -112,6 +140,61 @@ $is2fa = ((int) ($user['totp_enabled'] ?? 0)) === 1;
             </section>
 
             <section class="pe-section">
+                <h2 class="pe-section-title">Deneyim / Kurum</h2>
+                <p class="pe-section-hint">Çalıştığınız ya da kurduğunuz kurumlar. <strong>Güncel</strong> işaretli + <strong>web adresi</strong> girilen kurum, <code>Person.worksFor</code> olarak şemaya eklenir ve karşı sitenin <code>Organization</code> şemasına <code>@id</code> ile bağlanır (E-E-A-T cross-link). En fazla 4 satır; boş satırlar kaydedilmez.</p>
+                <?php
+                $exps = $profile['experience'] ?? [];
+                for ($i = 0; $i < 4; $i++):
+                    $x = $exps[$i] ?? ['company'=>'','role'=>'','url'=>'','year_start'=>'','year_end'=>'','current'=>false];
+                ?>
+                    <div class="pe-exp-row">
+                        <input type="text" name="profile[experience][<?= $i ?>][company]"
+                               placeholder="Kurum adı (örn. Onaltı Mimarlık)" maxlength="160"
+                               value="<?= esc((string) ($x['company'] ?? '')) ?>">
+                        <input type="text" name="profile[experience][<?= $i ?>][role]"
+                               placeholder="Ünvan / rol (örn. Kurucu, Mimar)" maxlength="160"
+                               value="<?= esc((string) ($x['role'] ?? '')) ?>">
+                        <input type="url" name="profile[experience][<?= $i ?>][url]"
+                               placeholder="Kurum web adresi (örn. https://onalti.com.tr)" maxlength="255"
+                               value="<?= esc((string) ($x['url'] ?? '')) ?>">
+                        <input type="number" name="profile[experience][<?= $i ?>][year_start]"
+                               placeholder="Başl." min="1900" max="2100"
+                               value="<?= esc((string) ($x['year_start'] ?? '')) ?>">
+                        <input type="number" name="profile[experience][<?= $i ?>][year_end]"
+                               placeholder="Bitiş" min="1900" max="2100"
+                               value="<?= esc((string) ($x['year_end'] ?? '')) ?>">
+                        <label class="pe-exp-current">
+                            <input type="checkbox" name="profile[experience][<?= $i ?>][current]" value="1"
+                                   <?= !empty($x['current']) ? 'checked' : '' ?>>
+                            <span>Güncel</span>
+                        </label>
+                    </div>
+                <?php endfor; ?>
+            </section>
+
+            <section class="pe-section">
+                <h2 class="pe-section-title">Diller</h2>
+                <p class="pe-section-hint">Bildiğiniz diller — <code>Person.knowsLanguage</code> olarak şemaya eklenir. Ad veya kod boş olan satırlar kaydedilmez.</p>
+                <?php
+                $langs = $profile['languages'] ?? [];
+                for ($i = 0; $i < 4; $i++):
+                    $lg = $langs[$i] ?? ['name'=>'','code'=>'','level'=>''];
+                ?>
+                    <div class="pe-lang-row">
+                        <input type="text" name="profile[languages][<?= $i ?>][name]"
+                               placeholder="Dil (örn. Türkçe)" maxlength="60"
+                               value="<?= esc((string) ($lg['name'] ?? '')) ?>">
+                        <input type="text" name="profile[languages][<?= $i ?>][code]"
+                               placeholder="Kod (örn. tr)" maxlength="10"
+                               value="<?= esc((string) ($lg['code'] ?? '')) ?>">
+                        <input type="text" name="profile[languages][<?= $i ?>][level]"
+                               placeholder="Seviye (örn. Anadil, C1)" maxlength="30"
+                               value="<?= esc((string) ($lg['level'] ?? '')) ?>">
+                    </div>
+                <?php endfor; ?>
+            </section>
+
+            <section class="pe-section">
                 <h2 class="pe-section-title">Sosyal Bağlantılar</h2>
                 <p class="pe-section-hint">Yazar sayfanızda küçük ikon olarak görünür. Boş bırakırsanız gizlenir.</p>
                 <?php foreach ($socialKeys as $k): ?>
@@ -122,6 +205,17 @@ $is2fa = ((int) ($user['totp_enabled'] ?? 0)) === 1;
                                value="<?= esc((string) ($profile['social'][$k] ?? '')) ?>">
                     </label>
                 <?php endforeach; ?>
+            </section>
+
+            <section class="pe-section">
+                <h2 class="pe-section-title">Doğrulama Profilleri (sameAs)</h2>
+                <p class="pe-section-hint">Sizi tanımlayan diğer sayfalar — her satıra bir URL. Örn. şirket sitenizdeki ekip/biyografi sayfanız (<code>onalti.com.tr/ekip/...</code>), ORCID, akademik profiliniz. Sosyal hesaplarınızla birlikte <code>Person.sameAs</code> dizisine eklenir; Google'ın kimliğinizi tek varlıkta birleştirmesini sağlar.</p>
+                <label>
+                    <span>URL listesi (her satıra bir tane)</span>
+                    <textarea name="profile[profiles_text]" rows="4"
+                              placeholder="https://onalti.com.tr/ekip/osman-dogan&#10;https://orcid.org/0000-0000-0000-0000"><?= esc(implode("\n", (array) ($profile['profiles'] ?? []))) ?></textarea>
+                    <small class="muted">En fazla 15 adres. Geçersiz satırlar kaydedilmez.</small>
+                </label>
             </section>
 
         </div>

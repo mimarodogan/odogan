@@ -227,6 +227,7 @@ $router->group('/panel', function ($r) {
     $r->get('/yazilar/yazar-ara',       [PanelPostController::class, 'authorSearch']);
     $r->post('/yazilar',                [PanelPostController::class, 'store']);
     $r->post('/yazilar/analiz',         [PanelPostController::class, 'analyze']);
+    $r->post('/yazilar/ai-analiz',      [PanelPostController::class, 'analyzeAi']);
     $r->post('/yazilar/onerile',        [PanelPostController::class, 'suggestLinks']);
     $r->post('/yazilar/toplu',          [PanelPostController::class, 'bulk']);
 

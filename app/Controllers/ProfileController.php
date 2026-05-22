@@ -61,6 +61,16 @@ final class ProfileController
             unset($rawProfile[$csvKey]);
         }
 
+        // profiles_text (her satır bir URL) → profiles[] (Person.sameAs).
+        // JS olmasa da çalışsın diye sunucu tarafında parse edilir.
+        if (isset($rawProfile['profiles_text']) && is_string($rawProfile['profiles_text'])) {
+            $rawProfile['profiles'] = array_values(array_filter(array_map(
+                'trim',
+                preg_split('/\r\n|\r|\n/', $rawProfile['profiles_text']) ?: []
+            ), static fn($v) => $v !== ''));
+            unset($rawProfile['profiles_text']);
+        }
+
         [$profile, $profileErrors] = ProfileService::validate($rawProfile);
 
         $errors = $profileErrors;
