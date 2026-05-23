@@ -76,16 +76,58 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                 </label>
             </section>
 
+            <?php
+            // Kaynak satırlarını çoz: önce JSON (yeni format), olmazsa legacy `;`
+            $_refsRaw = (string) ($item['references'] ?? '');
+            $_refs    = [];
+            if ($_refsRaw !== '') {
+                $decoded = json_decode($_refsRaw, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $r) {
+                        if (!is_array($r)) continue;
+                        $_refs[] = [
+                            'text' => (string) ($r['text'] ?? ''),
+                            'url'  => (string) ($r['url']  ?? ''),
+                        ];
+                    }
+                } else {
+                    // Legacy: noktalı virgül ayraçlı string
+                    foreach (array_filter(array_map('trim', explode(';', $_refsRaw))) as $part) {
+                        $isUrl = (bool) preg_match('#^https?://#i', $part);
+                        $_refs[] = [
+                            'text' => $part,
+                            'url'  => $isUrl ? $part : '',
+                        ];
+                    }
+                }
+            }
+            if ($_refs === []) {
+                $_refs = [['text' => '', 'url' => '']];
+            }
+            ?>
             <section class="pe-section">
                 <h2 class="pe-section-title">Kaynaklar</h2>
-                <p class="pe-section-hint">Akademik dayanak için kaynak listesi.</p>
-                <label class="pe-label-hidden">
-                    <span class="visually-hidden">Kaynaklar</span>
-                    <input type="text" name="references" maxlength="500"
-                           value="<?= esc((string) ($item['references'] ?? '')) ?>"
-                           placeholder="https://kaynak.com; Kitap Adı (Yazar, Yıl)">
-                </label>
-                <p class="pe-helper">Birden fazla kaynak için noktalı virgülle (<code>;</code>) ayır.</p>
+                <p class="pe-section-hint">
+                    Tanıma dayanak gösteren akademik kaynaklar. Her satır bir kaynaktır;
+                    metin alanı zorunlu, link alanı opsiyoneldir. Link verilirse
+                    public sayfada kaynak metni dış bağlantı olarak işlenir.
+                </p>
+                <div id="references-list" class="pe-faq-list" data-references>
+                    <?php foreach ($_refs as $i => $row): ?>
+                        <div class="faq-row reference-row" data-ref-row>
+                            <input type="text" name="references[<?= (int) $i ?>][text]"
+                                   placeholder="Kaynak metni (örn: Tanyeli, U. Modern Türkiye Mimarlığı, İletişim, 2007, s.142)"
+                                   maxlength="2000"
+                                   value="<?= esc((string) ($row['text'] ?? '')) ?>">
+                            <input type="url" name="references[<?= (int) $i ?>][url]"
+                                   placeholder="https://... (opsiyonel link)"
+                                   maxlength="500"
+                                   value="<?= esc((string) ($row['url'] ?? '')) ?>">
+                            <button type="button" class="btn btn-ghost reference-remove">Sil</button>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="btn btn-ghost" id="reference-add">+ Kaynak ekle</button>
             </section>
 
         </div>
@@ -133,3 +175,4 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 </form>
 
 <script src="<?= esc(asset('js/editor.js')) ?>" defer></script>
+<script src="<?= esc(asset('js/references-editor.js')) ?>" defer></script>

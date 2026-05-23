@@ -119,8 +119,62 @@ final class GlossaryController
             'definition'  => Sanitizer::clean($def),
             'category'    => mb_substr(trim((string) $req->input('category', '')), 0, 80),
             'aliases'     => mb_substr(trim((string) $req->input('aliases', '')), 0, 500),
-            'references'  => mb_substr(trim((string) $req->input('references', '')), 0, 500),
+            'references'  => self::normalizeReferences($req->input('references', null)),
             'is_active'   => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
         ];
+    }
+
+    /**
+     * Kaynaklar alanını JSON dizisine normalize eder.
+     *
+     * Kabul edilen girdiler:
+     *  - dizi:  [['text' => 'Kitap', 'url' => 'https://...'], ...]  → JSON
+     *  - string (legacy):  'A; B; https://x'                        → JSON dizisine çevrilir
+     *  - boş:   ''
+     *
+     * Görünüm tarafı hem JSON hem de eski `;` formatını okuyabilir
+     * (glossary-term.php geriye dönük decode yapar) — yine de yazarken
+     * her zaman JSON üretiyoruz ki yeni düzen tutarlı olsun.
+     */
+    private static function normalizeReferences(mixed $raw): string
+    {
+        $rows = [];
+
+        if (is_array($raw)) {
+            foreach ($raw as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $text = mb_substr(trim((string) ($row['text'] ?? '')), 0, 2000);
+                $url  = mb_substr(trim((string) ($row['url']  ?? '')), 0, 500);
+                if ($text === '' && $url === '') {
+                    continue;
+                }
+                // Salt URL girilmişse, görüntü için text alanına da koy
+                if ($text === '' && $url !== '') {
+                    $text = $url;
+                }
+                // URL şeması zorunlu — değilse boşalt
+                if ($url !== '' && !preg_match('#^https?://#i', $url)) {
+                    $url = '';
+                }
+                $rows[] = ['text' => $text, 'url' => $url];
+            }
+        } elseif (is_string($raw) && trim($raw) !== '') {
+            // Legacy: noktalı virgülle ayrılmış string. Her parça URL ise link,
+            // değilse düz metin.
+            foreach (array_filter(array_map('trim', explode(';', $raw))) as $part) {
+                $isUrl = (bool) preg_match('#^https?://#i', $part);
+                $rows[] = [
+                    'text' => mb_substr($part, 0, 2000),
+                    'url'  => $isUrl ? mb_substr($part, 0, 500) : '',
+                ];
+            }
+        }
+
+        if ($rows === []) {
+            return '';
+        }
+        return (string) json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

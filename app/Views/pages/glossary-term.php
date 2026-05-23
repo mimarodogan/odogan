@@ -25,11 +25,30 @@ if (mb_strlen($plain) > 200) {
     $leadText = mb_substr($leadText, 0, mb_strrpos($leadText, ' ') ?: 200) . '…';
 }
 
-// Referansları parse et — `;` ile ayrılmış, URL ise link, değilse plain
+// Referansları parse et — JSON [{text,url}] yeni biçim, fallback legacy `;`
 $refList = [];
 if ($references !== '') {
-    foreach (array_filter(array_map('trim', explode(';', $references))) as $ref) {
-        $refList[] = $ref;
+    $decoded = json_decode($references, true);
+    if (is_array($decoded)) {
+        foreach ($decoded as $r) {
+            if (!is_array($r)) continue;
+            $rText = trim((string) ($r['text'] ?? ''));
+            $rUrl  = trim((string) ($r['url']  ?? ''));
+            if ($rText === '' && $rUrl === '') continue;
+            $refList[] = [
+                'text' => $rText !== '' ? $rText : $rUrl,
+                'url'  => preg_match('#^https?://#i', $rUrl) ? $rUrl : '',
+            ];
+        }
+    } else {
+        // Legacy: 'A; B; https://x'
+        foreach (array_filter(array_map('trim', explode(';', $references))) as $part) {
+            $isUrl = (bool) preg_match('#^https?://#i', $part);
+            $refList[] = [
+                'text' => $part,
+                'url'  => $isUrl ? $part : '',
+            ];
+        }
     }
 }
 
@@ -65,20 +84,23 @@ if ($aliases !== '') {
     <?php if (!empty($refList)): ?>
     <section class="author-section post-glossary-refs" aria-labelledby="kaynaklar-title">
         <h2 id="kaynaklar-title">Kaynaklar</h2>
-        <ul>
-            <?php foreach ($refList as $ref): ?>
+        <ol>
+            <?php foreach ($refList as $ref):
+                $rText = (string) ($ref['text'] ?? '');
+                $rUrl  = (string) ($ref['url']  ?? '');
+            ?>
                 <li>
-                    <?php if (preg_match('/^https?:\/\//', $ref)): ?>
-                        <a href="<?= esc($ref) ?>" target="_blank" rel="noopener nofollow"
-                           title="<?= esc($ref) ?> — dış kaynak">
-                            <?= esc($ref) ?> <span aria-hidden="true">↗</span>
+                    <?php if ($rUrl !== ''): ?>
+                        <a href="<?= esc($rUrl) ?>" target="_blank" rel="noopener nofollow"
+                           title="<?= esc($rUrl) ?> — dış kaynak">
+                            <?= esc($rText) ?> <span aria-hidden="true">↗</span>
                         </a>
                     <?php else: ?>
-                        <?= esc($ref) ?>
+                        <?= esc($rText) ?>
                     <?php endif; ?>
                 </li>
             <?php endforeach; ?>
-        </ul>
+        </ol>
     </section>
     <?php endif; ?>
 
