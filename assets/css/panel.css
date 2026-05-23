@@ -145,23 +145,24 @@ body.admin-mode > .container.main{display:none !important}
    Below .45 fails 4.5:1 — boost titles + sublinks. */
 .ns-title{
   font-family:var(--mono);
-  font-size:.66rem;
+  font-size:.78rem;              /* ~12.5px — okunaklı, hâlâ "label" tonu */
   font-weight:700;
   text-transform:uppercase;
-  letter-spacing:var(--tracked-l);
-  color:rgba(244,241,234,.7);    /* was .36 — now ≥ 4.5:1 even for small text */
-  padding:.85rem 1.5rem .55rem;
+  letter-spacing:var(--tracked); /* tracked-l yerine standart — okuma akışını bozmasın */
+  color:rgba(244,241,234,.82);   /* daha parlak (.7 → .82) */
+  padding:1rem 1.5rem .65rem;    /* dikey hava arttı */
 }
 .admin-nav a{
   display:flex;
   align-items:center;
   gap:.85rem;
-  padding:.65rem 1.5rem;
-  color:rgba(244,241,234,.95);  /* nearly full contrast */
+  padding:.75rem 1.5rem;          /* dikey hava arttı: .65 → .75 */
+  color:rgba(244,241,234,.96);
   text-decoration:none;
   font-family:var(--sans);
-  font-size:.95rem;
+  font-size:1.02rem;              /* ~16.3px — gövde okunabilirliği */
   font-weight:500;
+  line-height:1.4;                /* açık dikey ritm */
   letter-spacing:-.005em;
   border:0;
   border-left:3px solid transparent;
@@ -176,18 +177,18 @@ body.admin-mode > .container.main{display:none !important}
   font-weight:700;
 }
 .admin-nav a.ns-sub{
-  padding-left:2.6rem;
-  font-size:.88rem;
-  color:rgba(244,241,234,.78);  /* lifted from .55 */
+  padding-left:2.9rem;            /* hizalama biraz daha açıldı */
+  font-size:.95rem;               /* .88 → .95 */
+  color:rgba(244,241,234,.84);    /* .78 → .84 */
 }
 .admin-nav a.ns-sub:hover{color:#ffffff}
 .ns-glyph{
   display:inline-block;
-  width:1.2rem;
+  width:1.35rem;                  /* hizalama için daha geniş */
   text-align:center;
-  color:rgba(244,241,234,.7);   /* lifted from .45 */
+  color:rgba(244,241,234,.78);
   font-family:var(--mono);
-  font-size:.95rem;
+  font-size:1.05rem;              /* sembol seçilebilirliği */
   line-height:1;
   flex-shrink:0;
 }
@@ -775,8 +776,8 @@ details.ns-group > summary.ns-title:focus-visible{
   border:1px solid rgba(255,255,255,.08);
   color:#f0f0f1;
   font-family:var(--sans);
-  font-size:.85rem;
-  padding:.5rem .75rem;
+  font-size:.98rem;               /* okunaklı placeholder */
+  padding:.65rem .85rem;          /* daha rahat */
   border-radius:6px;
   outline:0;
   transition:border-color 160ms ease, background 160ms ease;
@@ -791,10 +792,10 @@ details.ns-group > summary.ns-title:focus-visible{
 }
 .ns-search-hint{
   display:block;
-  margin-top:.35rem;
+  margin-top:.45rem;
   font-family:var(--mono);
-  font-size:.62rem;
-  color:rgba(244,241,234,.4);
+  font-size:.7rem;                /* .62 → .7 (~11.2px) */
+  color:rgba(244,241,234,.55);    /* .4 → .55 — daha okunur */
   letter-spacing:var(--tracked);
   text-transform:uppercase;
 }
