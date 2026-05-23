@@ -706,3 +706,109 @@ body.admin-mode .form fieldset{padding-top:1.5rem;margin-top:.25rem}
 .showcase-list li:last-child{border-bottom:0}
 .showcase-list a{color:var(--soot);text-decoration:none;font-family:var(--serif);font-size:1.05rem;font-weight:500}
 .showcase-list a:hover{color:var(--cobalt);text-decoration:none}
+
+/* ════════════════ SIDEBAR — accordion gruplar + arama ════════════════ */
+
+/* <details>/<summary> reset + chevron */
+details.ns-group > summary.ns-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+  cursor:pointer;
+  user-select:none;
+  list-style:none;            /* Firefox + standart marker'ı kaldır */
+  transition:color 160ms var(--ease), background 160ms var(--ease);
+}
+details.ns-group > summary.ns-title::-webkit-details-marker{ display:none; } /* Safari/Chrome */
+details.ns-group > summary.ns-title::after{
+  content:"›";                /* basit chevron — kapalıyken sağa, açıkken aşağı */
+  font-family:var(--mono);
+  font-size:1rem;
+  line-height:1;
+  color:rgba(244,241,234,.45);
+  margin-left:auto;
+  transform:rotate(0deg);
+  transition:transform 200ms var(--ease), color 200ms var(--ease);
+}
+details.ns-group[open] > summary.ns-title::after{
+  transform:rotate(90deg);
+  color:#8AA3E6;
+}
+details.ns-group > summary.ns-title:hover{
+  color:#ffffff;
+  background:rgba(255,255,255,.04);
+}
+details.ns-group > summary.ns-title:focus-visible{
+  outline:0;
+  box-shadow:inset 0 0 0 2px #8AA3E6;
+  color:#ffffff;
+}
+/* Erişilebilirlik: hareket azalt tercihi */
+@media (prefers-reduced-motion: reduce){
+  details.ns-group > summary.ns-title,
+  details.ns-group > summary.ns-title::after{ transition:none; }
+}
+
+/* Bekleyen sayım rozeti (eski inline-style yerine) */
+.ns-badge{
+  background:var(--cobalt,#1e3a8a);
+  color:#fff;
+  font-size:.7rem;
+  font-weight:700;
+  padding:.05rem .4rem;
+  border-radius:999px;
+  min-width:1.3rem;
+  text-align:center;
+  margin-left:.3rem;
+}
+
+/* Hızlı arama kutusu */
+.ns-search{
+  padding:.25rem 1rem 1rem;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  margin-bottom:.25rem;
+}
+.ns-search input{
+  width:100%;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  color:#f0f0f1;
+  font-family:var(--sans);
+  font-size:.85rem;
+  padding:.5rem .75rem;
+  border-radius:6px;
+  outline:0;
+  transition:border-color 160ms ease, background 160ms ease;
+}
+.ns-search input:focus{
+  border-color:#8AA3E6;
+  background:rgba(255,255,255,.09);
+}
+.ns-search input::placeholder{
+  color:rgba(244,241,234,.45);
+  font-style:italic;
+}
+.ns-search-hint{
+  display:block;
+  margin-top:.35rem;
+  font-family:var(--mono);
+  font-size:.62rem;
+  color:rgba(244,241,234,.4);
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+}
+.ns-search-hint kbd{
+  background:rgba(255,255,255,.08);
+  padding:0 .25rem;
+  border-radius:3px;
+  border:1px solid rgba(255,255,255,.12);
+  font-family:inherit;
+  font-size:inherit;
+  color:rgba(244,241,234,.7);
+}
+
+/* Filtre durumları */
+.admin-nav a.ns-filter-hidden{ display:none !important; }
+details.ns-group.ns-filter-empty{ display:none !important; }
+
