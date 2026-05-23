@@ -62,6 +62,7 @@ const BUNDLES = [
       'app/Views/partials/post-footer.php',
       'app/Views/partials/comments.php',
       'app/Views/partials/share-buttons.php',
+      'app/Views/partials/trending.php',
       'assets/js/toc.js',
       'assets/js/progress.js',
       'assets/js/lightbox.js',
@@ -163,6 +164,8 @@ const SAFELIST = {
     // Yazı gövdesinde dinamik üretilen tablo etiketleri — şablonlarda
     // doğrudan geçmedikleri için PurgeCSS'in stripslemesini engelle.
     'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
+    // Collapsible (FAQ, trending widget) için details/summary tag selector'leri.
+    'details', 'summary',
   ],
   greedy: [/^js-/, /^is-/, /^has-/, /^was-/, /^will-/, /^no-/],
   deep: [/:global/, /\[data-/, /\[aria-/],
