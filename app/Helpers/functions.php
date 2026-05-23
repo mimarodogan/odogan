@@ -28,7 +28,29 @@ if (!function_exists('url')) {
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        return url('assets/' . ltrim($path, '/'));
+        $rel = ltrim($path, '/');
+        $base = url('assets/' . $rel);
+
+        // Cache-buster: dosya mtime'ı ile ?v=... ekle ki .htaccess'in
+        // 30-günlük max-age header'ı CSS/JS güncellemelerini bloklamasın.
+        // Browser yeni URL'i fresh request olarak görür → hard-refresh
+        // zorunluluğu biter. Dosya yoksa veya publicRoot bilinmiyorsa
+        // sessizce orijinal URL döner (önceki davranış).
+        try {
+            $root = \App\Core\Config::publicRoot();
+            $abs  = rtrim($root, '/') . '/assets/' . $rel;
+            if (is_file($abs)) {
+                $mt = filemtime($abs);
+                if ($mt !== false) {
+                    $sep = str_contains($base, '?') ? '&' : '?';
+                    return $base . $sep . 'v=' . $mt;
+                }
+            }
+        } catch (\Throwable) {
+            // publicRoot çağrısı (cPanel sorunları, vb.) başarısızsa
+            // — orijinal URL'yi döndür, hiçbir şey kırılmasın.
+        }
+        return $base;
     }
 }
 
