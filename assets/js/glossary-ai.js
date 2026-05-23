@@ -140,8 +140,8 @@
 
         setBusy(true);
         const loadingMsg = mode === 'enhance'
-            ? 'Mevcut içerik analiz ediliyor… (≈10-20 sn + kaynak doğrulama)'
-            : 'Claude API\'ye gönderiliyor… (≈5-15 sn + kaynak doğrulama)';
+            ? 'Mevcut içerik analiz ediliyor + ansiklopedik yapıya genişletiliyor… (≈30-90 sn + kaynak doğrulama)'
+            : 'Ansiklopedik girdi üretiliyor (12 bölüm, H2/H3/H4 yapı)… (≈30-90 sn + kaynak doğrulama)';
         setStatus(loadingMsg, 'loading');
 
         try {

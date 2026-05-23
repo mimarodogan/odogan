@@ -101,12 +101,17 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 
             <section class="pe-section">
                 <h2 class="pe-section-title">Tanım</h2>
-                <p class="pe-section-hint">Kısa, açıklayıcı tanım. HTML kullanabilirsin — resim, link, alıntı, liste.</p>
+                <p class="pe-section-hint">
+                    Kapsamlı tanım. HTML kullanabilirsin — başlık (H2/H3/H4),
+                    resim, link, alıntı, liste, tablo. <strong>H1 kullanma</strong>
+                    (sayfa zaten H1 üretiyor). AI üreteci ansiklopedik yapıda
+                    girdi üretir; kısa terimler için manuel düzenleyebilirsin.
+                </p>
                 <span class="visually-hidden" id="rich-body-label">Tanım</span>
                 <textarea id="rich-body"
                           name="definition"
                           rows="14"
-                          required minlength="10" maxlength="10000"
+                          required minlength="10" maxlength="60000"
                           data-format="html"
                           aria-labelledby="rich-body-label"><?= esc((string) ($item['definition'] ?? '')) ?></textarea>
                 <input type="hidden" name="body_format" value="html">
@@ -123,10 +128,10 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                 </label>
                 <label>
                     <span>Eş Anlamlılar (virgülle)</span>
-                    <input type="text" name="aliases" maxlength="500"
+                    <input type="text" name="aliases" maxlength="2000"
                            value="<?= esc((string) ($item['aliases'] ?? '')) ?>"
-                           placeholder="örn: konsol, balkon konsolu">
-                    <small class="muted">Yazılarda bu kelimeler geçtiğinde de bu terime tooltip bağlanır.</small>
+                           placeholder="örn: konsol, balkon konsolu, cantilever, kragträger">
+                    <small class="muted">Yazılarda bu kelimeler geçtiğinde de bu terime tooltip bağlanır. Yabancı dilde karşılıkları da ekleyebilirsin.</small>
                 </label>
             </section>
 

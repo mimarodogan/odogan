@@ -168,7 +168,7 @@ final class GlossaryController
             'term'        => mb_substr($term, 0, 180),
             'definition'  => Sanitizer::clean($def),
             'category'    => mb_substr(trim((string) $req->input('category', '')), 0, 80),
-            'aliases'     => mb_substr(trim((string) $req->input('aliases', '')), 0, 500),
+            'aliases'     => mb_substr(trim((string) $req->input('aliases', '')), 0, 2000),
             'references'  => self::normalizeReferences($req->input('references', null)),
             'is_active'   => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
         ];
