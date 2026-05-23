@@ -52,6 +52,7 @@ final class AiGlossaryService
         'chunk_1' => [
             'label'      => 'TL;DR + Nedir + Köken',
             'word_budget'=> 500, // ~500 kelime hedef (toplam ~3000)
+            'max_tokens' => 3500, // TL;DR + Nedir + Köken + JSON meta (term/cat/aliases)
             'voice'      => '3. tekil, nötr akademik.',
             'sections'   => [
                 '<div class="tldr">…2-3 cümle SEO snippet-optimize özet (40-50 kelime)…</div>',
@@ -68,6 +69,7 @@ final class AiGlossaryService
         'chunk_2' => [
             'label'      => 'Tarihsel Gelişim + Mimarlıkta Kullanım',
             'word_budget'=> 700,
+            'max_tokens' => 4000,
             'sections'   => [
                 '<h2>[TERİM] Kavramının Tarihsel Gelişimi</h2>',
                 '  <h3>Erken Dönem ve Geleneksel Karşılıkları</h3>',
@@ -83,6 +85,7 @@ final class AiGlossaryService
         'chunk_3' => [
             'label'      => 'Türler + Tasarımda Dikkat (1. tekil ses)',
             'word_budget'=> 700,
+            'max_tokens' => 4000,
             'sections'   => [
                 '<h2>[TERİM] Türleri veya Yaklaşımları</h2>',
                 '  <h3>Birinci/İkinci/Üçüncü Tür</h3> (en az 2, en fazla 3)',
@@ -98,6 +101,7 @@ final class AiGlossaryService
         'chunk_4' => [
             'label'      => 'Karıştırılan Kavramlar (Ne Değildir entegre) + Mimari Örnekler',
             'word_budget'=> 600,
+            'max_tokens' => 4000,
             'sections'   => [
                 '<h2>[TERİM] ile Karıştırılan Kavramlar</h2>',
                 '  (Bu bölüm "Ne değildir?" kavramını da içerir — yaygın yanılgılar burada açıklanır)',
@@ -112,6 +116,9 @@ final class AiGlossaryService
         'chunk_5' => [
             'label'      => 'Türkiye + Eleştirel + FAQ + Kaynaklar (1. tekil ses)',
             'word_budget'=> 800,
+            // En ağır chunk: 2 H2 + 1 FAQ H2 (3-5 SSS) + references JSON + faq JSON.
+            // Haiku 4.5 tavanı 8192; "derin" modda 8000'e kadar çıkar (×1.3 = 7800).
+            'max_tokens' => 6000,
             'sections'   => [
                 '<h2>Türkiye Bağlamında [TERİM]</h2>',
                 '  <h3>Türkiye İklimi ve Yönetmelik Açısından</h3> (varsa TS standartları belirt)',
@@ -389,14 +396,20 @@ final class AiGlossaryService
 
         $isEnhance = self::hasCurrentContent($current);
 
-        // Her chunk için max_tokens: ~3K (varsayılan), derin=4K, kısa=2K.
-        // Haiku 4.5'in 8192 tavanı çok rahat içerir.
-        $maxTokens = match ($depth) {
-            'derin' => 4000,
-            'kisa'  => 2000,
-            default => 3000,
+        // Chunk başına max_tokens: CHUNK_PLAN'da her chunk için "max_tokens"
+        // base değeri tanımlı (orta derinlik içindir). Derin/kısa için
+        // multiplier uygulanır. Haiku 4.5 tavanı 8192 — asla aşılmaz.
+        $plan = self::CHUNK_PLAN[$chunkId];
+        $base = (int) $plan['max_tokens'];
+        $multiplier = match ($depth) {
+            'derin' => 1.3,
+            'kisa'  => 0.6,
+            default => 1.0,
         };
+        $maxTokens = (int) ($base * $multiplier);
         if ($isEnhance) $maxTokens = (int) ($maxTokens * 1.15);
+        // Haiku üst sınırı: 8000 (8192 tavanından 192 buffer)
+        $maxTokens = min($maxTokens, 8000);
 
         $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance, $outline);
 
