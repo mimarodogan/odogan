@@ -285,22 +285,23 @@
 .admin-nav a[aria-current="page"]::before{transform:scaleY(1)}
 .admin-nav a[aria-current="page"] .ns-glyph{color:var(--cobalt)}
 
-/* Sub-link (ns-sub) — Bakım altındaki Yedekler/Migrasyonlar gibi */
+/* Sub-link (ns-sub) — Bakım altındaki Yedekler/Migrasyonlar gibi.
+   Koyu sidebar üzerinde okunaklı olsun diye --ash yerine açık opaklık. */
 .admin-nav a.ns-sub{
-  padding-left:2.6rem;
-  font-size:.82rem;
-  color:var(--ash);
+  padding-left:2.9rem;
+  font-size:.95rem;
+  color:rgba(244,241,234,.94);
 }
 .admin-nav a.ns-sub .ns-glyph{
-  font-size:.85em;
-  opacity:.7;
+  font-size:.92em;
+  opacity:.85;
 }
 .admin-nav a.ns-sub:hover,
 .admin-nav a.ns-sub[aria-current="page"]{
-  color:var(--cobalt);
+  color:#ffffff;
 }
 @media(max-width:720px){
-  .admin-nav a.ns-sub{padding-left:2.2rem;font-size:.85rem}
+  .admin-nav a.ns-sub{padding-left:2.5rem;font-size:.92rem}
 }
 
 /* — Üst bar — marka damar + minor parlatma ———————————————————————————— */
