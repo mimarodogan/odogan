@@ -122,6 +122,7 @@ final class GlossaryController
             $term    = trim((string) $req->input('term', ''));
             $ctx     = trim((string) $req->input('context', ''));
             $depth   = trim((string) $req->input('depth', 'orta'));
+            $chunkId = trim((string) $req->input('chunk', ''));
             if (mb_strlen($term) < 2) {
                 return Response::json(['ok' => false, 'message' => 'Terim en az 2 karakter olmalı.'], 400);
             }
@@ -135,6 +136,13 @@ final class GlossaryController
                 'aliases'    => (string) $req->input('current_aliases',    ''),
                 'references' => (string) $req->input('current_references', ''),
             ];
+
+            // PARÇALI üretim: chunk parametresi verilirse tek bir bölüm üretilir.
+            // Aksi halde legacy tek-çağrı draft() (geriye dönük uyum).
+            if ($chunkId !== '') {
+                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current);
+                return Response::json(['ok' => true, 'chunk' => $chunkId, 'data' => $data]);
+            }
 
             $draft = \App\Services\AiGlossaryService::draft($term, $ctx, $depth, $current);
             return Response::json(['ok' => true, 'draft' => $draft]);

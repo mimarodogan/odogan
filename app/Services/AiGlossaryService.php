@@ -35,10 +35,91 @@ final class AiGlossaryService
 {
     private const ENDPOINT = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
-    // Glossary AI varsayılanı Sonnet: ansiklopedik 12-bölümlü çıktı için
-    // Haiku'nun 8192 output tavanı dar. Sonnet 4.5'in 64K output kapasitesi
-    // şablonu rahat sığdırır. Admin Settings'ten override edebilir.
-    private const DEFAULT_MODEL = 'claude-sonnet-4-5';
+    // PARÇALI üretim devreye girdi: her chunk ~3K token çıktı üretir,
+    // Haiku 4.5'in 8192 tavanına rahat sığar. Sonnet'e gerek kalmadı
+    // (cost ~4x daha pahalıydı). Admin Settings'ten override edebilir.
+    private const DEFAULT_MODEL = 'claude-haiku-4-5';
+
+    /**
+     * Parçalı (chunked) üretim planı. 5 ardışık API çağrısı; her biri
+     * yapının 2-4 bölümünü üretir. Sistem promptu paylaşılır → prompt
+     * caching ilk çağrıdan sonra cache-hit verir, maliyet düşer.
+     *
+     * Sıra önemli: chunk_1 önce çağrılmalı (term/category/aliases dolacak),
+     * chunk_5 en son (references doğrulamasıyla bitiş).
+     */
+    public const CHUNK_PLAN = [
+        'chunk_1' => [
+            'label'    => 'Tanım + Köken + Sözlük Tanımı',
+            'sections' => [
+                '<h2>[TERİM] Nedir?</h2>',
+                '<h2>[TERİM] Kelime Anlamı ve Kökeni</h2>',
+                '  <h3>Kelimenin Birinci Kökü veya İlk Anlamı</h3>',
+                '  <h3>Kelimenin İkinci Kökü veya İkinci Anlamı</h3>',
+                '  <h3>[TERİM] Türkçede Ne Anlama Gelir?</h3>',
+                '    <h4>Yüzeysel Anlam ve Mimari Anlam Farkı</h4>',
+                '<h2>Mimari Sözlük Tanımı</h2>',
+            ],
+            'json_extra' => 'Bu chunk\'ta meta bilgi de döndür: "term", "slug_hint", "category", "aliases".',
+        ],
+        'chunk_2' => [
+            'label'    => 'Tarihsel Gelişim + Mimarlıkta Kullanım',
+            'sections' => [
+                '<h2>[TERİM] Kavramının Tarihsel Gelişimi</h2>',
+                '  <h3>Erken Dönem Kullanımı</h3>',
+                '    <h4>Geleneksel Mimarlıkta Karşılığı</h4>',
+                '  <h3>Modern Mimarlıkta Gelişimi</h3>',
+                '    <h4>Öne Çıkan Mimarlar, Yapılar veya Akımlar</h4>',
+                '<h2>[TERİM] Mimarlıkta Nasıl Kullanılır?</h2>',
+                '  <h3>Tasarım Ölçeğinde Kullanımı</h3>',
+                '  <h3>Teknik Ölçekte Kullanımı</h3>',
+                '  <h3>Kullanıcı Deneyimi Açısından Önemi</h3>',
+            ],
+        ],
+        'chunk_3' => [
+            'label'    => 'Türler + Tasarımda Dikkat',
+            'sections' => [
+                '<h2>[TERİM] Türleri veya Yaklaşımları</h2>',
+                '  <h3>Birinci/İkinci/Üçüncü Tür veya Yaklaşım</h3> (en az 2, en fazla 4)',
+                '    <h4>Özellikleri</h4> (ul/li)',
+                '<h2>[TERİM] Tasarımında Dikkat Edilmesi Gerekenler</h2>',
+                '  <h3>Bağlam ve Yer Seçimi</h3>',
+                '  <h3>Malzeme ve Detay</h3>',
+                '  <h3>İklim ve Enerji Performansı</h3>',
+                '  <h3>Estetik ve İşlev Dengesi</h3>',
+            ],
+        ],
+        'chunk_4' => [
+            'label'    => 'Ne Değildir + Karıştırılan + Örnekler',
+            'sections' => [
+                '<h2>[TERİM] Ne Değildir?</h2>',
+                '  <h3>Yaygın Yanlış Anlama</h3>',
+                '    <h4>Neden Yanlıştır?</h4>',
+                '  <h3>Dekoratif Kullanım ile Gerçek Kullanım Farkı</h3>',
+                '<h2>[TERİM] ile Karıştırılan Kavramlar</h2>',
+                '  <h3>Birinci/İkinci/Üçüncü Benzer Kavram</h3> (en az 2)',
+                '    <h4>[TERİM] ile Farkı</h4>',
+                '<h2>Mimarlıkta [TERİM] Örnekleri</h2>',
+                '  <h3>Birinci/İkinci/Üçüncü Örnek</h3> (en az 2)',
+                '    <h4>Mimari Önemi</h4>',
+            ],
+        ],
+        'chunk_5' => [
+            'label'    => 'Türkiye + Eleştirel + Kapanış + Kaynaklar',
+            'sections' => [
+                '<h2>Türkiye ve Yerel Mimarlık Bağlamında [TERİM]</h2>',
+                '  <h3>Türkiye İklimi Açısından Değerlendirme</h3>',
+                '  <h3>Bursa veya Marmara Bölgesi Açısından Değerlendirme</h3>',
+                '<h2>[TERİM] Kavramına Eleştirel Bakış</h2>',
+                '  <h3>Güçlü Yönleri</h3>',
+                '  <h3>Riskli veya Zayıf Yönleri</h3>',
+                '  <h3>Doğru Kullanım İçin Öneriler</h3>',
+                '<h2>Mimari Sözlük İçin Kısa Tanım</h2> (2-3 cümle)',
+                '<h2>Daha Akademik Sözlük Tanımı</h2> (1-2 paragraf)',
+            ],
+            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 gerçek kaynak.',
+        ],
+    ];
 
     public static function isEnabled(): bool
     {
@@ -158,6 +239,292 @@ final class AiGlossaryService
         }
 
         return self::normalize($json);
+    }
+
+    /**
+     * PARÇALI üretim: 12 H2 yapılı ansiklopedik şablonun TEK bir parçasını üret.
+     *
+     * Avantajları:
+     *   - Her chunk ~3K token output → Haiku 4.5'in 8192 tavanına rahat sığar.
+     *   - Sistem promptu paylaşılır (cache hit ikinci chunk'tan itibaren).
+     *   - Bir chunk başarısız olsa diğerleri etkilenmez (client retry).
+     *   - Kullanıcı bölümlerin canlı dolduğunu görür.
+     *
+     * @param string $chunkId  CHUNK_PLAN anahtarlarından biri
+     * @param array  $current  Enhance modu için mevcut girdi (boş = yeni-üretim)
+     * @return array{
+     *   chunk_id:string,
+     *   html:string,
+     *   term?:string, slug_hint?:string, category?:string, aliases?:array<int,string>,
+     *   references?:array<int,array{text:string,url:string,dead:bool}>
+     * }
+     */
+    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = []): array
+    {
+        $key = self::apiKey();
+        if ($key === '') {
+            throw new \RuntimeException('Claude API anahtarı tanımlı değil.');
+        }
+        if (!isset(self::CHUNK_PLAN[$chunkId])) {
+            throw new \InvalidArgumentException('Geçersiz chunk_id: ' . $chunkId);
+        }
+
+        $term = trim($term);
+        if (mb_strlen($term) < 2) {
+            throw new \InvalidArgumentException('Terim en az 2 karakter olmalı.');
+        }
+        $context = mb_substr(trim($context), 0, 800);
+        $depth = in_array($depth, ['kisa', 'orta', 'derin'], true) ? $depth : 'orta';
+
+        $isEnhance = self::hasCurrentContent($current);
+
+        // Her chunk için max_tokens: ~3K (varsayılan), derin=4K, kısa=2K.
+        // Haiku 4.5'in 8192 tavanı çok rahat içerir.
+        $maxTokens = match ($depth) {
+            'derin' => 4000,
+            'kisa'  => 2000,
+            default => 3000,
+        };
+        if ($isEnhance) $maxTokens = (int) ($maxTokens * 1.15);
+
+        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance);
+
+        $body = [
+            'model'       => self::model(),
+            'max_tokens'  => $maxTokens,
+            'temperature' => $isEnhance ? 0.25 : 0.4,
+            'system'      => [[
+                'type' => 'text',
+                'text' => self::chunkSystemRubric(),
+                'cache_control' => ['type' => 'ephemeral'],
+            ]],
+            'messages' => [
+                ['role' => 'user', 'content' => $userText],
+                ['role' => 'assistant', 'content' => '{'],
+            ],
+        ];
+
+        $resp = self::http($key, $body);
+
+        $text = '';
+        foreach (($resp['content'] ?? []) as $blk) {
+            if (($blk['type'] ?? '') === 'text') {
+                $text .= (string) ($blk['text'] ?? '');
+            }
+        }
+        $json = self::extractJson('{' . $text);
+        if (!is_array($json)) {
+            $reason = (string) ($resp['stop_reason'] ?? '?');
+            throw new \RuntimeException(
+                'Chunk ' . $chunkId . ' çözümlenemedi (stop=' . $reason . '). '
+                . 'Başı: ' . mb_substr(trim($text), 0, 160)
+            );
+        }
+
+        return self::normalizeChunk($chunkId, $json);
+    }
+
+    /**
+     * Chunk yanıtını projeye uygun hale getirir. chunk_1'de term/cat/aliases,
+     * chunk_5'te references doğrulanır. HTML her chunk için sanitize edilir.
+     *
+     * @param array<string,mixed> $raw
+     * @return array{
+     *   chunk_id:string, html:string,
+     *   term?:string, slug_hint?:string, category?:string, aliases?:array<int,string>,
+     *   references?:array<int,array{text:string,url:string,dead:bool}>
+     * }
+     */
+    private static function normalizeChunk(string $chunkId, array $raw): array
+    {
+        $out = ['chunk_id' => $chunkId];
+
+        // HTML: defansif H1 → H2 dönüşümü + sanitize
+        $html = (string) ($raw['html'] ?? '');
+        if ($html !== '') {
+            $html = (string) preg_replace('#<h1(\s[^>]*)?>#i', '<h2$1>', $html);
+            $html = (string) preg_replace('#</h1>#i', '</h2>', $html);
+            if (class_exists(Sanitizer::class)) {
+                $html = Sanitizer::clean($html);
+            }
+        }
+        $out['html'] = $html;
+
+        // Chunk 1: meta alanları
+        if ($chunkId === 'chunk_1') {
+            $out['term']      = mb_substr(trim((string) ($raw['term']      ?? '')), 0, 180);
+            $out['slug_hint'] = mb_substr(trim((string) ($raw['slug_hint'] ?? '')), 0, 120);
+            $out['category']  = mb_substr(trim((string) ($raw['category']  ?? '')), 0, 80);
+
+            $aliases = [];
+            foreach ((array) ($raw['aliases'] ?? []) as $a) {
+                $a = trim((string) $a);
+                if ($a !== '' && mb_strlen($a) <= 120) {
+                    $aliases[] = mb_substr($a, 0, 120);
+                }
+            }
+            $out['aliases'] = array_slice(array_unique($aliases), 0, 15);
+        }
+
+        // Chunk 5: references — URL HEAD doğrulama
+        if ($chunkId === 'chunk_5') {
+            $refs = [];
+            foreach ((array) ($raw['references'] ?? []) as $r) {
+                if (!is_array($r)) continue;
+                $rt = mb_substr(trim((string) ($r['text'] ?? '')), 0, 2000);
+                $ru = mb_substr(trim((string) ($r['url']  ?? '')), 0, 500);
+                if ($rt === '' && $ru === '') continue;
+                if ($ru !== '' && !preg_match('#^https?://#i', $ru)) {
+                    $ru = '';
+                }
+                if ($rt === '' && $ru !== '') $rt = $ru;
+                $dead = $ru !== '' ? !self::urlAlive($ru) : false;
+                $refs[] = ['text' => $rt, 'url' => $ru, 'dead' => $dead];
+                if (count($refs) >= 8) break;
+            }
+            $out['references'] = $refs;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Tüm chunk'lar için ortak sistem rubrik'i. Tek prompt cache slot'unda
+     * kalır → ikinci chunk'tan itibaren cache-hit (ucuz).
+     */
+    private static function chunkSystemRubric(): string
+    {
+        return <<<TXT
+Sen Türkçe mimarlık sözlüğü için uzman bir editörsün. Konular: MİMARLIK,
+İÇ MİMARLIK, YAPI TEKNOLOJİSİ, KENT, TASARIM, YAPI KÜLTÜRÜ. Yazar Osman
+Doğan — Bursa merkezli mimar ve inşaat mühendisi.
+
+GÖREV: Kullanıcı sana bir TERİM ve hangi BÖLÜMÜ üreteceğini söyleyecek.
+Sen yalnızca o bölümü üretirsin — tüm yapıyı değil.
+
+YANIT KURALLARI (KESİN):
+- SADECE geçerli JSON döndür. Markdown, kod bloğu, açıklama YOK.
+- Tüm metin Türkçe; akademik ama okunabilir, gereksiz tekrar yok.
+- Başlık hiyerarşisi: SADECE <h2>, <h3>, <h4>. <h1> KESİNLİKLE YASAK
+  (sayfa kendi H1'ini atıyor). İzinli etiketler: <p>, <ul>, <ol>, <li>,
+  <strong>, <em>, <code>, <blockquote>, <a>. YASAK: <script>, <iframe>,
+  <style>, <h1>.
+- Bölümler kısa-öz (2-3 paragraf), gereksiz uzatma yok.
+
+JSON ŞEMASI (varsayılan):
+{ "html": "<h2>...</h2>... bu chunk'ın HTML gövdesi ..." }
+
+CHUNK 1 İÇİN EK ALANLAR:
+{
+  "term": "...",
+  "slug_hint": "...",
+  "category": "TEK kategori — listeden seç",
+  "aliases": ["TR + yabancı dil"],
+  "html": "<h2>...</h2>..."
+}
+
+CHUNK 5 İÇİN EK ALAN:
+{
+  "html": "<h2>...</h2>...",
+  "references": [
+    { "text": "Kaynak Başlığı — Yazar, Yayın (Yıl)", "url": "https://veya-bos" }
+  ]
+}
+
+KATEGORİ LİSTESİ (chunk_1'de TEK seç):
+Strüktür, Yapı Elemanı, Cephe, Malzeme, Yapı Teknolojisi, Mimari Akım,
+Tasarım Yaklaşımı, Sürdürülebilirlik, BIM, Kentleşme, Planlama,
+İç Mimarlık, Peyzaj, Restorasyon, Yapı Fiziği, Pasif Tasarım, Detay,
+Tipoloji, Bezeme, Taşıyıcı Sistem, Diğer
+
+GENEL KURALLAR:
+- Belirsiz/uydurma bilgi vermektense bölümü kısa tut.
+- Sayı/tarih emin değilsen belirsiz bırak.
+- references (chunk_5): UYDURMA — sadece BİLDİĞİN gerçek kaynaklar.
+- Tercih edilen kaynaklar: tdk.gov.tr, tmmob.org.tr, mimarist.org,
+  arkitera.com, yapi.com.tr, dergipark.org.tr, archnet.org, jstor.org,
+  kulturportali.gov.tr, üniversite yayınları.
+TXT;
+    }
+
+    /**
+     * Chunk'a özel kullanıcı mesajı — hangi bölümlerin üretileceği listelenir.
+     * @param array<string,mixed> $current
+     */
+    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance): string
+    {
+        $plan = self::CHUNK_PLAN[$chunkId];
+        $sections = implode("\n", (array) $plan['sections']);
+
+        $depthLabel = match ($depth) {
+            'derin' => 'derin (her bölüm 3-4 paragraf, alt başlık ekleyebilirsin)',
+            'kisa'  => 'kısa (her bölüm 1-2 paragraf, en temel açıklama)',
+            default => 'orta (her bölüm 2-3 paragraf, pratik örnek dahil)',
+        };
+
+        $lines = [
+            'TERİM: ' . $term,
+            'CHUNK: ' . $chunkId . ' — ' . $plan['label'],
+            'DERİNLİK: ' . $depthLabel,
+        ];
+        if ($context !== '') {
+            $lines[] = 'KULLANICI NOTU: ' . $context;
+        }
+
+        $lines[] = '';
+        $lines[] = 'BU CHUNK\'TA ÜRETECEKLERİN (YALNIZCA aşağıdakileri yaz; başka bölüm üretme):';
+        $lines[] = $sections;
+
+        if (!empty($plan['json_extra'])) {
+            $lines[] = '';
+            $lines[] = (string) $plan['json_extra'];
+        }
+
+        // Enhance modu: mevcut içeriği bağlam olarak ekle
+        if ($isEnhance) {
+            $lines[] = '';
+            $lines[] = 'GELİŞTİRME MODU AKTİF — mevcut girdi:';
+            $lines[] = self::enhanceContextBlock($current);
+            $lines[] = 'Mevcut metni TAMAMEN YENİDEN YAZMA; eksikleri tamamla, hataları düzelt.';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Enhance bağlam bloğu (chunk'lara dağıtılır).
+     * @param array<string,mixed> $current
+     */
+    private static function enhanceContextBlock(array $current): string
+    {
+        $curDef  = trim((string) ($current['definition'] ?? ''));
+        $curCat  = trim((string) ($current['category']   ?? ''));
+        $curAli  = trim((string) ($current['aliases']    ?? ''));
+        $curRefs = $current['references'] ?? '';
+
+        $refsBlock = '';
+        if (is_string($curRefs) && $curRefs !== '') {
+            $dec = json_decode($curRefs, true);
+            if (is_array($dec)) {
+                foreach ($dec as $i => $r) {
+                    if (!is_array($r)) continue;
+                    $refsBlock .= '  ' . ($i + 1) . ') '
+                        . (string) ($r['text'] ?? '')
+                        . ((!empty($r['url'])) ? '  (' . $r['url'] . ')' : '')
+                        . "\n";
+                }
+            } else {
+                $refsBlock = $curRefs;
+            }
+        }
+        if ($refsBlock === '') $refsBlock = '  (yok)';
+
+        return "  Kategori: " . ($curCat !== '' ? $curCat : '(yok)') . "\n"
+             . "  Alias'lar: " . ($curAli !== '' ? $curAli : '(yok)') . "\n"
+             . "  Mevcut Kaynaklar:\n" . $refsBlock
+             . "  Mevcut Tanım (HTML, kısaltılmış):\n  "
+             . mb_substr($curDef, 0, 4000)
+             . (mb_strlen($curDef) > 4000 ? '...(kısaltıldı)' : '');
     }
 
     /**
