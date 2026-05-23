@@ -1552,6 +1552,14 @@
 }
 
 /* ───── Trending widget → "Çok Okunanlar" açılır blok ─────────────── */
+/* "İlgili Yazılar" (.related-block) ile aynı üst ayırıcı + boşluk, ve
+   blok-sonu boşluğu — yapışık görünmesin. */
+details.trending-widget{
+    margin-top:6rem;
+    padding-top:3rem;
+    margin-bottom:5rem;
+    border-top:1px solid var(--soot);
+}
 details.trending-widget > summary{
     cursor:pointer;
     list-style:none;
