@@ -62,17 +62,6 @@ final class PostController
         $tags = Tag::listForPost((int) $post['id']);
         $related = Post::relatedSmart($post, 3);
         $trending = Post::trending(5, 30);
-        // En çok okunan yazılar — "Çok Okunanlar" açılır bloğu için (mevcut yazıyı hariç).
-        $mostRead = \App\Core\Database::instance()->fetchAll(
-            'SELECT p.id, p.title, p.slug, p.view_count,
-                    c.name AS category_name, c.slug AS category_slug
-             FROM posts p
-             INNER JOIN categories c ON c.id = p.category_id
-             WHERE p.status = "published" AND p.id != :pid
-             ORDER BY p.view_count DESC
-             LIMIT 8',
-            [':pid' => (int) $post['id']]
-        );
 
         // Aynı kategoride önceki/sonraki yayında yazı — feature flag korumalı.
         $prevNext = ['prev' => null, 'next' => null];
@@ -174,7 +163,6 @@ final class PostController
             'faq' => $faq,
             'comments' => $comments,
             'related' => $related,
-            'most_read' => $mostRead,
             'footnotes_html' => $footnotes_html,
             'tags' => $tags,
             'trending' => $trending,

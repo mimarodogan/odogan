@@ -204,23 +204,6 @@ endif; ?>
 </section>
 <?php endif; ?>
 
-<?php if (!empty($most_read)): ?>
-<details class="most-read-block">
-    <summary>Çok Okunanlar</summary>
-    <ol class="most-read-list">
-        <?php foreach ($most_read as $mr): ?>
-            <li>
-                <a href="<?= esc(url('/' . $mr['category_slug'] . '/' . $mr['slug'])) ?>"
-                   title="<?= esc((string) $mr['title']) ?>"><?= esc((string) $mr['title']) ?></a>
-                <?php if (!empty($mr['view_count'])): ?>
-                    <span class="muted mr-views"> · <?= number_format((int) $mr['view_count']) ?> görüntüleme</span>
-                <?php endif; ?>
-            </li>
-        <?php endforeach; ?>
-    </ol>
-</details>
-<?php endif; ?>
-
 <?php if (!empty($trending)):
     require dirname(__DIR__) . '/partials/trending.php';
 endif; ?>

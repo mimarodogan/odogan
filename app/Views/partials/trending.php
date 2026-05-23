@@ -8,8 +8,8 @@
 $heading = $heading ?? 'Çok Okunanlar';
 if (empty($trending)) return;
 ?>
-<aside class="trending-widget" aria-label="<?= esc($heading) ?>">
-    <h2 class="block-title"><?= esc($heading) ?></h2>
+<details class="trending-widget" aria-label="<?= esc($heading) ?>">
+    <summary><h2 class="block-title"><?= esc($heading) ?></h2></summary>
     <ol class="rank-list">
         <?php foreach ($trending as $_i => $p): ?>
             <li>
@@ -29,4 +29,4 @@ if (empty($trending)) return;
             </li>
         <?php endforeach; ?>
     </ol>
-</aside>
+</details>
