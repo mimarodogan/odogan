@@ -383,6 +383,7 @@ $router->group('/admin', function ($r) {
     $r->get('/sozluk',              [AdminGlossaryController::class, 'index']);
     $r->get('/sozluk/yeni',         [AdminGlossaryController::class, 'create']);
     $r->post('/sozluk',             [AdminGlossaryController::class, 'store']);
+    $r->post('/sozluk/ai-uret',     [AdminGlossaryController::class, 'aiDraft']);
     $r->get('/sozluk/{id}/duzenle', [AdminGlossaryController::class, 'edit']);
     $r->post('/sozluk/{id}',        [AdminGlossaryController::class, 'update']);
     $r->post('/sozluk/{id}/sil',    [AdminGlossaryController::class, 'destroy']);

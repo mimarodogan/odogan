@@ -1397,3 +1397,69 @@
 .ca-ai-block ul{ margin:.25rem 0; padding-left:1.1rem; }
 .ca-ai-block li{ margin:.15rem 0; }
 .ca-err{ color:#B0241D; font-size:.82rem; }
+
+/* ─── AI Sözlük Taslak Üreteci (admin/glossary/form.php) ─────────── */
+.glossary-ai-section{
+    border-left:3px solid #1F3A8A; /* cobalt vurgu */
+    background:linear-gradient(to right, rgba(31,58,138,.04), transparent 60%);
+}
+.glossary-ai-section .pe-section-title{
+    display:flex; align-items:center; gap:.4rem;
+}
+.glossary-ai-grid{
+    display:grid; grid-template-columns:1fr auto; gap:.75rem 1rem;
+    margin-bottom:.85rem;
+}
+.glossary-ai-grid label > span{
+    font-family:var(--mono); font-size:.7rem; text-transform:uppercase;
+    letter-spacing:var(--tracked); color:var(--ash); display:block; margin-bottom:.3rem;
+}
+.glossary-ai-grid textarea{
+    width:100%; padding:.5rem .6rem; font-size:.88rem; line-height:1.45;
+    border:1px solid var(--hair); background:#fff; resize:vertical;
+}
+.glossary-ai-depth{
+    border:0; padding:0; margin:0;
+    display:flex; flex-direction:column; gap:.3rem;
+    align-self:end; /* alt hizalansın */
+}
+.glossary-ai-depth label{
+    display:flex; align-items:center; gap:.4rem;
+    font-size:.85rem; color:var(--soot); cursor:pointer;
+}
+.glossary-ai-actions{
+    display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+}
+.glossary-ai-status{
+    font-size:.82rem; line-height:1.45; flex:1 1 auto; min-width:0;
+}
+.glossary-ai-status.is-loading::before{
+    content:"●"; margin-right:.4rem; color:#1F3A8A;
+    animation:gloss-ai-pulse 1.2s ease-in-out infinite;
+}
+.glossary-ai-status.is-error{ color:#B0241D; }
+.glossary-ai-status.is-success{ color:#2F6A3E; }
+.glossary-ai-actions .btn.is-loading{ opacity:.7; cursor:wait; }
+@keyframes gloss-ai-pulse{
+    0%, 100%{ opacity:1; }
+    50%{ opacity:.35; }
+}
+
+/* Ölü/şüpheli kaynak URL satırı */
+.reference-row-dead{
+    background:linear-gradient(to right, rgba(255,193,7,.18), transparent 60%) !important;
+    border-color:#E0A800 !important;
+}
+.reference-dead-warn{
+    grid-column:1 / -1; grid-row:3 / 4;
+    font-size:.75rem; color:#8C6A12; font-family:var(--mono);
+    padding:.25rem 0 0;
+}
+
+@media (max-width:640px){
+    .glossary-ai-grid{ grid-template-columns:1fr; }
+    .glossary-ai-depth{ flex-direction:row; flex-wrap:wrap; align-self:auto; }
+}
+@media (prefers-reduced-motion: reduce){
+    .glossary-ai-status.is-loading::before{ animation:none; }
+}

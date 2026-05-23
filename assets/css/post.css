@@ -1581,3 +1581,28 @@ details.trending-widget > summary::after{
 details.trending-widget[open] > summary::after{
     transform:translateY(-50%) rotate(180deg);
 }
+
+/* — Otomatik iç linkleme (AutoLinkService) ————————————————————————— */
+.post-body a.auto-link{
+    text-decoration-style:dotted;
+    text-decoration-color:var(--cobalt);
+    text-decoration-thickness:1px;
+    text-underline-offset:4px;
+    color:var(--soot);
+}
+.post-body a.auto-link:hover{
+    color:var(--cobalt);
+    text-decoration-style:solid;
+}
+/* Sözlüğe giden link'i hafif ayırt et — küçük "§" sembolü */
+.post-body a.auto-link-glossary::after{
+    content:" §";
+    font-size:.7em;
+    color:var(--cobalt);
+    opacity:.55;
+    margin-left:1px;
+    font-family:var(--mono);
+}
+.post-body a.auto-link-glossary:hover::after{ opacity:.9; }
+/* Yazı→yazı link'i için marker yok, sadece dotted underline */
+.post-body a.auto-link-post{}

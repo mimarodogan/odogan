@@ -50,6 +50,14 @@ final class PostController
             : $cover;
         // Gövdede footnote LİSTESİ eklenmez; "Kaynakça" SSS'den sonra ayrı render edilir.
         $body = MarkdownService::render($post, false);
+        // Wikipedia-stili otomatik iç linkleme (max 2/sayfa, sözlük+yazı adayları).
+        // feature flag kapalıysa hiç dokunmadan döner.
+        $body = \App\Services\AutoLinkService::enrich(
+            $body,
+            'post',
+            (int) $post['id'],
+            ['category_id' => (int) ($post['category_id'] ?? 0)]
+        );
         $footnotes_html = '';
         if (function_exists('feature') && feature('footnotes_enabled')) {
             $_fn = \App\Services\FootnoteService::decode($post['footnotes_json'] ?? null);

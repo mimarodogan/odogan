@@ -104,6 +104,15 @@ final class GlossaryController
         }
         Glossary::bumpView((int) $item['id']);
 
+        // Wikipedia-stili otomatik iç linkleme (max 2/sayfa).
+        // Self-link engellenir; <a>, <code>, <pre>, başlıklar dokunulmaz.
+        $item['definition'] = \App\Services\AutoLinkService::enrich(
+            (string) ($item['definition'] ?? ''),
+            'glossary',
+            (int) $item['id'],
+            ['category' => (string) ($item['category'] ?? '')]
+        );
+
         $url = absolute_url('/sozluk/' . $slug);
         $related = Glossary::relatedByCategory(
             (int) $item['id'],

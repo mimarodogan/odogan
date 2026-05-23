@@ -36,6 +36,7 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
     <header class="post-editor-head">
         <input type="text"
                name="term"
+               id="glossary-term"
                class="post-title-input"
                required minlength="2" maxlength="180"
                placeholder="Terim (örn: Konsol kiriş)…"
@@ -44,6 +45,43 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 
     <div class="post-editor-grid">
         <div class="post-editor-main">
+
+            <?php if (!$isEdit && function_exists('feature') && feature('glossary_ai_enabled')): ?>
+            <section class="pe-section glossary-ai-section" id="glossary-ai-panel">
+                <h2 class="pe-section-title">
+                    <span aria-hidden="true">✶</span>
+                    AI ile Taslak Üret
+                    <span class="badge badge-scheduled" style="margin-left:.5rem">opsiyonel</span>
+                </h2>
+                <p class="pe-section-hint">
+                    Terim adını yaz, dilersen 1-2 cümlelik bağlam ekle. AI
+                    Türkçe sözlük girdisi (tanım + kategori + alias + kaynaklar)
+                    üretir, alanlar otomatik dolar. Yayına almadan önce
+                    incele &amp; düzenleyebilirsin. Önerilen kaynakların URL'leri
+                    otomatik doğrulanır — ölü olanlar sarı işaretle çıkar.
+                </p>
+                <div class="glossary-ai-grid">
+                    <label>
+                        <span>Bağlam (opsiyonel)</span>
+                        <textarea id="glossary-ai-context"
+                                  rows="2" maxlength="800"
+                                  placeholder="Örn: Konstrüktif değil, sürdürülebilirlik açısından ele al."></textarea>
+                    </label>
+                    <fieldset class="glossary-ai-depth" aria-label="Derinlik">
+                        <legend class="visually-hidden">Derinlik</legend>
+                        <label><input type="radio" name="ai-depth" value="kisa"> Kısa</label>
+                        <label><input type="radio" name="ai-depth" value="orta" checked> Orta</label>
+                        <label><input type="radio" name="ai-depth" value="derin"> Derin</label>
+                    </fieldset>
+                </div>
+                <div class="glossary-ai-actions">
+                    <button type="button" class="btn btn-primary" id="glossary-ai-run">
+                        Taslak Üret
+                    </button>
+                    <span class="glossary-ai-status muted" id="glossary-ai-status" aria-live="polite"></span>
+                </div>
+            </section>
+            <?php endif; ?>
 
             <section class="pe-section">
                 <h2 class="pe-section-title">Tanım</h2>
@@ -176,3 +214,6 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 
 <script src="<?= esc(asset('js/editor.js')) ?>" defer></script>
 <script src="<?= esc(asset('js/references-editor.js')) ?>" defer></script>
+<?php if (!$isEdit && function_exists('feature') && feature('glossary_ai_enabled')): ?>
+<script src="<?= esc(asset('js/glossary-ai.js')) ?>" defer></script>
+<?php endif; ?>

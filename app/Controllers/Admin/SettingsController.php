@@ -97,6 +97,8 @@ final class SettingsController
             'draft_preview_enabled'    => ['type' => 'bool', 'label' => 'Taslak Önizleme Linki'],
             'post_templates_enabled'   => ['type' => 'bool', 'label' => 'Yazı Şablonları'],
             'glossary_enabled'         => ['type' => 'bool', 'label' => 'Mimari Sözlük'],
+            'glossary_ai_enabled'      => ['type' => 'bool', 'label' => 'AI Sözlük Taslak Üreteci (Claude API gerekir)'],
+            'auto_internal_link'       => ['type' => 'bool', 'label' => 'Otomatik İç Linkleme (Wikipedia-stili, max 2/sayfa)'],
             'before_after_enabled'     => ['type' => 'bool', 'label' => 'Öncesi/Sonrası Slider'],
             'pwa_enabled'              => ['type' => 'bool', 'label' => 'PWA + Service Worker'],
             'sponsored_post_enabled'   => ['type' => 'bool', 'label' => 'Sponsorlu İçerik Tipi'],

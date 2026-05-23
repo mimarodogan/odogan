@@ -99,6 +99,46 @@ final class GlossaryController
     }
 
     /**
+     * AI Sözlük Taslak Üreteci — talep-üzerine.
+     * Editör panelinde "AI ile doldur" butonu bu endpoint'i POST eder; servis
+     * Claude API çağırır, çıktıyı JSON döndürür. Front-end form alanlarını
+     * yanıttan doldurur.
+     */
+    public function aiDraft(Request $req): Response
+    {
+        if ($g = self::gate()) return $g;
+
+        if (!function_exists('feature') || !feature('glossary_ai_enabled')) {
+            return Response::json(['ok' => false, 'message' => 'AI sözlük üreteci kapalı.'], 404);
+        }
+        if (!\App\Services\AiGlossaryService::isEnabled()) {
+            return Response::json([
+                'ok' => false,
+                'message' => 'AI servisi etkin değil veya Claude API anahtarı tanımlı değil.',
+            ], 400);
+        }
+
+        try {
+            $term    = trim((string) $req->input('term', ''));
+            $ctx     = trim((string) $req->input('context', ''));
+            $depth   = trim((string) $req->input('depth', 'orta'));
+            if (mb_strlen($term) < 2) {
+                return Response::json(['ok' => false, 'message' => 'Terim en az 2 karakter olmalı.'], 400);
+            }
+
+            $draft = \App\Services\AiGlossaryService::draft($term, $ctx, $depth);
+            return Response::json(['ok' => true, 'draft' => $draft]);
+        } catch (\Throwable $e) {
+            if (class_exists(\App\Services\Logger::class)) {
+                \App\Services\Logger::error('admin.glossary.ai_draft.exception', [
+                    'msg' => $e->getMessage(),
+                ], 'editorial');
+            }
+            return Response::json(['ok' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * @return array<string,mixed>
      */
     private static function validateInput(Request $req, ?string &$err): array
