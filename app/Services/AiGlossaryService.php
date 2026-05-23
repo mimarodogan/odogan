@@ -83,7 +83,7 @@ final class AiGlossaryService
             'voice' => '3. tekil, nötr akademik.',
         ],
         'chunk_3' => [
-            'label'      => 'Türler + Tasarımda Dikkat (1. tekil ses)',
+            'label'      => 'Türler + Tasarımda Dikkat',
             'word_budget'=> 700,
             'max_tokens' => 4000,
             'sections'   => [
@@ -96,7 +96,9 @@ final class AiGlossaryService
                 '  <h3>İklim ve Enerji Performansı</h3>',
                 '  <h3>Estetik ve İşlev Dengesi</h3>',
             ],
-            'voice' => 'Tasarımda Dikkat bölümünde "Pratikte gördüğümüz...", "Bursa\'daki uygulamalarda..." gibi 1. çoğul/tekil deneyim sesi uygundur (E-E-A-T Experience). Türler bölümü nötr.',
+            // KARAR: 1. tekil "Bursa'da gördüğüm" tarzı yerel deneyim iddiaları
+            // kaldırıldı — AI'nın spesifik proje/lokasyon uydurma riski yüksek.
+            'voice' => '3. tekil, nötr akademik. Genel kabul görmüş bilgi.',
         ],
         'chunk_4' => [
             'label'      => 'Karıştırılan Kavramlar (Ne Değildir entegre) + Mimari Örnekler',
@@ -114,29 +116,25 @@ final class AiGlossaryService
             'voice' => '3. tekil, nötr akademik. Örneklerde gerçek yapı/mimar (UYDURMA).',
         ],
         'chunk_5' => [
-            'label'      => 'Türkiye + Eleştirel + FAQ + Kaynaklar (1. tekil ses)',
-            'word_budget'=> 800,
-            // En ağır chunk: 2 H2 + 1 FAQ H2 (3-5 SSS) + references JSON + faq JSON.
-            // Haiku 4.5 tavanı 8192; "derin" modda 8000'e kadar çıkar (×1.3 = 7800).
-            'max_tokens' => 6000,
+            'label'      => 'FAQ + Kaynaklar',
+            // KARAR (uydurma riski): "Türkiye Bağlamında" ve "Eleştirel Bakış"
+            // bölümleri kaldırıldı — AI'nın yerel binalar/mimarlar/yönetmelik
+            // numaraları/öznel iddialar üretme riski çok yüksekti.
+            // chunk_5 artık sadece evrensel FAQ + doğrulanabilir kaynaklar.
+            'word_budget'=> 400,
+            'max_tokens' => 3500,
             'sections'   => [
-                '<h2>Türkiye Bağlamında [TERİM]</h2>',
-                '  <h3>Türkiye İklimi ve Yönetmelik Açısından</h3> (varsa TS standartları belirt)',
-                '  <h3>Bursa ve Marmara Bölgesi Pratiğinden</h3> (1. tekil ses: "gördüğüm", "uyguladığım")',
-                '<h2>[TERİM] Üzerine Eleştirel Değerlendirme</h2>',
-                '  <h3>Güçlü Yönleri ve Riskleri</h3>',
-                '  <h3>Doğru Kullanım İçin Öneriler</h3> (1. tekil ses uygun)',
                 '<h2>Sıkça Sorulan Sorular</h2>',
                 '  <h3>Soru 1?</h3>',
-                '    Cevap 1 (2-3 cümle, net)',
+                '    Cevap 1 (2-3 cümle, net, doğrulanabilir bilgi)',
                 '  <h3>Soru 2?</h3>',
                 '    Cevap 2 (2-3 cümle, net)',
                 '  <h3>Soru 3?</h3>',
                 '    Cevap 3 (2-3 cümle, net)',
-                '  (3-5 SSS — "People Also Ask" hedefli)',
+                '  (3-5 SSS — "People Also Ask" hedefli, sadece konsept-genel sorular)',
             ],
-            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 gerçek kaynak. AYRICA "faq" alanı: [{"q":"Soru?","a":"Cevap"}] formatında 3-5 SSS — Schema.org FAQPage markup için.',
-            'voice' => 'Türkiye/Bursa ve Eleştirel bölümlerde 1. çoğul/tekil deneyim sesi (E-E-A-T). FAQ nötr.',
+            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 GERÇEK doğrulanabilir kaynak (uydurma yok). AYRICA "faq" alanı: [{"q":"Soru?","a":"Cevap"}] formatında 3-5 SSS — Schema.org FAQPage markup için.',
+            'voice' => '3. tekil, nötr akademik. Yerel/öznel iddia yok.',
         ],
     ];
 
@@ -531,9 +529,8 @@ final class AiGlossaryService
     private static function chunkSystemRubric(): string
     {
         return <<<TXT
-Sen Türkçe mimarlık sözlüğü için SEO + E-E-A-T odaklı uzman editörsün.
-Konular: MİMARLIK, İÇ MİMARLIK, YAPI TEKNOLOJİSİ, KENT, TASARIM, YAPI
-KÜLTÜRÜ. Yazar: Osman Doğan — Bursa merkezli mimar ve inşaat mühendisi.
+Sen Türkçe mimarlık sözlüğü için SEO odaklı uzman editörsün. Konular:
+MİMARLIK, İÇ MİMARLIK, YAPI TEKNOLOJİSİ, KENT, TASARIM, YAPI KÜLTÜRÜ.
 
 GÖREV: Kullanıcı sana bir TERİM + outline + hangi CHUNK'ı üreteceğini
 söyler. Sen yalnızca o chunk'ın bölümlerini üretirsin.
@@ -542,43 +539,49 @@ söyler. Sen yalnızca o chunk'ın bölümlerini üretirsin.
 KALİTE ANAYASASI (SIRASIYLA UYULACAK)
 ═══════════════════════════════════════════════════════════════════
 
-1) TEKRAR YASAĞI:
+1) UYDURMA YASAĞI (EN ÖNEMLİ):
+   - Sayı/tarih/yapı/mimar adı emin değilsen ASLA yazma.
+   - Bir bilgi vermek için en az 2 bağımsız hatırladığın kaynak olmalı.
+   - Belirsizken "20. yy başları", "modernizm döneminde" gibi GENEL
+     ifadeler kullan; spesifik yıl/yapı/kişi UYDURMA.
+   - references (chunk_5): UYDURMA YOK. Sadece BİLDİĞİN gerçek
+     kaynaklar. Tercih edilen domain'ler: tdk.gov.tr, archnet.org,
+     jstor.org, dergipark.org.tr, mimarist.org, arkitera.com,
+     yapi.com.tr, üniversite yayınları, MIT/Harvard/Oxford gibi
+     akademik kurum yayınları, akademik dergi DOI'leri.
+   - Şüphelenirsen bölümü kısa tut, içerik az kalsın — yanlış olmasından iyidir.
+   - YEREL/ÖZNEL İDDİA YOK: "Türkiye'de", "Bursa'da", "uyguladığım"
+     gibi yerel/kişisel ifadeler kullanma — bu yapı çıkarıldı.
+
+2) TEKRAR YASAĞI:
    - Verilen outline'ı OKUR ve diğer bölümlerin nereye değineceğini
      görürsün. ASLA başka bölümün konusuna girme.
    - Tanımı sadece chunk_1'in ilk paragrafında ver; başka chunk'larda
      "yukarıda tanımlandığı gibi" yaklaşımıyla ATIF yap, tekrar etme.
 
-2) FEATURED SNIPPET (chunk_1 ilk paragraf):
+3) FEATURED SNIPPET (chunk_1 ilk paragraf):
    - 40-50 kelime arası
    - "[TERİM], …" ile başlayan kısa-net tanım
    - Tek paragraf, alt cümle yok
 
-3) FOCUS KEYWORD DENSITY:
-   - Terim metinde doğal olarak %1-2 oranında geçsin (her 100 kelimede 1-2).
-   - Şişirme/stuffing yasak. "Şu terim böyledir, şu terim..." gibi yapay
-     tekrar = penaltı. Doğal akışta serpiştir.
+4) FOCUS KEYWORD DENSITY:
+   - Terim metinde doğal olarak %1-2 oranında geçsin.
+   - Şişirme/stuffing yasak; doğal akışta serpiştir.
 
-4) BAŞLIK HİYERARŞİSİ:
+5) BAŞLIK HİYERARŞİSİ:
    - SADECE <h2>, <h3>, <h4>. <h1> KESİNLİKLE YASAK.
    - İzinli etiketler: <p>, <ul>, <ol>, <li>, <strong>, <em>, <code>,
      <blockquote>, <a>, <div class="tldr"> (sadece chunk_1).
    - YASAK: <script>, <iframe>, <style>, <h1>.
 
-5) LENGTH BUDGET (sıkı uy):
+6) LENGTH BUDGET (sıkı uy):
    - Her chunk'ın "word_budget" hedefi user message'da verilir.
    - %20 üstüne çıkma; %20 altına da inme.
 
-6) E-E-A-T SES (Experience):
-   - "voice" alanında belirtilen bölümlerde 1. tekil/çoğul ses kullan:
-     "gördüğümüz", "Bursa\'daki pratikte", "uyguladığım projelerde…"
-   - Diğer bölümlerde 3. tekil nötr akademik.
-
-7) UYDURMA YASAĞI:
-   - Sayı/tarih/yapı/mimar adı emin değilsen belirsiz bırak veya çıkar.
-   - references (chunk_5): UYDURMA YOK. Sadece BİLDİĞİN gerçek kaynaklar.
-   - Tercih edilen kaynaklar: tdk.gov.tr, tmmob.org.tr, mimarist.org,
-     arkitera.com, yapi.com.tr, dergipark.org.tr, archnet.org, jstor.org,
-     kulturportali.gov.tr, üniversite yayınları, akademik dergi DOI'leri.
+7) SES:
+   - Tüm chunk'lar 3. tekil, nötr akademik ses.
+   - 1. tekil ("gördüğüm", "uyguladığım") veya yerel iddia ("Bursa'da") YASAK.
+   - Sadece evrensel/akademik bilgi.
 
 8) GEÇİŞLER:
    - Bölüm başlarken bir önceki chunk'ın bittiği konuya kısa köprü kur
@@ -633,7 +636,7 @@ Sen Türkçe mimarlık sözlüğü için kıdemli editörsün. Sana bir TERİM v
 Görevin yazıyı bölmek yerine BÜTÜNÜYLE planlamaktır — sonradan 5 farklı
 yazar (chunk) bu plana uyarak bölümlerini yazacak.
 
-GÖREV: Aşağıdaki 10 H2 bölümü için anahtar-cümle planı üret. Her H2 için
+GÖREV: Aşağıdaki 5 chunk için anahtar-cümle planı üret. Her bölüm için
 1-2 cümlelik ÖZ açıklama yaz. Hangi anahtar fikirler, mimarlar, yapılar,
 örnekler her bölümde kullanılacak — kararını şimdi ver ki bölümler arası
 ÇAKIŞMA olmasın.
@@ -641,9 +644,10 @@ GÖREV: Aşağıdaki 10 H2 bölümü için anahtar-cümle planı üret. Her H2 i
 YANIT KURALLARI:
 - SADECE geçerli JSON döndür. Markdown, açıklama YOK.
 - Tüm metin Türkçe.
-- Toplam ~3000 kelimelik yazı için outline (her bölüm 200-400 kelime).
+- Toplam ~2500-3000 kelimelik yazı için outline.
 - Bölüm 1'de ÖZ tanım (featured snippet, 40-50 kelime).
 - Belirsiz/uydurma bilgi yerine boş bırakmayı seç.
+- Yerel/öznel iddialardan kaçın — yazı evrensel/akademik kalmalı.
 
 JSON ŞEMASI (TAM):
 {
@@ -655,15 +659,17 @@ JSON ŞEMASI (TAM):
     "tarih_kullanim":"Bölüm 2: Tarih + Kullanım — hangi dönem, hangi mimar/akım, hangi ölçek.",
     "turler_tasarim":"Bölüm 3: Türler + Tasarım — kaç tür, hangi malzeme/detay/iklim notu.",
     "karistirilan_ornekler":"Bölüm 4: Karıştırılan + Örnekler — hangi 2-3 karıştırılan kavram, hangi 2-3 gerçek yapı/mimar.",
-    "turkiye_faq":   "Bölüm 5: Türkiye + Eleştirel + FAQ — Bursa açısı, yönetmelik (varsa TS), 3-5 SSS başlığı."
+    "faq":           "Bölüm 5: 3-5 SSS başlığı — konseptin temel/teknik yönüne dair genel sorular."
   },
-  "key_architects": ["emin olduğun 2-4 mimar adı (chunk 2 ve 4 kullanır)"],
-  "key_buildings":  ["emin olduğun 2-4 yapı adı (chunk 4 kullanır)"],
-  "ts_standards":   ["varsa Türk Standardı no (TS 500 vb), yoksa boş dizi"]
+  "key_architects": ["emin olduğun 2-4 mimar adı (chunk 2 ve 4 kullanır). Emin değilsen BOŞ dizi."],
+  "key_buildings":  ["emin olduğun 2-4 yapı adı (chunk 4 kullanır). Emin değilsen BOŞ dizi."]
 }
 
-ÖNEMLİ: Bu sadece PLAN — gerçek yazıyı sen yazmayacaksın. Sonraki 5
-yazar bu plana bakıp yazacak. Plan çakışmasız ve bütünleşik olmalı.
+ÖNEMLİ:
+- Bu sadece PLAN — gerçek yazıyı sen yazmayacaksın.
+- key_architects ve key_buildings UYDURMA yasak. Emin değilsen boş bırak.
+- Yapı veya mimar adı vereceksen tarihsel olarak kanıtlanmış, çoklu kaynakta
+  doğrulanmış olanları seç (örn. Le Corbusier, Tadao Ando, Mimar Sinan).
 TXT;
     }
 
