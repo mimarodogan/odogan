@@ -133,7 +133,10 @@ final class AiGlossaryService
                 '    Cevap 3 (2-3 cümle, net)',
                 '  (3-5 SSS — "People Also Ask" hedefli, sadece konsept-genel sorular)',
             ],
-            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 GERÇEK doğrulanabilir kaynak (uydurma yok). AYRICA "faq" alanı: [{"q":"Soru?","a":"Cevap"}] formatında 3-5 SSS — Schema.org FAQPage markup için.',
+            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 GERÇEK doğrulanabilir kaynak (uydurma yok). '
+                . 'URL ALANI: sadece SPESİFİK içerik URL\'i (ör. /wiki/Konsol_kirisi). '
+                . 'Anasayfa URL\'i (https://tdk.gov.tr gibi sadece kök) YASAK — bilmiyorsan url\'i BOŞ STRING bırak. '
+                . 'AYRICA "faq" alanı: [{"q":"Soru?","a":"Cevap"}] formatında 3-5 SSS — Schema.org FAQPage markup için.',
             'voice' => '3. tekil, nötr akademik. Yerel/öznel iddia yok.',
         ],
     ];
@@ -499,6 +502,12 @@ final class AiGlossaryService
                 if ($ru !== '' && !preg_match('#^https?://#i', $ru)) {
                     $ru = '';
                 }
+                // Anasayfa URL'leri "kaynak vermiş gibi" yapar ama bilgi
+                // taşımaz. Tespit edip url'i boşalt — text alanı kalır,
+                // okuyucu akademik atıfı görür ama yararsız link tıklayamaz.
+                if ($ru !== '' && self::isHomepageUrl($ru)) {
+                    $ru = '';
+                }
                 if ($rt === '' && $ru !== '') $rt = $ru;
                 $dead = $ru !== '' ? !self::urlAlive($ru) : false;
                 $refs[] = ['text' => $rt, 'url' => $ru, 'dead' => $dead];
@@ -544,14 +553,40 @@ KALİTE ANAYASASI (SIRASIYLA UYULACAK)
    - Bir bilgi vermek için en az 2 bağımsız hatırladığın kaynak olmalı.
    - Belirsizken "20. yy başları", "modernizm döneminde" gibi GENEL
      ifadeler kullan; spesifik yıl/yapı/kişi UYDURMA.
-   - references (chunk_5): UYDURMA YOK. Sadece BİLDİĞİN gerçek
-     kaynaklar. Tercih edilen domain'ler: tdk.gov.tr, archnet.org,
-     jstor.org, dergipark.org.tr, mimarist.org, arkitera.com,
-     yapi.com.tr, üniversite yayınları, MIT/Harvard/Oxford gibi
-     akademik kurum yayınları, akademik dergi DOI'leri.
    - Şüphelenirsen bölümü kısa tut, içerik az kalsın — yanlış olmasından iyidir.
    - YEREL/ÖZNEL İDDİA YOK: "Türkiye'de", "Bursa'da", "uyguladığım"
      gibi yerel/kişisel ifadeler kullanma — bu yapı çıkarıldı.
+
+   ─── KAYNAK (references) ÖZEL KURALLARI (chunk_5) ───
+
+   1.a) UYDURMA YOK: sadece BİLDİĞİN gerçek yayın/kitap/makale.
+        Tercih edilen domain'ler: tdk.gov.tr, archnet.org, jstor.org,
+        dergipark.org.tr, mimarist.org, arkitera.com, yapi.com.tr,
+        üniversite yayınları, akademik DOI'ler.
+
+   1.b) URL ALANI İÇİN: SADECE SPESİFİK İÇERİK URL'i. Anasayfa URL'i
+        VERMEZSİN — kullanıcıya yararı yok, "kaynak vermiş gibi"
+        yapar ama bilgi taşımaz.
+
+        ✅ KABUL (deep URL):
+        - https://sozluk.gov.tr/?ara=konsol         (spesifik sözlük girdisi)
+        - https://tr.wikipedia.org/wiki/Konsol_kirisi  (spesifik makale)
+        - https://dergipark.org.tr/tr/pub/.../article/12345
+        - https://archnet.org/sites/12345           (spesifik yapı)
+        - https://doi.org/10.1234/xyz               (DOI)
+
+        ❌ RED (anasayfa / yararsız):
+        - https://tdk.gov.tr                        (sadece kök)
+        - https://wikipedia.org                     (sadece kök)
+        - https://www.archnet.org                   (sadece kök)
+        - https://www.tmmob.org.tr                  (sadece kök)
+        - https://www.yapi.com.tr                   (sadece kök)
+
+   1.c) Spesifik URL'i BİLMİYORSAN, "url" alanını BOŞ STRING bırak ("").
+        Tahmin etme, çıkarsama yapma. Boş URL kabul edilir; uydurma
+        kabul edilmez. Text alanında tam akademik atıf yeterli:
+        "Tanyeli, Uğur. Modern Türkiye Mimarlığı, İletişim, 2007, s.142"
+        — URL olmadan da değerli kaynaktır.
 
 2) TEKRAR YASAĞI:
    - Verilen outline'ı OKUR ve diğer bölümlerin nereye değineceğini
@@ -851,6 +886,52 @@ TXT;
      * Performans için aynı host'ta seri çağrı kabul; 5 URL × 8 sn maksimum
      * 40 sn ekstra latency demek — taslak üretiminde tolere edilebilir.
      */
+    /**
+     * URL bir "anasayfa" mı (yani spesifik içerik URL'i değil)?
+     *
+     * AI emin olmadığı durumlarda "güvenli" diye kök domain'e
+     * düşüyor (örn. "https://tdk.gov.tr"). Bu kaynak olarak
+     * yararsız — kullanıcıyı genel siteye yönlendirir, hangi
+     * sayfanın atıf yapıldığı belli değil. Bu metot böyle URL'leri
+     * yakalar; normalizeChunk() içinde url alanı boşaltılır.
+     *
+     * Kural:
+     *   - path boş veya "/" → anasayfa (path tabanlı içerik yok)
+     *   - path var ama "?" veya "#" da yoksa → anasayfa
+     *   - path "/" ile başlayıp en az 1 anlamlı segment varsa
+     *     (örn. "/wiki/Konsol") → deep URL, kabul
+     *   - query/fragment varsa (örn. "?ara=konsol") → deep URL, kabul
+     */
+    private static function isHomepageUrl(string $url): bool
+    {
+        if ($url === '') return false;
+        $parts = parse_url($url);
+        if (!is_array($parts)) return true; // parse edemiyorsak şüpheli
+        $path     = (string) ($parts['path']     ?? '');
+        $query    = (string) ($parts['query']    ?? '');
+        $fragment = (string) ($parts['fragment'] ?? '');
+
+        // Query veya fragment varsa muhtemelen spesifik içerik (?ara=, ?word=, vs)
+        if ($query !== '' || $fragment !== '') {
+            return false;
+        }
+
+        // Path boş veya sadece "/" → kesinlikle anasayfa
+        $trimmedPath = trim($path, '/');
+        if ($trimmedPath === '') {
+            return true;
+        }
+
+        // Path çok kısa ve sadece dil kodu olabilir (tr, en, fr) → şüpheli
+        // ama "tr" bir kod olabileceği gibi "tr-makale-adi" anlamlı olabilir.
+        // 2-3 harf tek segment → anasayfa olarak işaretle
+        if (mb_strlen($trimmedPath) <= 3 && !str_contains($trimmedPath, '/')) {
+            return true;
+        }
+
+        return false;
+    }
+
     private static function urlAlive(string $url): bool
     {
         $ch = curl_init($url);
