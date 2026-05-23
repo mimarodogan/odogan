@@ -635,29 +635,63 @@
         true
     ); // capture phase — diğer handler'lardan önce dur
 
-    // ──────────────────────  Paste — temizleyici  ────────────────────
+    // ──────────────────  Paste — DOM tabanlı temizleyici (tablo korur)  ──────────────────
+    // Word / Google Docs / Excel / web — hangi kaynaktan gelirse gelsin tablo
+    // yapısı korunur (colspan/rowspan dahil); style/class/Office namespace'leri
+    // gibi gürültü temizlenir. Sunucu Sanitizer'ı tabloları zaten allowlist'te
+    // tutuyor; bu handler sadece editöre temiz HTML sokar.
     editor.addEventListener('paste', ev => {
-        // Word/Google Docs'tan zengin biçimi atıp, plain text yapıştır.
-        if (ev.clipboardData && ev.clipboardData.getData) {
-            const html = ev.clipboardData.getData('text/html');
-            const text = ev.clipboardData.getData('text/plain');
-            if (html && /style=|class=|<o:p>|MsoNormal/i.test(html)) {
-                ev.preventDefault();
-                // Sadece güvenli tag'ler
-                const clean = html
-                    .replace(/<!--[\s\S]*?-->/g, '')
-                    .replace(/<\/?(o:p|w:|m:|v:|xml|meta|link|style|script)[^>]*>/gi, '')
-                    .replace(/ (style|class|lang|align|width|height)="[^"]*"/gi, '')
-                    .replace(/<span>/gi, '')
-                    .replace(/<\/span>/gi, '')
-                    .replace(/<p[^>]*>/gi, '<p>');
-                document.execCommand('insertHTML', false, clean);
-                return;
-            }
-            if (text && !html) {
-                ev.preventDefault();
-                document.execCommand('insertText', false, text);
-            }
+        if (!ev.clipboardData) return;
+        const html = ev.clipboardData.getData('text/html');
+        const text = ev.clipboardData.getData('text/plain');
+
+        if (html && html.trim()) {
+            ev.preventDefault();
+            const tpl = document.createElement('template');
+            tpl.innerHTML = html;
+            const root = tpl.content;
+
+            // 1) Tehlikeli + gürültü etiketleri kaldır
+            root.querySelectorAll(
+                'script,style,link,meta,iframe,object,embed,form,input,button,head,xml,title'
+            ).forEach(n => n.remove());
+
+            // 2) Office/Word namespace etiketleri (o:p, w:*, m:*, v:*) kaldır
+            root.querySelectorAll('*').forEach(el => {
+                if (/^(o|w|m|v|xml):/i.test(el.tagName)) el.remove();
+            });
+
+            // 3) HTML yorumlarını kaldır
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+            const comments = [];
+            while (walker.nextNode()) comments.push(walker.currentNode);
+            comments.forEach(c => c.remove());
+
+            // 4) Yalnız beyaz-listedeki nitelikleri tut — colspan/rowspan tablo için kritik
+            const keepAttrs = ['href','src','alt','title','colspan','rowspan','align','start','type'];
+            root.querySelectorAll('*').forEach(el => {
+                [...el.attributes].forEach(a => {
+                    if (!keepAttrs.includes(a.name.toLowerCase())) el.removeAttribute(a.name);
+                });
+            });
+
+            // 5) Niteliksiz span/font sarmalayıcılarını aç (Google Docs gürültüsü)
+            root.querySelectorAll('span, font').forEach(el => {
+                if (!el.attributes.length) {
+                    const p = el.parentNode;
+                    while (el.firstChild) p.insertBefore(el.firstChild, el);
+                    p.removeChild(el);
+                }
+            });
+
+            document.execCommand('insertHTML', false, tpl.innerHTML);
+            return;
+        }
+
+        // HTML yoksa, salt metin olarak yapıştır
+        if (text) {
+            ev.preventDefault();
+            document.execCommand('insertText', false, text);
         }
     });
 
