@@ -662,7 +662,7 @@
             });
 
             // 3) HTML yorumlarını kaldır
-            const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+            const walker = document.createTreeWalker(root, 128 /* NodeFilter.SHOW_COMMENT */);
             const comments = [];
             while (walker.nextNode()) comments.push(walker.currentNode);
             comments.forEach(c => c.remove());
