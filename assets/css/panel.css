@@ -177,18 +177,20 @@ body.admin-mode > .container.main{display:none !important}
   font-weight:700;
 }
 .admin-nav a.ns-sub{
-  padding-left:2.9rem;            /* hizalama biraz daha açıldı */
-  font-size:.95rem;               /* .88 → .95 */
-  color:rgba(244,241,234,.84);    /* .78 → .84 */
+  padding-left:2.9rem;            /* hiyerarşi: GİRİNTİ ile, opaklıkla değil */
+  font-size:.95rem;
+  color:rgba(244,241,234,.94);    /* .84 → .94 — ana öğelere çok yakın */
 }
+/* Alt-öğenin glyph'i ana öğeninkinden biraz daha donuk kalsın (hiyerarşi) */
+.admin-nav a.ns-sub .ns-glyph{ color:rgba(244,241,234,.72); }
 .admin-nav a.ns-sub:hover{color:#ffffff}
 .ns-glyph{
   display:inline-block;
-  width:1.35rem;                  /* hizalama için daha geniş */
+  width:1.35rem;
   text-align:center;
-  color:rgba(244,241,234,.78);
+  color:rgba(244,241,234,.88);    /* .78 → .88 — sembol seçilebilirliği */
   font-family:var(--mono);
-  font-size:1.05rem;              /* sembol seçilebilirliği */
+  font-size:1.05rem;
   line-height:1;
   flex-shrink:0;
 }
