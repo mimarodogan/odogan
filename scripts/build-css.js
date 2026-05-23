@@ -160,6 +160,9 @@ const SAFELIST = {
     'series-nav',
     'series-prev',
     'series-next',
+    // Yazı gövdesinde dinamik üretilen tablo etiketleri — şablonlarda
+    // doğrudan geçmedikleri için PurgeCSS'in stripslemesini engelle.
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
   ],
   greedy: [/^js-/, /^is-/, /^has-/, /^was-/, /^will-/, /^no-/],
   deep: [/:global/, /\[data-/, /\[aria-/],

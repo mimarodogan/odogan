@@ -40,19 +40,24 @@ final class MarkdownService
      *  - Body içinde [^N] markerları sup link'e dönüşür
      *  - Yazı sonuna <aside class="footnotes"> ile kaynak listesi append edilir
      */
-    public static function render(array $post): string
+    public static function render(array $post, bool $appendFootnotes = true): string
     {
         $format = (string) ($post['body_format'] ?? 'markdown');
         $html = $format === 'html'
             ? self::fromHtml((string) ($post['body'] ?? ''))
             : self::toHtml((string) ($post['body'] ?? ''));
 
-        // Footnote enrichment — feature flag default false
+        // Footnote enrichment — feature flag default false.
+        // Inline marker'lar her zaman değiştirilir; kaynak LİSTESİ ise yalnız
+        // $appendFootnotes=true ise gövdeye eklenir. PostController bunu false
+        // verir ve "Kaynakça"yı SSS'den sonra ayrıca render eder.
         if (function_exists('feature') && feature('footnotes_enabled')) {
             $footnotes = FootnoteService::decode($post['footnotes_json'] ?? null);
             if ($footnotes) {
                 $html = FootnoteService::replaceMarkers($html, $footnotes);
-                $html .= FootnoteService::renderList($footnotes);
+                if ($appendFootnotes) {
+                    $html .= FootnoteService::renderList($footnotes);
+                }
             }
         }
 
