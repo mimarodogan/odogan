@@ -137,13 +137,27 @@ final class GlossaryController
                 'references' => (string) $req->input('current_references', ''),
             ];
 
+            // OUTLINE PRE-PASS: chunk=outline → küresel plan üret (6 çağrılık
+            // akışın 1. adımı). Çıktısı sonraki 5 chunk'a bağlam olarak verilir.
+            if ($chunkId === 'outline') {
+                $outline = \App\Services\AiGlossaryService::draftOutline($term, $ctx, $depth, $current);
+                return Response::json(['ok' => true, 'chunk' => 'outline', 'data' => $outline]);
+            }
+
             // PARÇALI üretim: chunk parametresi verilirse tek bir bölüm üretilir.
-            // Aksi halde legacy tek-çağrı draft() (geriye dönük uyum).
+            // Client outline'ı outline_json parametresiyle gönderir (chunk_1..5).
             if ($chunkId !== '') {
-                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current);
+                $outlineRaw = (string) $req->input('outline_json', '');
+                $outline = [];
+                if ($outlineRaw !== '') {
+                    $dec = json_decode($outlineRaw, true);
+                    if (is_array($dec)) $outline = $dec;
+                }
+                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current, $outline);
                 return Response::json(['ok' => true, 'chunk' => $chunkId, 'data' => $data]);
             }
 
+            // Legacy tek-çağrı (geriye dönük uyum)
             $draft = \App\Services\AiGlossaryService::draft($term, $ctx, $depth, $current);
             return Response::json(['ok' => true, 'draft' => $draft]);
         } catch (\Throwable $e) {

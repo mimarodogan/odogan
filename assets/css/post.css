@@ -1582,6 +1582,59 @@ details.trending-widget[open] > summary::after{
     transform:translateY(-50%) rotate(180deg);
 }
 
+/* — Glossary: TL;DR kutu + meta satırı + FAQ kutusu ————————————————— */
+
+/* Sayfa başındaki "son güncelleme" + kategori satırı */
+.post-glossary-meta{
+    display:flex; align-items:center; gap:.6rem;
+    font-family:var(--mono); font-size:.78rem;
+    margin:.2rem 0 .9rem;
+    flex-wrap:wrap;
+}
+.post-glossary-meta .cat-pill{
+    text-decoration:none;
+    border:1px solid currentColor;
+    padding:.1rem .55rem;
+    font-size:.7rem;
+    letter-spacing:var(--tracked);
+    text-transform:uppercase;
+}
+.post-glossary-meta time{ font-variant-numeric:tabular-nums; }
+
+/* TL;DR callout — AI'nın <div class="tldr"> ile sardığı featured-snippet özeti */
+.post-body .tldr{
+    background:linear-gradient(to right, rgba(31,58,138,.05), transparent 80%);
+    border-left:3px solid var(--cobalt);
+    padding:.85rem 1.1rem;
+    margin:0 0 1.6rem;
+    font-style:italic;
+    font-size:1.05rem;
+    line-height:1.6;
+    color:var(--coal);
+    position:relative;
+}
+.post-body .tldr::before{
+    content:"TL;DR";
+    display:block;
+    font-style:normal; font-weight:600;
+    font-family:var(--mono); font-size:.62rem;
+    letter-spacing:var(--tracked); text-transform:uppercase;
+    color:var(--cobalt);
+    margin-bottom:.35rem;
+}
+
+/* FAQ bölümü — H2 "Sıkça Sorulan Sorular" + iç H3 sorular */
+.post-body h2 + h3{ margin-top:1.6rem; } /* H2 hemen sonrasında H3 gelirse yakın */
+.post-body h3{
+    font-size:1.15rem;
+    margin:2.2rem 0 .7rem;
+}
+/* Glossary'de hızlı tarama için H3'ler hafif vurgulu */
+.post-glossary .post-body h3{
+    border-left:2px solid var(--hair-2);
+    padding-left:.7rem;
+}
+
 /* — Otomatik iç linkleme (AutoLinkService) ————————————————————————— */
 .post-body a.auto-link{
     text-decoration-style:dotted;

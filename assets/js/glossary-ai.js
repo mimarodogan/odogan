@@ -20,12 +20,14 @@
 
     // PARÇA PLANI — server tarafıyla aynı (CHUNK_PLAN). Buradaki etiketler
     // sadece progress UI içindir; gerçek üretim sunucu tarafında.
-    const CHUNKS = [
-        { id: 'chunk_1', label: 'Tanım & Köken' },
-        { id: 'chunk_2', label: 'Tarih & Kullanım' },
-        { id: 'chunk_3', label: 'Türler & Tasarım' },
-        { id: 'chunk_4', label: 'Karşılaştırma & Örnekler' },
-        { id: 'chunk_5', label: 'Yerel + Eleştirel + Kaynaklar' },
+    // ÖNCE outline (küresel plan), SONRA 5 chunk.
+    const STEPS = [
+        { id: 'outline', label: 'Outline (küresel plan)', isOutline: true },
+        { id: 'chunk_1', label: 'TL;DR + Tanım + Köken' },
+        { id: 'chunk_2', label: 'Tarih + Kullanım' },
+        { id: 'chunk_3', label: 'Türler + Tasarımda Dikkat' },
+        { id: 'chunk_4', label: 'Karıştırılan + Örnekler' },
+        { id: 'chunk_5', label: 'Türkiye + Eleştirel + FAQ' },
     ];
 
     const setStatus = (msg, tone) => {
@@ -119,14 +121,17 @@
         };
     };
 
-    // Tek bir chunk için API çağrısı
-    const fetchChunk = async (chunkId, term, context, depth, snap) => {
+    // Tek bir chunk için API çağrısı (outline ve chunk_1..5 ortak)
+    const fetchStep = async (stepId, term, context, depth, snap, outlineJson) => {
         const body = new URLSearchParams();
         body.set('_csrf', csrf);
         body.set('term', term);
         body.set('context', context);
         body.set('depth', depth);
-        body.set('chunk', chunkId);
+        body.set('chunk', stepId);
+        if (outlineJson) {
+            body.set('outline_json', outlineJson);
+        }
         if (snap) {
             body.set('current_definition', snap.definition);
             body.set('current_category', snap.category);
@@ -189,23 +194,36 @@
             }
         }
 
-        setBusy(true, 'Üretiliyor (1/5)…');
+        const totalSteps = STEPS.length;  // 1 outline + 5 chunk = 6
+        setBusy(true, `Üretiliyor (1/${totalSteps})…`);
         let combinedHtml = '';
+        let outlineJson = '';
         let success = 0;
         const failed = [];
         let deadRefs = 0;
+        let faqArr = [];
 
-        // Her chunk için ardışık çağrı — biri patlarsa devam et
-        for (let i = 0; i < CHUNKS.length; i++) {
-            const chunk = CHUNKS[i];
-            setBusy(true, `Üretiliyor (${i + 1}/${CHUNKS.length})…`);
-            setStatus(`Bölüm ${i + 1}/${CHUNKS.length}: ${chunk.label} üretiliyor…`, 'loading');
+        // 6 ardışık çağrı: önce outline (küresel plan), sonra 5 chunk.
+        // Outline başarısız olursa boş bağlamla devam ederiz (graceful).
+        for (let i = 0; i < STEPS.length; i++) {
+            const step = STEPS[i];
+            setBusy(true, `Üretiliyor (${i + 1}/${totalSteps})…`);
+            setStatus(`Adım ${i + 1}/${totalSteps}: ${step.label} üretiliyor…`, 'loading');
 
             try {
-                const data = await fetchChunk(chunk.id, term.trim(), context.trim(), depth, snap);
+                const data = await fetchStep(
+                    step.id, term.trim(), context.trim(), depth, snap, outlineJson
+                );
+
+                if (step.isOutline) {
+                    // Outline'ı sakla — sonraki chunk'lara aktarılır
+                    outlineJson = JSON.stringify(data || {});
+                    success++;
+                    continue;
+                }
 
                 // Chunk 1: term + category + aliases
-                if (chunk.id === 'chunk_1') {
+                if (step.id === 'chunk_1') {
                     if (mode === 'new'
                         && (data.term || '').trim().length > 1
                         && $('#glossary-term')
@@ -226,35 +244,44 @@
                     setBodyHtml(combinedHtml);
                 }
 
-                // Chunk 5: references
-                if (chunk.id === 'chunk_5' && Array.isArray(data.references)) {
-                    setReferences(data.references);
-                    deadRefs = data.references.filter(r => r && r.dead).length;
+                // Chunk 5: references + FAQ
+                if (step.id === 'chunk_5') {
+                    if (Array.isArray(data.references)) {
+                        setReferences(data.references);
+                        deadRefs = data.references.filter(r => r && r.dead).length;
+                    }
+                    if (Array.isArray(data.faq)) {
+                        faqArr = data.faq;
+                    }
                 }
 
                 success++;
             } catch (err) {
-                failed.push({ chunk: chunk.id, label: chunk.label, msg: err.message });
-                // Devam et — diğer chunk'lar etkilenmesin
+                failed.push({ step: step.id, label: step.label, msg: err.message });
+                if (step.isOutline) {
+                    // Outline başarısız — yine de chunk'ları çalıştır (boş outline ile)
+                    outlineJson = '';
+                }
             }
         }
 
         // Final durum mesajı
-        if (success === CHUNKS.length) {
+        if (success === totalSteps) {
             const okPrefix = mode === 'enhance' ? 'Geliştirildi' : 'Taslak hazır';
             const refMsg = deadRefs > 0
                 ? ` — ${deadRefs} kaynak URL'si doğrulanamadı (sarı rozet).`
                 : '';
-            setStatus(`✓ ${okPrefix}: 5/5 bölüm tamam${refMsg} İncele, düzenle, kaydet.`, 'success');
+            const faqMsg = faqArr.length > 0 ? ` · ${faqArr.length} SSS üretildi.` : '';
+            setStatus(`✓ ${okPrefix}: ${success}/${totalSteps} adım tamam${refMsg}${faqMsg} İncele, düzenle, kaydet.`, 'success');
         } else if (success > 0) {
-            const fl = failed.map(f => `${f.chunk}: ${f.msg}`).join(' | ');
+            const fl = failed.map(f => `${f.step}: ${f.msg}`).join(' | ');
             setStatus(
-                `Kısmi başarı: ${success}/${CHUNKS.length} bölüm üretildi. Başarısız: ${fl}`,
+                `Kısmi başarı: ${success}/${totalSteps} adım. Başarısız: ${fl}`,
                 'error'
             );
         } else {
             setStatus(
-                `Tüm bölümler başarısız: ${failed.map(f => f.msg).join(' | ')}`,
+                `Tüm adımlar başarısız: ${failed.map(f => f.msg).join(' | ')}`,
                 'error'
             );
         }

@@ -166,6 +166,10 @@ const SAFELIST = {
     'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
     // Collapsible (FAQ, trending widget) için details/summary tag selector'leri.
     'details', 'summary',
+    // Glossary AI üreteci dinamik olarak ekler — public template'lerde
+    // doğrudan geçmiyor ama AI çıktısında var.
+    'tldr', 'post-glossary-meta', 'post-glossary-refs', 'post-glossary',
+    'reference-row-dead', 'reference-dead-warn',
   ],
   greedy: [/^js-/, /^is-/, /^has-/, /^was-/, /^will-/, /^no-/],
   deep: [/:global/, /\[data-/, /\[aria-/],

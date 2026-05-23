@@ -50,24 +50,27 @@ final class AiGlossaryService
      */
     public const CHUNK_PLAN = [
         'chunk_1' => [
-            'label'    => 'Tanım + Köken + Sözlük Tanımı',
-            'sections' => [
+            'label'      => 'TL;DR + Nedir + Köken',
+            'word_budget'=> 500, // ~500 kelime hedef (toplam ~3000)
+            'voice'      => '3. tekil, nötr akademik.',
+            'sections'   => [
+                '<div class="tldr">…2-3 cümle SEO snippet-optimize özet (40-50 kelime)…</div>',
                 '<h2>[TERİM] Nedir?</h2>',
+                '  (İlk paragraf 40-50 kelime: TERİM + tanım + bağlam — featured snippet hedefli)',
+                '  (İkinci paragraf: mimari/tasarım uygulamadaki yeri)',
                 '<h2>[TERİM] Kelime Anlamı ve Kökeni</h2>',
-                '  <h3>Kelimenin Birinci Kökü veya İlk Anlamı</h3>',
-                '  <h3>Kelimenin İkinci Kökü veya İkinci Anlamı</h3>',
+                '  <h3>Kelimenin Kökü / İlk Anlamı</h3>',
                 '  <h3>[TERİM] Türkçede Ne Anlama Gelir?</h3>',
-                '    <h4>Yüzeysel Anlam ve Mimari Anlam Farkı</h4>',
-                '<h2>Mimari Sözlük Tanımı</h2>',
+                '    <h4>Yüzeysel ve Mimari Anlam Farkı</h4>',
             ],
             'json_extra' => 'Bu chunk\'ta meta bilgi de döndür: "term", "slug_hint", "category", "aliases".',
         ],
         'chunk_2' => [
-            'label'    => 'Tarihsel Gelişim + Mimarlıkta Kullanım',
-            'sections' => [
+            'label'      => 'Tarihsel Gelişim + Mimarlıkta Kullanım',
+            'word_budget'=> 700,
+            'sections'   => [
                 '<h2>[TERİM] Kavramının Tarihsel Gelişimi</h2>',
-                '  <h3>Erken Dönem Kullanımı</h3>',
-                '    <h4>Geleneksel Mimarlıkta Karşılığı</h4>',
+                '  <h3>Erken Dönem ve Geleneksel Karşılıkları</h3>',
                 '  <h3>Modern Mimarlıkta Gelişimi</h3>',
                 '    <h4>Öne Çıkan Mimarlar, Yapılar veya Akımlar</h4>',
                 '<h2>[TERİM] Mimarlıkta Nasıl Kullanılır?</h2>',
@@ -75,12 +78,14 @@ final class AiGlossaryService
                 '  <h3>Teknik Ölçekte Kullanımı</h3>',
                 '  <h3>Kullanıcı Deneyimi Açısından Önemi</h3>',
             ],
+            'voice' => '3. tekil, nötr akademik.',
         ],
         'chunk_3' => [
-            'label'    => 'Türler + Tasarımda Dikkat',
-            'sections' => [
+            'label'      => 'Türler + Tasarımda Dikkat (1. tekil ses)',
+            'word_budget'=> 700,
+            'sections'   => [
                 '<h2>[TERİM] Türleri veya Yaklaşımları</h2>',
-                '  <h3>Birinci/İkinci/Üçüncü Tür veya Yaklaşım</h3> (en az 2, en fazla 4)',
+                '  <h3>Birinci/İkinci/Üçüncü Tür</h3> (en az 2, en fazla 3)',
                 '    <h4>Özellikleri</h4> (ul/li)',
                 '<h2>[TERİM] Tasarımında Dikkat Edilmesi Gerekenler</h2>',
                 '  <h3>Bağlam ve Yer Seçimi</h3>',
@@ -88,36 +93,43 @@ final class AiGlossaryService
                 '  <h3>İklim ve Enerji Performansı</h3>',
                 '  <h3>Estetik ve İşlev Dengesi</h3>',
             ],
+            'voice' => 'Tasarımda Dikkat bölümünde "Pratikte gördüğümüz...", "Bursa\'daki uygulamalarda..." gibi 1. çoğul/tekil deneyim sesi uygundur (E-E-A-T Experience). Türler bölümü nötr.',
         ],
         'chunk_4' => [
-            'label'    => 'Ne Değildir + Karıştırılan + Örnekler',
-            'sections' => [
-                '<h2>[TERİM] Ne Değildir?</h2>',
-                '  <h3>Yaygın Yanlış Anlama</h3>',
-                '    <h4>Neden Yanlıştır?</h4>',
-                '  <h3>Dekoratif Kullanım ile Gerçek Kullanım Farkı</h3>',
+            'label'      => 'Karıştırılan Kavramlar (Ne Değildir entegre) + Mimari Örnekler',
+            'word_budget'=> 600,
+            'sections'   => [
                 '<h2>[TERİM] ile Karıştırılan Kavramlar</h2>',
-                '  <h3>Birinci/İkinci/Üçüncü Benzer Kavram</h3> (en az 2)',
+                '  (Bu bölüm "Ne değildir?" kavramını da içerir — yaygın yanılgılar burada açıklanır)',
+                '  <h3>Birinci/İkinci/Üçüncü Benzer Kavram</h3> (en az 2, en fazla 3)',
                 '    <h4>[TERİM] ile Farkı</h4>',
                 '<h2>Mimarlıkta [TERİM] Örnekleri</h2>',
-                '  <h3>Birinci/İkinci/Üçüncü Örnek</h3> (en az 2)',
+                '  <h3>Birinci/İkinci/Üçüncü Örnek</h3> (en az 2, en fazla 3)',
                 '    <h4>Mimari Önemi</h4>',
             ],
+            'voice' => '3. tekil, nötr akademik. Örneklerde gerçek yapı/mimar (UYDURMA).',
         ],
         'chunk_5' => [
-            'label'    => 'Türkiye + Eleştirel + Kapanış + Kaynaklar',
-            'sections' => [
-                '<h2>Türkiye ve Yerel Mimarlık Bağlamında [TERİM]</h2>',
-                '  <h3>Türkiye İklimi Açısından Değerlendirme</h3>',
-                '  <h3>Bursa veya Marmara Bölgesi Açısından Değerlendirme</h3>',
-                '<h2>[TERİM] Kavramına Eleştirel Bakış</h2>',
-                '  <h3>Güçlü Yönleri</h3>',
-                '  <h3>Riskli veya Zayıf Yönleri</h3>',
-                '  <h3>Doğru Kullanım İçin Öneriler</h3>',
-                '<h2>Mimari Sözlük İçin Kısa Tanım</h2> (2-3 cümle)',
-                '<h2>Daha Akademik Sözlük Tanımı</h2> (1-2 paragraf)',
+            'label'      => 'Türkiye + Eleştirel + FAQ + Kaynaklar (1. tekil ses)',
+            'word_budget'=> 800,
+            'sections'   => [
+                '<h2>Türkiye Bağlamında [TERİM]</h2>',
+                '  <h3>Türkiye İklimi ve Yönetmelik Açısından</h3> (varsa TS standartları belirt)',
+                '  <h3>Bursa ve Marmara Bölgesi Pratiğinden</h3> (1. tekil ses: "gördüğüm", "uyguladığım")',
+                '<h2>[TERİM] Üzerine Eleştirel Değerlendirme</h2>',
+                '  <h3>Güçlü Yönleri ve Riskleri</h3>',
+                '  <h3>Doğru Kullanım İçin Öneriler</h3> (1. tekil ses uygun)',
+                '<h2>Sıkça Sorulan Sorular</h2>',
+                '  <h3>Soru 1?</h3>',
+                '    Cevap 1 (2-3 cümle, net)',
+                '  <h3>Soru 2?</h3>',
+                '    Cevap 2 (2-3 cümle, net)',
+                '  <h3>Soru 3?</h3>',
+                '    Cevap 3 (2-3 cümle, net)',
+                '  (3-5 SSS — "People Also Ask" hedefli)',
             ],
-            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 gerçek kaynak.',
+            'json_extra' => 'Bu chunk\'ta "references" alanını da döndür: 3-6 gerçek kaynak. AYRICA "faq" alanı: [{"q":"Soru?","a":"Cevap"}] formatında 3-5 SSS — Schema.org FAQPage markup için.',
+            'voice' => 'Türkiye/Bursa ve Eleştirel bölümlerde 1. çoğul/tekil deneyim sesi (E-E-A-T). FAQ nötr.',
         ],
     ];
 
@@ -242,6 +254,103 @@ final class AiGlossaryService
     }
 
     /**
+     * OUTLINE PRE-PASS — 5 chunk'tan ÖNCE çağrılır.
+     *
+     * Tüm yazı için anahtar-cümle planı üretir; sonraki chunk'lar bu
+     * plana uyarak çakışmadan yazılır. Tekrar ve üslup tutarsızlığını
+     * büyük ölçüde önler.
+     *
+     * @return array{
+     *   tldr:string, focus_keyword:string, secondary_keywords:array,
+     *   outline:array, key_architects:array, key_buildings:array,
+     *   ts_standards:array
+     * }
+     */
+    public static function draftOutline(string $term, string $context = '', string $depth = 'orta', array $current = []): array
+    {
+        $key = self::apiKey();
+        if ($key === '') {
+            throw new \RuntimeException('Claude API anahtarı tanımlı değil.');
+        }
+
+        $term = trim($term);
+        if (mb_strlen($term) < 2) {
+            throw new \InvalidArgumentException('Terim en az 2 karakter olmalı.');
+        }
+        $context = mb_substr(trim($context), 0, 800);
+        $isEnhance = self::hasCurrentContent($current);
+
+        $lines = [
+            'TERİM: ' . $term,
+            'DERİNLİK: ' . $depth . ' (toplam hedef: ' . self::depthWordTarget($depth) . ' kelime)',
+        ];
+        if ($context !== '') {
+            $lines[] = 'KULLANICI NOTU: ' . $context;
+        }
+        if ($isEnhance) {
+            $lines[] = '';
+            $lines[] = 'GELİŞTİRME MODU: aşağıdaki mevcut girdiye bakarak outline üret.';
+            $lines[] = 'Mevcut yapıyı koruyacak şekilde plan yap:';
+            $lines[] = self::enhanceContextBlock($current);
+        }
+
+        $body = [
+            'model'       => self::model(),
+            'max_tokens'  => 1500,    // Outline küçük (~600-1000 token yeterli)
+            'temperature' => 0.3,     // Plan deterministik olsun
+            'system'      => [[
+                'type' => 'text',
+                'text' => self::outlineRubric(),
+                'cache_control' => ['type' => 'ephemeral'],
+            ]],
+            'messages' => [
+                ['role' => 'user', 'content' => implode("\n", $lines)],
+                ['role' => 'assistant', 'content' => '{'],
+            ],
+        ];
+
+        $resp = self::http($key, $body);
+
+        $text = '';
+        foreach (($resp['content'] ?? []) as $blk) {
+            if (($blk['type'] ?? '') === 'text') {
+                $text .= (string) ($blk['text'] ?? '');
+            }
+        }
+        $json = self::extractJson('{' . $text);
+        if (!is_array($json)) {
+            $reason = (string) ($resp['stop_reason'] ?? '?');
+            throw new \RuntimeException(
+                'Outline çözümlenemedi (stop=' . $reason . '). '
+                . 'Başı: ' . mb_substr(trim($text), 0, 160)
+            );
+        }
+
+        // Normalize
+        return [
+            'tldr'               => mb_substr(trim((string) ($json['tldr'] ?? '')), 0, 600),
+            'focus_keyword'      => mb_substr(trim((string) ($json['focus_keyword'] ?? '')), 0, 180),
+            'secondary_keywords' => array_slice(array_filter(array_map('trim', (array) ($json['secondary_keywords'] ?? []))), 0, 6),
+            'outline'            => is_array($json['outline'] ?? null) ? $json['outline'] : [],
+            'key_architects'     => array_slice(array_filter(array_map('trim', (array) ($json['key_architects'] ?? []))), 0, 6),
+            'key_buildings'      => array_slice(array_filter(array_map('trim', (array) ($json['key_buildings'] ?? []))), 0, 6),
+            'ts_standards'       => array_slice(array_filter(array_map('trim', (array) ($json['ts_standards'] ?? []))), 0, 6),
+        ];
+    }
+
+    /**
+     * Toplam kelime hedefi (derinliğe göre).
+     */
+    private static function depthWordTarget(string $depth): int
+    {
+        return match ($depth) {
+            'derin' => 5000,
+            'kisa'  => 1500,
+            default => 3000,
+        };
+    }
+
+    /**
      * PARÇALI üretim: 12 H2 yapılı ansiklopedik şablonun TEK bir parçasını üret.
      *
      * Avantajları:
@@ -252,14 +361,16 @@ final class AiGlossaryService
      *
      * @param string $chunkId  CHUNK_PLAN anahtarlarından biri
      * @param array  $current  Enhance modu için mevcut girdi (boş = yeni-üretim)
+     * @param array  $outline  draftOutline() çıktısı (boş = legacy çağrı)
      * @return array{
      *   chunk_id:string,
      *   html:string,
      *   term?:string, slug_hint?:string, category?:string, aliases?:array<int,string>,
-     *   references?:array<int,array{text:string,url:string,dead:bool}>
+     *   references?:array<int,array{text:string,url:string,dead:bool}>,
+     *   faq?:array<int,array{q:string,a:string}>
      * }
      */
-    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = []): array
+    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = [], array $outline = []): array
     {
         $key = self::apiKey();
         if ($key === '') {
@@ -287,7 +398,7 @@ final class AiGlossaryService
         };
         if ($isEnhance) $maxTokens = (int) ($maxTokens * 1.15);
 
-        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance);
+        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance, $outline);
 
         $body = [
             'model'       => self::model(),
@@ -366,7 +477,7 @@ final class AiGlossaryService
             $out['aliases'] = array_slice(array_unique($aliases), 0, 15);
         }
 
-        // Chunk 5: references — URL HEAD doğrulama
+        // Chunk 5: references — URL HEAD doğrulama + FAQ array
         if ($chunkId === 'chunk_5') {
             $refs = [];
             foreach ((array) ($raw['references'] ?? []) as $r) {
@@ -383,6 +494,18 @@ final class AiGlossaryService
                 if (count($refs) >= 8) break;
             }
             $out['references'] = $refs;
+
+            // FAQ — FAQPage schema markup için
+            $faqs = [];
+            foreach ((array) ($raw['faq'] ?? []) as $f) {
+                if (!is_array($f)) continue;
+                $q = mb_substr(trim((string) ($f['q'] ?? '')), 0, 500);
+                $a = mb_substr(trim((string) ($f['a'] ?? '')), 0, 1500);
+                if ($q === '' || $a === '') continue;
+                $faqs[] = ['q' => $q, 'a' => $a];
+                if (count($faqs) >= 6) break;
+            }
+            $out['faq'] = $faqs;
         }
 
         return $out;
@@ -395,39 +518,85 @@ final class AiGlossaryService
     private static function chunkSystemRubric(): string
     {
         return <<<TXT
-Sen Türkçe mimarlık sözlüğü için uzman bir editörsün. Konular: MİMARLIK,
-İÇ MİMARLIK, YAPI TEKNOLOJİSİ, KENT, TASARIM, YAPI KÜLTÜRÜ. Yazar Osman
-Doğan — Bursa merkezli mimar ve inşaat mühendisi.
+Sen Türkçe mimarlık sözlüğü için SEO + E-E-A-T odaklı uzman editörsün.
+Konular: MİMARLIK, İÇ MİMARLIK, YAPI TEKNOLOJİSİ, KENT, TASARIM, YAPI
+KÜLTÜRÜ. Yazar: Osman Doğan — Bursa merkezli mimar ve inşaat mühendisi.
 
-GÖREV: Kullanıcı sana bir TERİM ve hangi BÖLÜMÜ üreteceğini söyleyecek.
-Sen yalnızca o bölümü üretirsin — tüm yapıyı değil.
+GÖREV: Kullanıcı sana bir TERİM + outline + hangi CHUNK'ı üreteceğini
+söyler. Sen yalnızca o chunk'ın bölümlerini üretirsin.
 
-YANIT KURALLARI (KESİN):
-- SADECE geçerli JSON döndür. Markdown, kod bloğu, açıklama YOK.
-- Tüm metin Türkçe; akademik ama okunabilir, gereksiz tekrar yok.
-- Başlık hiyerarşisi: SADECE <h2>, <h3>, <h4>. <h1> KESİNLİKLE YASAK
-  (sayfa kendi H1'ini atıyor). İzinli etiketler: <p>, <ul>, <ol>, <li>,
-  <strong>, <em>, <code>, <blockquote>, <a>. YASAK: <script>, <iframe>,
-  <style>, <h1>.
-- Bölümler kısa-öz (2-3 paragraf), gereksiz uzatma yok.
+═══════════════════════════════════════════════════════════════════
+KALİTE ANAYASASI (SIRASIYLA UYULACAK)
+═══════════════════════════════════════════════════════════════════
 
-JSON ŞEMASI (varsayılan):
-{ "html": "<h2>...</h2>... bu chunk'ın HTML gövdesi ..." }
+1) TEKRAR YASAĞI:
+   - Verilen outline'ı OKUR ve diğer bölümlerin nereye değineceğini
+     görürsün. ASLA başka bölümün konusuna girme.
+   - Tanımı sadece chunk_1'in ilk paragrafında ver; başka chunk'larda
+     "yukarıda tanımlandığı gibi" yaklaşımıyla ATIF yap, tekrar etme.
 
-CHUNK 1 İÇİN EK ALANLAR:
+2) FEATURED SNIPPET (chunk_1 ilk paragraf):
+   - 40-50 kelime arası
+   - "[TERİM], …" ile başlayan kısa-net tanım
+   - Tek paragraf, alt cümle yok
+
+3) FOCUS KEYWORD DENSITY:
+   - Terim metinde doğal olarak %1-2 oranında geçsin (her 100 kelimede 1-2).
+   - Şişirme/stuffing yasak. "Şu terim böyledir, şu terim..." gibi yapay
+     tekrar = penaltı. Doğal akışta serpiştir.
+
+4) BAŞLIK HİYERARŞİSİ:
+   - SADECE <h2>, <h3>, <h4>. <h1> KESİNLİKLE YASAK.
+   - İzinli etiketler: <p>, <ul>, <ol>, <li>, <strong>, <em>, <code>,
+     <blockquote>, <a>, <div class="tldr"> (sadece chunk_1).
+   - YASAK: <script>, <iframe>, <style>, <h1>.
+
+5) LENGTH BUDGET (sıkı uy):
+   - Her chunk'ın "word_budget" hedefi user message'da verilir.
+   - %20 üstüne çıkma; %20 altına da inme.
+
+6) E-E-A-T SES (Experience):
+   - "voice" alanında belirtilen bölümlerde 1. tekil/çoğul ses kullan:
+     "gördüğümüz", "Bursa\'daki pratikte", "uyguladığım projelerde…"
+   - Diğer bölümlerde 3. tekil nötr akademik.
+
+7) UYDURMA YASAĞI:
+   - Sayı/tarih/yapı/mimar adı emin değilsen belirsiz bırak veya çıkar.
+   - references (chunk_5): UYDURMA YOK. Sadece BİLDİĞİN gerçek kaynaklar.
+   - Tercih edilen kaynaklar: tdk.gov.tr, tmmob.org.tr, mimarist.org,
+     arkitera.com, yapi.com.tr, dergipark.org.tr, archnet.org, jstor.org,
+     kulturportali.gov.tr, üniversite yayınları, akademik dergi DOI'leri.
+
+8) GEÇİŞLER:
+   - Bölüm başlarken bir önceki chunk'ın bittiği konuya kısa köprü kur
+     (1 cümle yeter). Outline bilgisini kullan.
+
+═══════════════════════════════════════════════════════════════════
+JSON ŞEMASI
+═══════════════════════════════════════════════════════════════════
+
+SADECE geçerli JSON. Markdown, kod bloğu, açıklama YOK. Tüm metin Türkçe.
+
+CHUNK 1:
 {
-  "term": "...",
-  "slug_hint": "...",
-  "category": "TEK kategori — listeden seç",
-  "aliases": ["TR + yabancı dil"],
-  "html": "<h2>...</h2>..."
+  "term": "Resmi terim (Türkçe yazım kuralları)",
+  "slug_hint": "url-uyumlu-slug",
+  "category": "TEK kategori (listeden)",
+  "aliases": ["TR + yabancı dil + kısaltma"],
+  "html": "<div class=\"tldr\">…</div><h2>...</h2>... bu chunk'ın HTML gövdesi ..."
 }
 
-CHUNK 5 İÇİN EK ALAN:
+CHUNK 2-4:
+{ "html": "<h2>...</h2>... bu chunk'ın HTML gövdesi ..." }
+
+CHUNK 5:
 {
-  "html": "<h2>...</h2>...",
+  "html": "<h2>...</h2>... Türkiye + Eleştirel + FAQ ...",
   "references": [
     { "text": "Kaynak Başlığı — Yazar, Yayın (Yıl)", "url": "https://veya-bos" }
+  ],
+  "faq": [
+    { "q": "Soru?", "a": "Cevap (2-3 cümle, net)" }
   ]
 }
 
@@ -436,14 +605,52 @@ Strüktür, Yapı Elemanı, Cephe, Malzeme, Yapı Teknolojisi, Mimari Akım,
 Tasarım Yaklaşımı, Sürdürülebilirlik, BIM, Kentleşme, Planlama,
 İç Mimarlık, Peyzaj, Restorasyon, Yapı Fiziği, Pasif Tasarım, Detay,
 Tipoloji, Bezeme, Taşıyıcı Sistem, Diğer
+TXT;
+    }
 
-GENEL KURALLAR:
-- Belirsiz/uydurma bilgi vermektense bölümü kısa tut.
-- Sayı/tarih emin değilsen belirsiz bırak.
-- references (chunk_5): UYDURMA — sadece BİLDİĞİN gerçek kaynaklar.
-- Tercih edilen kaynaklar: tdk.gov.tr, tmmob.org.tr, mimarist.org,
-  arkitera.com, yapi.com.tr, dergipark.org.tr, archnet.org, jstor.org,
-  kulturportali.gov.tr, üniversite yayınları.
+    /**
+     * Outline pre-pass rubrik'i — küresel bağlamı kuran ilk çağrı.
+     * Çıktısı 5 chunk'a bağlam olarak verilir; tekrar ve üslup tutarsızlığını
+     * büyük ölçüde önler.
+     */
+    private static function outlineRubric(): string
+    {
+        return <<<TXT
+Sen Türkçe mimarlık sözlüğü için kıdemli editörsün. Sana bir TERİM verilir.
+Görevin yazıyı bölmek yerine BÜTÜNÜYLE planlamaktır — sonradan 5 farklı
+yazar (chunk) bu plana uyarak bölümlerini yazacak.
+
+GÖREV: Aşağıdaki 10 H2 bölümü için anahtar-cümle planı üret. Her H2 için
+1-2 cümlelik ÖZ açıklama yaz. Hangi anahtar fikirler, mimarlar, yapılar,
+örnekler her bölümde kullanılacak — kararını şimdi ver ki bölümler arası
+ÇAKIŞMA olmasın.
+
+YANIT KURALLARI:
+- SADECE geçerli JSON döndür. Markdown, açıklama YOK.
+- Tüm metin Türkçe.
+- Toplam ~3000 kelimelik yazı için outline (her bölüm 200-400 kelime).
+- Bölüm 1'de ÖZ tanım (featured snippet, 40-50 kelime).
+- Belirsiz/uydurma bilgi yerine boş bırakmayı seç.
+
+JSON ŞEMASI (TAM):
+{
+  "tldr": "40-50 kelime, terim + tanım + bağlam (featured snippet hedefli)",
+  "focus_keyword": "ana terim (genelde TERİM'in normal hali)",
+  "secondary_keywords": ["yakın anahtar 1", "yakın 2", "yakın 3"],
+  "outline": {
+    "nedir":         "Bölüm 1: Nedir + Köken için anahtar cümle. Hangi tanım, hangi etimoloji.",
+    "tarih_kullanim":"Bölüm 2: Tarih + Kullanım — hangi dönem, hangi mimar/akım, hangi ölçek.",
+    "turler_tasarim":"Bölüm 3: Türler + Tasarım — kaç tür, hangi malzeme/detay/iklim notu.",
+    "karistirilan_ornekler":"Bölüm 4: Karıştırılan + Örnekler — hangi 2-3 karıştırılan kavram, hangi 2-3 gerçek yapı/mimar.",
+    "turkiye_faq":   "Bölüm 5: Türkiye + Eleştirel + FAQ — Bursa açısı, yönetmelik (varsa TS), 3-5 SSS başlığı."
+  },
+  "key_architects": ["emin olduğun 2-4 mimar adı (chunk 2 ve 4 kullanır)"],
+  "key_buildings":  ["emin olduğun 2-4 yapı adı (chunk 4 kullanır)"],
+  "ts_standards":   ["varsa Türk Standardı no (TS 500 vb), yoksa boş dizi"]
+}
+
+ÖNEMLİ: Bu sadece PLAN — gerçek yazıyı sen yazmayacaksın. Sonraki 5
+yazar bu plana bakıp yazacak. Plan çakışmasız ve bütünleşik olmalı.
 TXT;
     }
 
@@ -451,24 +658,51 @@ TXT;
      * Chunk'a özel kullanıcı mesajı — hangi bölümlerin üretileceği listelenir.
      * @param array<string,mixed> $current
      */
-    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance): string
+    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance, array $outline = []): string
     {
         $plan = self::CHUNK_PLAN[$chunkId];
         $sections = implode("\n", (array) $plan['sections']);
-
-        $depthLabel = match ($depth) {
-            'derin' => 'derin (her bölüm 3-4 paragraf, alt başlık ekleyebilirsin)',
-            'kisa'  => 'kısa (her bölüm 1-2 paragraf, en temel açıklama)',
-            default => 'orta (her bölüm 2-3 paragraf, pratik örnek dahil)',
-        };
+        // CHUNK_PLAN'da her chunk için voice/word_budget tanımlı.
+        $voice = (string) $plan['voice'];
+        $wordBudget = (int) $plan['word_budget'];
 
         $lines = [
             'TERİM: ' . $term,
             'CHUNK: ' . $chunkId . ' — ' . $plan['label'],
-            'DERİNLİK: ' . $depthLabel,
+            'HEDEF UZUNLUK: ' . $wordBudget . ' kelime (±%20). Sıkı uy.',
+            'YAZAR SESİ: ' . $voice,
         ];
         if ($context !== '') {
             $lines[] = 'KULLANICI NOTU: ' . $context;
+        }
+
+        // OUTLINE bağlamı (draftOutline'dan gelir) — tekrar/çakışma önleme
+        if ($outline !== []) {
+            $lines[] = '';
+            $lines[] = '═══ KÜRESEL OUTLINE (diğer chunk\'lar bunu uyguluyor — sen sadece KENDİ bölümünü yaz) ═══';
+            if (!empty($outline['focus_keyword'])) {
+                $lines[] = 'Focus keyword: ' . $outline['focus_keyword'] . ' (doğal olarak metinde %1-2 geç)';
+            }
+            if (!empty($outline['outline']) && is_array($outline['outline'])) {
+                $lines[] = 'Bölüm planları (her birinin neye değineceği):';
+                foreach ($outline['outline'] as $secKey => $secNote) {
+                    $lines[] = '  • ' . $secKey . ': ' . (string) $secNote;
+                }
+            }
+            if (!empty($outline['key_architects'])) {
+                $lines[] = 'Anahtar mimarlar: ' . implode(', ', (array) $outline['key_architects']);
+            }
+            if (!empty($outline['key_buildings'])) {
+                $lines[] = 'Anahtar yapılar: ' . implode(', ', (array) $outline['key_buildings']);
+            }
+            if (!empty($outline['ts_standards'])) {
+                $lines[] = 'Türk Standartları: ' . implode(', ', (array) $outline['ts_standards']);
+            }
+            // TLDR sadece chunk_1'de kullanılır
+            if ($chunkId === 'chunk_1' && !empty($outline['tldr'])) {
+                $lines[] = 'TLDR (chunk_1 başında <div class="tldr"> içine koy): ' . $outline['tldr'];
+            }
+            $lines[] = '═══════════════════════════════════════════════════════════════';
         }
 
         $lines[] = '';

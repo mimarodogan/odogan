@@ -121,12 +121,13 @@ final class GlossaryController
         );
 
         // JSON-LD: DefinedTerm — sözlük girişleri için Google'ın anladığı schema
-        $jsonld = '<script type="application/ld+json">' . json_encode([
+        $definedTerm = array_filter([
             '@context'      => 'https://schema.org',
             '@type'         => 'DefinedTerm',
             'name'          => $item['term'],
             'description'   => mb_substr(strip_tags((string) $item['definition']), 0, 300),
             'url'           => $url,
+            'dateModified'  => !empty($item['updated_at']) ? date('c', strtotime((string) $item['updated_at'])) : null,
             'inDefinedTermSet' => [
                 '@type' => 'DefinedTermSet',
                 'name'  => 'Mimari Sözlük',
@@ -135,7 +136,26 @@ final class GlossaryController
             'alternateName' => !empty($item['aliases'])
                 ? array_values(array_filter(array_map('trim', explode(',', (string) $item['aliases']))))
                 : null,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . '</script>';
+        ]);
+
+        // FAQPage schema — AI üretici "Sıkça Sorulan Sorular" bölümünü H3 olarak
+        // gömüyor. HTML body'den otomatik çıkarıp ek schema bloğu üretiriz.
+        $faqEntities = self::extractFaqEntities((string) $item['definition']);
+        $schemas = [$definedTerm];
+        if ($faqEntities !== []) {
+            $schemas[] = [
+                '@context'   => 'https://schema.org',
+                '@type'      => 'FAQPage',
+                'mainEntity' => $faqEntities,
+            ];
+        }
+
+        $jsonld = '';
+        foreach ($schemas as $sch) {
+            $jsonld .= '<script type="application/ld+json">'
+                . json_encode($sch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
+                . '</script>' . "\n";
+        }
 
         return view('pages.glossary-term', [
             'title'       => $item['term'] . ' · Sözlük',
@@ -151,5 +171,57 @@ final class GlossaryController
                 ['name' => $item['term'], 'url' => $url],
             ],
         ]);
+    }
+
+    /**
+     * Definition HTML'inden "Sıkça Sorulan Sorular" bölümünü ayrıştırır
+     * ve FAQPage schema entities'e dönüştürür.
+     *
+     * AI ürettiği yapı:
+     *   <h2>Sıkça Sorulan Sorular</h2>
+     *   <h3>Soru?</h3>
+     *   <p>Cevap…</p>
+     *   <h3>İkinci soru?</h3>
+     *   <p>İkinci cevap…</p>
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function extractFaqEntities(string $html): array
+    {
+        if (trim($html) === '') return [];
+
+        // FAQ bölümünü H2 başlığından sonraki kısımdan bul (mümkün varyantlar)
+        $faqHeadingPattern = '/<h2[^>]*>\s*(?:Sıkça\s+Sorulan\s+Sorular|SSS|S\.S\.S)\s*<\/h2>(.*?)(?=<h2[^>]*>|$)/siu';
+        if (!preg_match($faqHeadingPattern, $html, $m)) {
+            return [];
+        }
+        $body = $m[1];
+
+        // İçindeki H3 (soru) + sonraki <p> (cevap) çiftlerini topla
+        $entities = [];
+        if (preg_match_all('/<h3[^>]*>(.+?)<\/h3>\s*(.*?)(?=<h3[^>]*>|$)/siu', $body, $pairs, PREG_SET_ORDER)) {
+            foreach ($pairs as $pair) {
+                $q = trim(strip_tags($pair[1]));
+                // Cevap için ilk <p>…</p>'yi al, yoksa tüm metni temizle
+                $aRaw = trim($pair[2]);
+                $aPlain = '';
+                if (preg_match('/<p[^>]*>(.+?)<\/p>/siu', $aRaw, $pm)) {
+                    $aPlain = trim(strip_tags($pm[1]));
+                } else {
+                    $aPlain = trim(strip_tags($aRaw));
+                }
+                if ($q === '' || $aPlain === '') continue;
+                $entities[] = [
+                    '@type'          => 'Question',
+                    'name'           => mb_substr($q, 0, 500),
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text'  => mb_substr($aPlain, 0, 2000),
+                    ],
+                ];
+                if (count($entities) >= 6) break;
+            }
+        }
+        return $entities;
     }
 }

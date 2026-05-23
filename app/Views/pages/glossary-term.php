@@ -67,6 +67,21 @@ if ($aliases !== '') {
     <header>
         <h1><?= esc($term) ?></h1>
 
+        <?php if ($updatedAt !== ''):
+            $updatedTs = strtotime($updatedAt);
+        ?>
+            <p class="post-glossary-meta muted">
+                <?php if ($category !== ''): ?>
+                    <span class="cat-pill"><?= esc($category) ?></span>
+                    <span aria-hidden="true">·</span>
+                <?php endif; ?>
+                <time datetime="<?= esc(date('c', $updatedTs ?: time())) ?>">
+                    Son güncelleme:
+                    <?= esc(date('j F Y', $updatedTs ?: time())) ?>
+                </time>
+            </p>
+        <?php endif; ?>
+
         <?php if (!empty($aliasList)): ?>
             <p class="lead">
                 <em>Ayrıca bilinir:</em>
