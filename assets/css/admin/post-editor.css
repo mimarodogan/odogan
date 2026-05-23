@@ -1403,6 +1403,11 @@
     border-left:3px solid #1F3A8A; /* cobalt vurgu */
     background:linear-gradient(to right, rgba(31,58,138,.04), transparent 60%);
 }
+/* Enhance modunda farklı (yeşil) vurgu — kullanıcı modu yanlış anlamasın */
+.glossary-ai-section.glossary-ai-enhance{
+    border-left-color:#2F6A3E;
+    background:linear-gradient(to right, rgba(47,106,62,.06), transparent 60%);
+}
 .glossary-ai-section .pe-section-title{
     display:flex; align-items:center; gap:.4rem;
 }

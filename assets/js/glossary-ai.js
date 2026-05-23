@@ -85,6 +85,32 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
+    // Mod: edit sayfasında "enhance", yeni sayfasında "new".
+    // Panel HTML'de data-mode attribute'undan okunur (PHP tarafından set edilir).
+    const mode = panel.getAttribute('data-mode') === 'enhance' ? 'enhance' : 'new';
+
+    // Mevcut form değerlerini topla (enhance modu için).
+    const currentSnapshot = () => {
+        const def = document.getElementById('rich-body');
+        const cat = form.querySelector('input[name="category"]');
+        const ali = form.querySelector('input[name="aliases"]');
+        // References: JSON formatında [{text,url},...]
+        const refs = [];
+        form.querySelectorAll('[data-ref-row]').forEach((row) => {
+            const t = row.querySelector('input[name^="references"][name$="[text]"]');
+            const u = row.querySelector('input[name^="references"][name$="[url]"]');
+            const tv = t ? (t.value || '').trim() : '';
+            const uv = u ? (u.value || '').trim() : '';
+            if (tv || uv) refs.push({ text: tv, url: uv });
+        });
+        return {
+            definition: def ? (def.value || '') : '',
+            category: cat ? (cat.value || '') : '',
+            aliases: ali ? (ali.value || '') : '',
+            references: JSON.stringify(refs),
+        };
+    };
+
     runBtn.addEventListener('click', async () => {
         const term = ($('#glossary-term') || {}).value || '';
         const context = ($('#glossary-ai-context') || {}).value || '';
@@ -96,8 +122,27 @@
             return;
         }
 
+        // Enhance modunda yazıyı üzerine yazmadan onay al — kaza önleme.
+        const snap = mode === 'enhance' ? currentSnapshot() : null;
+        if (mode === 'enhance') {
+            const hasAny = (snap.definition.trim() !== '' || snap.category.trim() !== ''
+                || snap.aliases.trim() !== '' || snap.references !== '[]');
+            if (hasAny) {
+                // eslint-disable-next-line no-alert -- native confirm yeterli: basit Y/N
+                const ok = window.confirm(
+                    'Mevcut tanım, kategori, alias ve kaynaklar AI tarafından GELİŞTİRİLECEK. '
+                    + 'Mevcut yapı korunur ama metin değişir. Devam edilsin mi?\n\n'
+                    + 'Tavsiye: Şu an formdayken kaybedersen geri alma yok; emin değilsen önce iptal et.'
+                );
+                if (!ok) return;
+            }
+        }
+
         setBusy(true);
-        setStatus('Claude API\'ye gönderiliyor… (≈5-15 sn + kaynak doğrulama)', 'loading');
+        const loadingMsg = mode === 'enhance'
+            ? 'Mevcut içerik analiz ediliyor… (≈10-20 sn + kaynak doğrulama)'
+            : 'Claude API\'ye gönderiliyor… (≈5-15 sn + kaynak doğrulama)';
+        setStatus(loadingMsg, 'loading');
 
         try {
             const body = new URLSearchParams();
@@ -105,6 +150,12 @@
             body.set('term', term.trim());
             body.set('context', context.trim());
             body.set('depth', depth);
+            if (snap) {
+                body.set('current_definition', snap.definition);
+                body.set('current_category', snap.category);
+                body.set('current_aliases', snap.aliases);
+                body.set('current_references', snap.references);
+            }
 
             const res = await fetch(window.appUrl ? window.appUrl('/admin/sozluk/ai-uret') : '/admin/sozluk/ai-uret', {
                 method: 'POST',
@@ -125,9 +176,12 @@
 
             const d = data.draft || {};
 
-            // Term — kullanıcının yazdığı kalır (AI'nın "term"i ipucu);
-            // sadece boşsa ya da gerçekten farklı ise normalize ederiz.
-            if ((d.term || '').trim().length > 1 && $('#glossary-term') && !$('#glossary-term').value.trim()) {
+            // Term: enhance modunda DOKUNMA (kullanıcı zaten girmiş ve URL bağlı).
+            // New modda kullanıcı alanı boşsa AI'dan al.
+            if (mode === 'new'
+                && (d.term || '').trim().length > 1
+                && $('#glossary-term')
+                && !$('#glossary-term').value.trim()) {
                 $('#glossary-term').value = d.term;
             }
             // Kategori
@@ -142,9 +196,10 @@
             setReferences(d.references || []);
 
             const deadCount = (d.references || []).filter(r => r.dead).length;
+            const okPrefix = mode === 'enhance' ? 'Geliştirildi' : 'Taslak hazır';
             const msg = deadCount > 0
-                ? `Taslak hazır — ${deadCount} kaynak URL'si doğrulanamadı, manuel kontrol et.`
-                : 'Taslak hazır. İncele, düzenle, kaydet.';
+                ? `${okPrefix} — ${deadCount} kaynak URL'si doğrulanamadı, manuel kontrol et.`
+                : `${okPrefix}. İncele, düzenle, kaydet.`;
             setStatus(msg, 'success');
 
             // Görsel olarak forma kaydır

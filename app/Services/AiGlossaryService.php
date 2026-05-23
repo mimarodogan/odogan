@@ -63,13 +63,17 @@ final class AiGlossaryService
      * @param string $term      İstenen terim adı (örn: "Konsol Kiriş")
      * @param string $context   Opsiyonel kısa açıklama / hangi açıdan ele alınsın
      * @param string $depth     'kisa' | 'orta' | 'derin' (varsayılan: orta)
+     * @param array  $current   Mevcut girdiye geçince doldurulur. Anahtarlar:
+     *                          'definition'(html), 'category', 'aliases'(csv),
+     *                          'references'([{text,url},...] veya json string).
+     *                          Boş array → yeni-üretim modu (default).
      * @return array{
      *   term:string, slug_hint:string, category:string,
      *   aliases:array<int,string>, definition_html:string,
      *   references:array<int,array{text:string,url:string,dead:bool}>
      * }
      */
-    public static function draft(string $term, string $context = '', string $depth = 'orta'): array
+    public static function draft(string $term, string $context = '', string $depth = 'orta', array $current = []): array
     {
         $key = self::apiKey();
         if ($key === '') {
@@ -83,22 +87,29 @@ final class AiGlossaryService
         $context = mb_substr(trim($context), 0, 800);
         $depth = in_array($depth, ['kisa', 'orta', 'derin'], true) ? $depth : 'orta';
 
-        $userText = self::userPayload($term, $context, $depth);
+        $isEnhance = self::hasCurrentContent($current);
+        $userText = $isEnhance
+            ? self::enhancePayload($term, $context, $depth, $current)
+            : self::userPayload($term, $context, $depth);
 
         // max_tokens: derin için 3500, orta 2200, kısa 1200
+        // Geliştirme modunda mevcut metin de prompt'a girer → biraz daha yer ver.
         $maxTokens = match ($depth) {
             'derin' => 3500,
             'kisa'  => 1200,
             default => 2200,
         };
+        if ($isEnhance) $maxTokens = (int) ($maxTokens * 1.2);
 
         $body = [
             'model'       => self::model(),
             'max_tokens'  => $maxTokens,
-            'temperature' => 0.4,
+            // Enhance modunda biraz daha muhafazakar (mevcut metni koru); yeni
+            // üretimde biraz daha yaratıcı.
+            'temperature' => $isEnhance ? 0.25 : 0.4,
             'system'      => [[
                 'type' => 'text',
-                'text' => self::rubric(),
+                'text' => $isEnhance ? self::rubricEnhance() : self::rubric(),
                 'cache_control' => ['type' => 'ephemeral'],
             ]],
             'messages' => [
@@ -261,6 +272,55 @@ YANIT KURALLARI:
 TXT;
     }
 
+    /**
+     * Enhance-modu sistem rubrik'i — mevcut bir girdiyi GÜÇLENDİRMEK için.
+     * Sıfırdan yeniden yazmaktan kaçınır; kullanıcı sesini ve mevcut yapıyı korur.
+     */
+    private static function rubricEnhance(): string
+    {
+        return <<<TXT
+Sen Türkçe mimarlık/inşaat mühendisliği sözlüğü editörüsün. Sana MEVCUT bir
+sözlük girdisinin geçerli içeriği verilecek ve onu GELİŞTİRMEKLE görevlisin.
+Yazar Osman Doğan — mimar ve inşaat mühendisi — kişisel sitesi için.
+
+EN ÖNEMLİ KURAL: SIFIRDAN YENİDEN YAZMAYACAKSIN. Mevcut tanımın yapısını,
+yazar sesini ve doğru bilgilerini KORU. Sadece eksikleri tamamla ve hataları
+düzelt. Kullanıcı yazımın iyileştiğini hissetsin, ama "AI bir şey yazdı"
+hissi vermeyecek.
+
+GELİŞTİRME ALANLARI (sırayla değerlendir):
+1. Eksik teknik açıklamalar varsa ekle (örn. boyut/oran/standart belirtilmemişse).
+2. Türkçe yazım/dilbilgisi hataları varsa düzelt.
+3. Belirsiz cümleleri net ifadeyle değiştir.
+4. Mevcut "category" makul değilse düzelt (listeden seç).
+5. Daha iyi "aliases" varsa ekle — ama yanlış olanları çıkarma.
+6. EMIN olduğun ek referans varsa ekle (uydurma). Mevcut referansları SİL ME.
+7. Pratik örnek yoksa, kısa bir Türk yapı ortamı örneği ekleyebilirsin.
+
+YASAKLAR:
+- Mevcut metni tamamen değiştirme/yeniden yazma.
+- Mevcut referansları silme veya yerine farklı kaynak koyma (sadece ek yapabilirsin).
+- Belirsiz/uydurma bilgi ekleme. Emin değilsen DOKUNMA.
+- Üslubu drastik değiştirme. Akademik ama erişilebilir tonu koru.
+
+YANIT KURALLARI:
+- SADECE geçerli JSON döndür. Markdown, kod bloğu, açıklama YOK.
+- Tüm metin Türkçe.
+- JSON şeması TAM olarak şu (yeni-üretim ile aynı):
+{
+  "term": "Mevcut terim (değiştirme; sadece yazım hatası varsa düzelt)",
+  "slug_hint": "url-uyumlu-kısa-slug (mevcut slug verildiyse onu kullan)",
+  "category": "Strüktür | Yapı Elemanı | Malzeme | Tasarım | Yönetmelik | BIM | Tarih | Sürdürülebilirlik | Mühendislik | Şehircilik | Diğer",
+  "aliases": ["mevcut + eklediklerin (silme yapma)"],
+  "definition_html": "<p>...</p> Geliştirilmiş HTML gövde. Mevcut yapıyı koru.",
+  "references": [
+    { "text": "Mevcut + yeni (mevcudu sil ME)", "url": "https://..." }
+  ]
+}
+- references listesinde MEVCUT öğeleri OLDUĞU GİBİ ÖNCE KOY, yenileri sona ekle.
+TXT;
+    }
+
     private static function userPayload(string $term, string $context, string $depth): string
     {
         $depthLabel = match ($depth) {
@@ -276,6 +336,93 @@ TXT;
             $lines[] = 'BAĞLAM/AÇIKLAMA: ' . $context;
         }
         return implode("\n", $lines);
+    }
+
+    /**
+     * Enhance modunda kullanıcı payload'u — mevcut içerik AI'a serileştirilir.
+     * @param array<string,mixed> $current
+     */
+    private static function enhancePayload(string $term, string $context, string $depth, array $current): string
+    {
+        $depthLabel = match ($depth) {
+            'derin' => 'gerekirse uzat (4-5 paragrafa kadar)',
+            'kisa'  => 'mevcut uzunluğu koru (gereksiz şişirme)',
+            default => 'mevcut uzunluğa yakın, %20-30 büyüyebilir',
+        };
+
+        $curDef  = trim((string) ($current['definition'] ?? ''));
+        $curCat  = trim((string) ($current['category']   ?? ''));
+        $curAli  = trim((string) ($current['aliases']    ?? ''));
+        $curRefs = $current['references'] ?? '';
+        // references string olarak gelirse (JSON), pretty hale getir
+        $refsBlock = '';
+        if (is_string($curRefs) && $curRefs !== '') {
+            $dec = json_decode($curRefs, true);
+            if (is_array($dec)) {
+                foreach ($dec as $i => $r) {
+                    if (!is_array($r)) continue;
+                    $refsBlock .= '  ' . ($i + 1) . ') '
+                        . (string) ($r['text'] ?? '')
+                        . ((!empty($r['url'])) ? '  (' . $r['url'] . ')' : '')
+                        . "\n";
+                }
+            } else {
+                $refsBlock = $curRefs;
+            }
+        } elseif (is_array($curRefs)) {
+            foreach ($curRefs as $i => $r) {
+                if (!is_array($r)) continue;
+                $refsBlock .= '  ' . ($i + 1) . ') '
+                    . (string) ($r['text'] ?? '')
+                    . ((!empty($r['url'])) ? '  (' . $r['url'] . ')' : '')
+                    . "\n";
+            }
+        }
+        if ($refsBlock === '') $refsBlock = '  (yok)';
+
+        $lines = [
+            'GÖREV: GELİŞTİRME MODU — aşağıdaki mevcut sözlük girdisini güçlendir.',
+            '       Sıfırdan yeniden yazma. Yapıyı ve yazar sesini koru.',
+            '',
+            'TERİM: ' . $term,
+            'UZUNLUK STRATEJİSİ: ' . $depthLabel,
+        ];
+        if ($context !== '') {
+            $lines[] = 'KULLANICI NOTU: ' . $context;
+        }
+        $lines[] = '';
+        $lines[] = 'MEVCUT İÇERİK ─────────────────────────────';
+        $lines[] = 'Kategori: ' . ($curCat !== '' ? $curCat : '(yok)');
+        $lines[] = 'Alias\'lar: ' . ($curAli !== '' ? $curAli : '(yok)');
+        $lines[] = 'Mevcut Kaynaklar:';
+        $lines[] = $refsBlock;
+        $lines[] = '';
+        $lines[] = 'Mevcut Tanım (HTML):';
+        $lines[] = $curDef !== '' ? $curDef : '(yok)';
+        $lines[] = '────────────────────────────────────────';
+        $lines[] = '';
+        $lines[] = 'YAPACAĞIN: Yukarıyı GELİŞTİR. Mevcut metnin %70-80\'ini koru;';
+        $lines[] = 'eksikleri tamamla, hataları düzelt. Mevcut referansları SİL ME;';
+        $lines[] = 'sadece sonuna ekle (varsa, emin olduğun).';
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Verilen current girdisinde gerçekten mevcut içerik var mı?
+     * Sadece boş alanlardan oluşan dizi → yeni-üretim modu.
+     * @param array<string,mixed> $current
+     */
+    private static function hasCurrentContent(array $current): bool
+    {
+        if ($current === []) return false;
+        $def = trim((string) ($current['definition'] ?? ''));
+        $cat = trim((string) ($current['category']   ?? ''));
+        $ali = trim((string) ($current['aliases']    ?? ''));
+        $ref = $current['references'] ?? '';
+        if (is_array($ref)) $ref = json_encode($ref);
+        $ref = trim((string) $ref);
+        return $def !== '' || $cat !== '' || $ali !== '' || ($ref !== '' && $ref !== '[]');
     }
 
     /**

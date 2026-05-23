@@ -126,7 +126,17 @@ final class GlossaryController
                 return Response::json(['ok' => false, 'message' => 'Terim en az 2 karakter olmalı.'], 400);
             }
 
-            $draft = \App\Services\AiGlossaryService::draft($term, $ctx, $depth);
+            // GELİŞTİRME modu: form mevcut bir girdiyi düzenliyorsa, current_*
+            // alanları AI'a bağlam olarak geçer ve "sıfırdan yazma" yerine
+            // "güçlendir" rubric'i devreye girer.
+            $current = [
+                'definition' => (string) $req->input('current_definition', ''),
+                'category'   => (string) $req->input('current_category',   ''),
+                'aliases'    => (string) $req->input('current_aliases',    ''),
+                'references' => (string) $req->input('current_references', ''),
+            ];
+
+            $draft = \App\Services\AiGlossaryService::draft($term, $ctx, $depth, $current);
             return Response::json(['ok' => true, 'draft' => $draft]);
         } catch (\Throwable $e) {
             if (class_exists(\App\Services\Logger::class)) {

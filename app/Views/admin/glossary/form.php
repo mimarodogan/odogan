@@ -46,13 +46,24 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
     <div class="post-editor-grid">
         <div class="post-editor-main">
 
-            <?php if (!$isEdit && function_exists('feature') && feature('glossary_ai_enabled')): ?>
-            <section class="pe-section glossary-ai-section" id="glossary-ai-panel">
+            <?php if (function_exists('feature') && feature('glossary_ai_enabled')): ?>
+            <section class="pe-section glossary-ai-section <?= $isEdit ? 'glossary-ai-enhance' : 'glossary-ai-new' ?>"
+                     id="glossary-ai-panel"
+                     data-mode="<?= $isEdit ? 'enhance' : 'new' ?>">
                 <h2 class="pe-section-title">
                     <span aria-hidden="true">✶</span>
-                    AI ile Taslak Üret
+                    <?= $isEdit ? 'AI ile Mevcut Girdiyi Geliştir' : 'AI ile Taslak Üret' ?>
                     <span class="badge badge-scheduled" style="margin-left:.5rem">opsiyonel</span>
                 </h2>
+                <?php if ($isEdit): ?>
+                <p class="pe-section-hint">
+                    AI mevcut tanımı, kategorini, alias'larını ve kaynaklarını okuyacak;
+                    <strong>sıfırdan yeniden yazmadan</strong> eksikleri tamamlayacak,
+                    yazım hatalarını düzeltecek, gerekirse emin olduğu yeni kaynaklar
+                    ekleyecek. Yazar sesin korunur. Çalıştırınca form alanları
+                    geliştirilmiş içerikle değişir — kaydet'e basmadan inceleyebilirsin.
+                </p>
+                <?php else: ?>
                 <p class="pe-section-hint">
                     Terim adını yaz, dilersen 1-2 cümlelik bağlam ekle. AI
                     Türkçe sözlük girdisi (tanım + kategori + alias + kaynaklar)
@@ -60,12 +71,17 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                     incele &amp; düzenleyebilirsin. Önerilen kaynakların URL'leri
                     otomatik doğrulanır — ölü olanlar sarı işaretle çıkar.
                 </p>
+                <?php endif; ?>
                 <div class="glossary-ai-grid">
                     <label>
-                        <span>Bağlam (opsiyonel)</span>
+                        <span>
+                            <?= $isEdit ? 'Geliştirme yönlendirmesi (opsiyonel)' : 'Bağlam (opsiyonel)' ?>
+                        </span>
                         <textarea id="glossary-ai-context"
                                   rows="2" maxlength="800"
-                                  placeholder="Örn: Konstrüktif değil, sürdürülebilirlik açısından ele al."></textarea>
+                                  placeholder="<?= $isEdit
+                                    ? 'Örn: Statik açıdan zayıf, daha çok teknik detay ekle.'
+                                    : 'Örn: Konstrüktif değil, sürdürülebilirlik açısından ele al.' ?>"></textarea>
                     </label>
                     <fieldset class="glossary-ai-depth" aria-label="Derinlik">
                         <legend class="visually-hidden">Derinlik</legend>
@@ -76,7 +92,7 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                 </div>
                 <div class="glossary-ai-actions">
                     <button type="button" class="btn btn-primary" id="glossary-ai-run">
-                        Taslak Üret
+                        <?= $isEdit ? 'Mevcut Girdiyi Geliştir' : 'Taslak Üret' ?>
                     </button>
                     <span class="glossary-ai-status muted" id="glossary-ai-status" aria-live="polite"></span>
                 </div>
@@ -214,6 +230,6 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 
 <script src="<?= esc(asset('js/editor.js')) ?>" defer></script>
 <script src="<?= esc(asset('js/references-editor.js')) ?>" defer></script>
-<?php if (!$isEdit && function_exists('feature') && feature('glossary_ai_enabled')): ?>
+<?php if (function_exists('feature') && feature('glossary_ai_enabled')): ?>
 <script src="<?= esc(asset('js/glossary-ai.js')) ?>" defer></script>
 <?php endif; ?>
