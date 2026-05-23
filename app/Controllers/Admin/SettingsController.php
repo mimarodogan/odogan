@@ -142,8 +142,9 @@ final class SettingsController
         // AI Derin Analiz — Faz 5. Anahtar boşsa .env ANTHROPIC_API_KEY kullanılır.
         // ai_analysis_enabled (features) açık + anahtar varsa editörde buton görünür.
         'ai' => [
-            'ai_model'          => ['type' => 'string', 'label' => 'AI Model (boş = claude-haiku-4-5)'],
-            'anthropic_api_key' => ['type' => 'string', 'label' => 'Claude API Anahtarı (boşsa .env ANTHROPIC_API_KEY kullanılır)'],
+            'ai_model'           => ['type' => 'string', 'label' => 'AI Model — Yazı analizi (boş = claude-haiku-4-5)'],
+            'glossary_ai_model'  => ['type' => 'string', 'label' => 'AI Model — Sözlük taslakları (boş = claude-sonnet-4-5; ansiklopedik yapı için Sonnet önerilir, Haiku output tavanına takılır)'],
+            'anthropic_api_key'  => ['type' => 'string', 'label' => 'Claude API Anahtarı (boşsa .env ANTHROPIC_API_KEY kullanılır)'],
         ],
     ];
 

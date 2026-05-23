@@ -35,7 +35,10 @@ final class AiGlossaryService
 {
     private const ENDPOINT = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
-    private const DEFAULT_MODEL = 'claude-haiku-4-5';
+    // Glossary AI varsayılanı Sonnet: ansiklopedik 12-bölümlü çıktı için
+    // Haiku'nun 8192 output tavanı dar. Sonnet 4.5'in 64K output kapasitesi
+    // şablonu rahat sığdırır. Admin Settings'ten override edebilir.
+    private const DEFAULT_MODEL = 'claude-sonnet-4-5';
 
     public static function isEnabled(): bool
     {
@@ -55,7 +58,11 @@ final class AiGlossaryService
 
     private static function model(): string
     {
-        $m = trim((string) Setting::get('ai_model', '', 'ai'));
+        // Glossary'ye özel model önceliği: glossary_ai_model > ai_model > sonnet default.
+        $m = trim((string) Setting::get('glossary_ai_model', '', 'ai'));
+        if ($m === '') {
+            $m = trim((string) Setting::get('ai_model', '', 'ai'));
+        }
         return $m !== '' ? $m : self::DEFAULT_MODEL;
     }
 
@@ -92,16 +99,15 @@ final class AiGlossaryService
             ? self::enhancePayload($term, $context, $depth, $current)
             : self::userPayload($term, $context, $depth);
 
-        // max_tokens: yapı 12 H2 bölümlü ansiklopedik şablon. Hedef:
-        //   kısa  ≈ 4000 token (kısa-öz bölümler)
-        //   orta  ≈ 6500 token (varsayılan)
-        //   derin ≈ 8000 token (haiku-4-5 tavanına yakın)
-        // Geliştirme modunda mevcut metin prompt'a girer; yine de output
-        // limitini koruruz (zaten haiku üst sınırı 8192).
+        // max_tokens — modele göre. Haiku 4.5'in 8192 output tavanı 12-bölümlü
+        // şablon için dar; Sonnet 4.5 ise 64K'ya kadar verir.
+        //   Haiku:  kısa=4000  orta=7000  derin=8000  (tavan)
+        //   Sonnet: kısa=7000  orta=14000 derin=20000 (cömert)
+        $usingHaiku = str_contains(strtolower(self::model()), 'haiku');
         $maxTokens = match ($depth) {
-            'derin' => 8000,
-            'kisa'  => 4000,
-            default => 6500,
+            'derin' => $usingHaiku ? 8000  : 20000,
+            'kisa'  => $usingHaiku ? 4000  : 7000,
+            default => $usingHaiku ? 7000  : 14000,
         };
 
         $body = [
@@ -133,7 +139,22 @@ final class AiGlossaryService
         $json = self::extractJson('{' . $text);
         if (!is_array($json)) {
             $reason = (string) ($resp['stop_reason'] ?? '?');
-            throw new \RuntimeException('AI yanıtı çözümlenemedi (stop=' . $reason . '). Başı: ' . mb_substr(trim($text), 0, 160));
+            $hint = '';
+            if ($reason === 'max_tokens') {
+                $currentModel = self::model();
+                if (str_contains(strtolower($currentModel), 'haiku')) {
+                    $hint = ' → Çıktı Haiku tavanına takıldı. Settings\'ten '
+                          . '"glossary_ai_model = claude-sonnet-4-5" yap (64K output kapasitesi) '
+                          . 'veya derinliği "Kısa"ya çek.';
+                } else {
+                    $hint = ' → Bu derinlik için bile çıktı kesildi; "Orta" veya "Kısa" derinlikle dene.';
+                }
+            }
+            throw new \RuntimeException(
+                'AI yanıtı çözümlenemedi (stop=' . $reason . ').'
+                . $hint
+                . ' Başı: ' . mb_substr(trim($text), 0, 160)
+            );
         }
 
         return self::normalize($json);
