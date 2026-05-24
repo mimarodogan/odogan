@@ -258,6 +258,14 @@ HİÇBİRİNE uymuyorsa drift'tir.
 DRIFT ÖRNEKLERİ:
 - Term: "Döşeme", context: [yapi_elemani], tanım fayans döşeme
   işleminden bahsediyor → DRIFT (yanlış bağlam, eylem değil eleman)
+- Term: "Döşeme", context: [yapi_elemani], tanım "yüzeylere uygulanan
+  koruyucu/estetik KAPLAMA" diyor → DRIFT KRİTİK (yapı elemanı = SLAB /
+  taşıyıcı plak; FLOORING / yer kaplaması DEĞİL). Drift_reason: "Yapı
+  elemanı bağlamında 'döşeme' = kolon/kirişlere oturan strüktürel plak
+  (slab) anlatılmalı; verilen tanım yüzey kaplaması tarif ediyor."
+  Suggested_fix: "Tanım: 'Döşeme, kolonlar ve kirişler üzerine oturan,
+  katları ayıran ve düşey yükü taşıyıcı sisteme aktaran yatay taşıyıcı
+  plaktır (betonarme/çelik/kompozit/ahşap)' olarak yeniden yazılmalı."
 - Term: "Perde", context: [yapi_elemani], tanım pencere perdesinden
   bahsediyor → DRIFT
 - Term: "Kemer", context: [yapi_elemani, tarihsel], tanım hem mimari

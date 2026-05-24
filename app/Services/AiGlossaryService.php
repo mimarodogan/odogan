@@ -672,13 +672,26 @@ TXT;
     private static function contextForbiddenList(array $contextTypes, string $term): string
     {
         $map = [
+            // CRITICAL — "Döşeme" drift case'i: AI "yapı elemanı" deyince
+            // YANLIŞLIKLA "yer kaplaması / flooring" yorumlar (drift).
+            // DOĞRU: yapı elemanı = STRÜKTÜREL TAŞIYICI (slab, beam, column).
             'yapi_elemani' => '  ✗ Eylem/işlem ("X döşeme işi", "X yapımı", "X uygulaması")
+  ✗ YÜZEY KAPLAMASI / dekoratif bitirme ("seramik kaplama", "parke",
+    "yer kaplaması", "duvar kaplaması", "flooring", "wall covering")
+     ↳ Doğru bağlam: STRÜKTÜREL eleman — taşıyıcı plak, kiriş, kolon,
+       duvar (mimari/statik açıdan yük taşıyan bileşen)
+     ↳ Kritik örnek: "Döşeme" → "yüzeye uygulanan koruyucu kaplama" YASAK;
+       "kolon/kirişlere oturan yatay TAŞIYICI plak (slab/floor deck)" DOĞRU
+     ↳ İngilizce karşılık SLAB / FLOOR DECK / BEAM olmalı, "FLOORING" değil
   ✗ Malzeme tanımı ("şu malzemeden yapılır" yerine "şu işleve sahip eleman")
   ✗ Hizmet/firma adı, satış-perakende bağlamı',
             'yapi_teknigi' => '  ✗ Bitmiş ürün/eleman tanımı (eylem olmalı, nesne değil)
-  ✗ Malzemenin kendisi (sürecin ham hammaddesi farklı şey)',
+  ✗ Malzemenin kendisi (sürecin ham hammaddesi farklı şey)
+  ✗ Yer/duvar kaplama uygulaması ("fayans döşeme işi") — bu tekniğin
+    kendisi değil, sadece bir alt-uygulamadır',
             'malzeme' => '  ✗ Ondan yapılmış son ürünün tanımı (malzemenin kendisi olmalı)
-  ✗ Üretim sürecinin adımları (eylem değil, ham bileşen)',
+  ✗ Üretim sürecinin adımları (eylem değil, ham bileşen)
+  ✗ Estetik/dekoratif kullanım odağı (kompozisyonel-fiziksel özellik öne çıkmalı)',
             'mimari_akim' => '  ✗ Tek bir yapı/proje (akım = trend, hareket, üslup)
   ✗ Tek bir mimarın özgün dili (kişisel stil değil, kolektif akım)
   ✗ Yapı tekniği veya malzeme',
