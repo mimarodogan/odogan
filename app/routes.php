@@ -389,23 +389,27 @@ $router->group('/admin', function ($r) {
     $r->post('/404-loglari/{id}/sil',       [AdminNotFoundController::class, 'destroy']);
 
     // Glossary (Tier 7)
+    // KRİTİK: Router first-match-wins → LİTERAL path'li POST'lar
+    // /sozluk/{id} catch-all'undan ÖNCE register edilmeli. Aksi takdirde
+    // /sozluk/check-dup → /sozluk/{id} match'i (id="check-dup") → update()
+    // çalışır → 404. Aynı kural /sozluk/toplu için de geçerli.
     $r->get('/sozluk',              [AdminGlossaryController::class, 'index']);
     $r->get('/sozluk/yeni',         [AdminGlossaryController::class, 'create']);
+    $r->get('/sozluk/toplu',        [AdminGlossaryController::class, 'batchIndex']);
     $r->post('/sozluk',             [AdminGlossaryController::class, 'store']);
     $r->post('/sozluk/ai-uret',     [AdminGlossaryController::class, 'aiDraft']);
+    // H3: AJAX duplicate term check — literal POST, {id} catch-all'dan önce
+    $r->post('/sozluk/check-dup',   [AdminGlossaryController::class, 'checkDuplicate']);
+    $r->post('/sozluk/toplu',       [AdminGlossaryController::class, 'batchEnqueue']);
+    $r->post('/sozluk/toplu/isle',  [AdminGlossaryController::class, 'batchProcessNext']);
+    // ─── {id} CATCH-ALL ROUTE'LARI — literal POST'lardan SONRA ──────────
     $r->get('/sozluk/{id}/duzenle', [AdminGlossaryController::class, 'edit']);
+    $r->get('/sozluk/{id}/autolink-debug', [AdminGlossaryController::class, 'autoLinkDebug']);
     $r->post('/sozluk/{id}',        [AdminGlossaryController::class, 'update']);
     $r->post('/sozluk/{id}/sil',    [AdminGlossaryController::class, 'destroy']);
     // H1: Hızlı aktivasyon onayı (taslak → public)
     $r->post('/sozluk/{id}/aktif',  [AdminGlossaryController::class, 'toggleActive']);
-    // H3: AJAX duplicate term check (form blur'unda anlık uyarı)
-    $r->post('/sozluk/check-dup',   [AdminGlossaryController::class, 'checkDuplicate']);
     $r->post('/sozluk/{id}/ai-iliskili', [AdminGlossaryController::class, 'aiSuggestRelated']);
-    $r->get('/sozluk/{id}/autolink-debug', [AdminGlossaryController::class, 'autoLinkDebug']);
-    // Toplu üretim (batch mode)
-    $r->get('/sozluk/toplu',       [AdminGlossaryController::class, 'batchIndex']);
-    $r->post('/sozluk/toplu',      [AdminGlossaryController::class, 'batchEnqueue']);
-    $r->post('/sozluk/toplu/isle', [AdminGlossaryController::class, 'batchProcessNext']);
 
     // Affiliate (Tier 8)
     $r->get('/affiliate',           [AdminAffiliateController::class, 'index']);
