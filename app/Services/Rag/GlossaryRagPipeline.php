@@ -40,7 +40,7 @@ final class GlossaryRagPipeline
     private const ENDPOINT = 'https://api.anthropic.com/v1/messages';
     private const API_VERSION = '2023-06-01';
     private const WRITER_MODEL = 'claude-sonnet-4-5';
-    private const WRITER_MAX_TOKENS = 5000;
+    private const WRITER_MAX_TOKENS = 8000; // Sonnet 4.5 cömert; Türkçe BPE 1.5x
     private const TIMEOUT_SEC = 120;
 
     /**
@@ -221,8 +221,13 @@ final class GlossaryRagPipeline
             . "BAĞLAM TÜRÜ: {$ctxText}\n\n"
             . "KAYNAK PASAJLAR (numaralı — citation için [1] [2] kullan):\n"
             . $sourceBlock
-            . "Bu kaynaklara DAYANARAK '{$term}' için sözlük girdisini JSON ile üret.";
+            . "Bu kaynaklara DAYANARAK '{$term}' için sözlük girdisini hazırla ve "
+            . "'submit_glossary' tool'u ile gönder.";
 
+        // Tool use mimarisi: Anthropic API garanti valid JSON döndürür
+        // (eski prefill yaklaşımında uzun çıktılarda JSON kesilebiliyordu —
+        // stop=end_turn ama JSON tamamlanmamış sorunu).
+        // Bkz: docs/GLOSSARY_AI_REDESIGN.md — Writer reliability fix
         $body = [
             'model'       => self::writerModel(),
             'max_tokens'  => self::WRITER_MAX_TOKENS,
@@ -232,25 +237,40 @@ final class GlossaryRagPipeline
                 'text' => $sysPrompt,
                 'cache_control' => ['type' => 'ephemeral'],
             ]],
+            'tools' => [self::writerToolSchema()],
+            'tool_choice' => ['type' => 'tool', 'name' => 'submit_glossary'],
             'messages' => [
                 ['role' => 'user', 'content' => $userMsg],
-                ['role' => 'assistant', 'content' => '{'],
+                // ⚠ Tool use ile prefill kullanılmaz — tool_choice zorunlu kılar
             ],
         ];
 
         $resp = self::http($key, $body);
-        $text = '';
+
+        // Tool use response parse: content array içinde tool_use bloğu aranır
+        $json = null;
+        $debugText = '';
         foreach ((array) ($resp['content'] ?? []) as $blk) {
-            if (($blk['type'] ?? '') === 'text') {
-                $text .= (string) ($blk['text'] ?? '');
+            $blkType = (string) ($blk['type'] ?? '');
+            if ($blkType === 'tool_use' && ($blk['name'] ?? '') === 'submit_glossary') {
+                $json = is_array($blk['input'] ?? null) ? $blk['input'] : null;
+                break;
+            }
+            if ($blkType === 'text') {
+                $debugText .= (string) ($blk['text'] ?? '');
             }
         }
-        $json = self::extractJson('{' . $text);
         if (!is_array($json)) {
             $reason = (string) ($resp['stop_reason'] ?? '?');
+            $hint = '';
+            if ($reason === 'max_tokens') {
+                $hint = ' → Çıktı max_tokens tavanına dayandı; Writer FAQ\'ı kısa tutmalı. '
+                    . 'WRITER_MAX_TOKENS şu an ' . self::WRITER_MAX_TOKENS . '.';
+            } elseif ($reason === 'end_turn' && $debugText !== '') {
+                $hint = ' → Model tool_use yerine text döndürdü: ' . mb_substr(trim($debugText), 0, 200);
+            }
             throw new \RuntimeException(
-                'Writer çıktısı çözümlenemedi (stop=' . $reason . '). '
-                . 'Başı: ' . mb_substr(trim($text), 0, 160)
+                'Writer çıktısı tool_use bloğunda bulunamadı (stop=' . $reason . ').' . $hint
             );
         }
 
@@ -325,6 +345,81 @@ final class GlossaryRagPipeline
         ];
     }
 
+    /**
+     * Anthropic tool_use schema — Writer çıktısını structured/garanti-valid
+     * JSON olarak alır. Prefill yaklaşımının uzun-çıktı kesilme sorununu çözer.
+     *
+     * @return array<string,mixed>
+     */
+    private static function writerToolSchema(): array
+    {
+        return [
+            'name'        => 'submit_glossary',
+            'description' => 'Mimari sözlük girdisini sisteme kaydet. '
+                . 'Tüm alanlar zorunludur. HTML kaynaklara dayanmalı, '
+                . 'cümle sonlarında [1] [2] citation içermelidir.',
+            'input_schema' => [
+                'type' => 'object',
+                'required' => ['term', 'category', 'aliases', 'html', 'faq', 'references'],
+                'properties' => [
+                    'term' => [
+                        'type' => 'string',
+                        'description' => 'Resmi terim adı (Türkçe yazım kuralları)',
+                    ],
+                    'slug_hint' => [
+                        'type' => 'string',
+                        'description' => 'URL-uyumlu slug öneri (küçük harf, tire-ayraçlı)',
+                    ],
+                    'category' => [
+                        'type' => 'string',
+                        'description' => 'TEK kategori. Liste: Strüktür, Yapı Elemanı, Cephe, '
+                            . 'Malzeme, Yapı Teknolojisi, Mimari Akım, Tasarım Yaklaşımı, '
+                            . 'Sürdürülebilirlik, BIM, Kentleşme, Planlama, İç Mimarlık, '
+                            . 'Peyzaj, Restorasyon, Yapı Fiziği, Pasif Tasarım, Detay, '
+                            . 'Tipoloji, Bezeme, Taşıyıcı Sistem, Diğer',
+                    ],
+                    'aliases' => [
+                        'type'  => 'array',
+                        'items' => ['type' => 'string'],
+                        'description' => 'TR + yabancı dil + kısaltma karşılıkları (max 15)',
+                    ],
+                    'html' => [
+                        'type' => 'string',
+                        'description' => 'Sözlük tanım HTML. YALNIZCA iki H2: '
+                            . '"[TERİM] Nedir?" + "[TERİM] Kelime Anlamı ve Kökeni". '
+                            . 'İlk paragraf 40-50 kelime (Featured Snippet). Toplam 400-600 kelime. '
+                            . 'Her ana cümle sonunda [1] [2] kaynak referansı. '
+                            . 'İzinli: h2, h3, p, ul, ol, li, strong, em. YASAK: h1, script.',
+                    ],
+                    'faq' => [
+                        'type'  => 'array',
+                        'description' => 'En az 8 SSS — gerçek "People Also Ask" tipi sorular',
+                        'items' => [
+                            'type' => 'object',
+                            'required' => ['q', 'a'],
+                            'properties' => [
+                                'q' => ['type' => 'string', 'description' => 'Soru (max 220 karakter)'],
+                                'a' => ['type' => 'string', 'description' => 'Cevap (2-3 cümle, max 1500 karakter)'],
+                            ],
+                        ],
+                    ],
+                    'references' => [
+                        'type'  => 'array',
+                        'description' => 'Kaynaklara atıf — Writer\'a verilen pasajlardan veya ek',
+                        'items' => [
+                            'type' => 'object',
+                            'required' => ['text'],
+                            'properties' => [
+                                'text' => ['type' => 'string', 'description' => 'Kaynak başlığı/açıklaması'],
+                                'url'  => ['type' => 'string', 'description' => 'URL (https zorunlu, opsiyonel)'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     private static function writerSystemPrompt(): string
     {
         return <<<TXT
@@ -377,26 +472,14 @@ KESİN KURALLAR
    "uyguladığım", "gördüğüm") YASAK.
 
 ═══════════════════════════════════════════════════════════════════
-JSON ŞEMASI (SADECE bu çıktı, başka hiçbir şey)
+ÇIKTI YÖNTEMİ
 ═══════════════════════════════════════════════════════════════════
 
-{
-  "term": "Resmi terim adı (Türkçe yazım kuralları)",
-  "slug_hint": "url-uyumlu-slug",
-  "category": "TEK kategori (listeden)",
-  "aliases": ["TR karşılık", "EN karşılık", "kısaltma"],
-  "html": "<h2>...</h2><p>...[1]</p>...<h2>Kelime Anlamı...</h2>...",
-  "faq": [
-    {"q":"Soru 1?", "a":"Cevap (2-3 cümle)"},
-    {"q":"Soru 2?", "a":"Cevap"},
-    ... (en az 8)
-  ],
-  "references": [
-    {"text": "Kaynak başlığı — yazar, yayın", "url": "https://..."}
-  ]
-}
+Çıktını 'submit_glossary' TOOL'u aracılığıyla ver. Tool şemasındaki TÜM
+zorunlu alanları doldur. Düz metin/markdown/JSON yazma — yalnızca tool
+çağrısı yap.
 
-KATEGORİ LİSTESİ (TEK seç):
+Kategori için listeden TEK seç:
 Strüktür, Yapı Elemanı, Cephe, Malzeme, Yapı Teknolojisi, Mimari Akım,
 Tasarım Yaklaşımı, Sürdürülebilirlik, BIM, Kentleşme, Planlama,
 İç Mimarlık, Peyzaj, Restorasyon, Yapı Fiziği, Pasif Tasarım, Detay,
