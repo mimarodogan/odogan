@@ -341,7 +341,7 @@ TXT;
      *   ts_standards:array
      * }
      */
-    public static function draftOutline(string $term, string $context = '', string $depth = 'orta', array $current = []): array
+    public static function draftOutline(string $term, string $context = '', string $depth = 'orta', array $current = [], string $contextType = 'diger'): array
     {
         $key = self::apiKey();
         if ($key === '') {
@@ -445,7 +445,7 @@ TXT;
      *   faq?:array<int,array{q:string,a:string}>
      * }
      */
-    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = [], array $outline = []): array
+    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = [], array $outline = [], string $contextType = 'diger'): array
     {
         $key = self::apiKey();
         if ($key === '') {
@@ -479,7 +479,7 @@ TXT;
         // Haiku üst sınırı: 8000 (8192 tavanından 192 buffer)
         $maxTokens = min($maxTokens, 8000);
 
-        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance, $outline);
+        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance, $outline, $contextType);
 
         $body = [
             'model'       => self::model(),
@@ -597,6 +597,67 @@ TXT;
         }
 
         return $out;
+    }
+
+    /**
+     * Q3: Bağlam etiketi direktifi — disambiguation hint olarak prompt'a
+     * inject edilir. Çok-anlamlı kelimelerin (örn. "döşeme" = yapı elemanı
+     * VS fayans döşeme eylemi) AI tarafından yanlış bağlamda
+     * yorumlanmasını önler.
+     *
+     * @return array<int,string>  satır listesi (chunkUserPayload'a append)
+     */
+    private static function buildContextDirective(string $term, string $contextType): array
+    {
+        $types = GlossaryValidationService::CONTEXT_TYPES;
+        if (!isset($types[$contextType]) || $contextType === 'diger') {
+            return [
+                '⚠ BAĞLAM TÜRÜ: BELİRLENMEMİŞ — mimari/yapı bağlamında en olası anlamı seç.',
+            ];
+        }
+        $label = $types[$contextType];
+        // Spesifik bağlam directives — AI'ya net "ne YAZMA" kuralı ver
+        $forbidden = self::contextForbiddenList($contextType, $term);
+        $lines = [
+            '═══════════════════════════════════════════════════════════',
+            '🎯 BAĞLAM TÜRÜ (KESİN UYULACAK): ' . $contextType,
+            '   → ' . $label,
+            '',
+            '"' . $term . '" terimini SADECE bu bağlamda ele al.',
+            'Aşağıdaki anlamlara GİTME (YAZMA):',
+            $forbidden,
+            '',
+            'Çok-anlamlı kelime ise sadece belirtilen bağlamı anlat;',
+            'günlük Türkçe veya komşu anlamları açıklama.',
+            '═══════════════════════════════════════════════════════════',
+        ];
+        return $lines;
+    }
+
+    /** Her context_type için "anlatma" yasak listesi — sık karıştırılan diğer bağlamlar. */
+    private static function contextForbiddenList(string $contextType, string $term): string
+    {
+        $map = [
+            'yapi_elemani' => '  ✗ Eylem/işlem ("X döşeme işi", "X yapımı", "X uygulaması")
+  ✗ Malzeme tanımı ("şu malzemeden yapılır" yerine "şu işleve sahip eleman")
+  ✗ Hizmet/firma adı, satış-perakende bağlamı',
+            'yapi_teknigi' => '  ✗ Bitmiş ürün/eleman tanımı (eylem olmalı, nesne değil)
+  ✗ Malzemenin kendisi (sürecin ham hammaddesi farklı şey)',
+            'malzeme' => '  ✗ Ondan yapılmış son ürünün tanımı (malzemenin kendisi olmalı)
+  ✗ Üretim sürecinin adımları (eylem değil, ham bileşen)',
+            'mimari_akim' => '  ✗ Tek bir yapı/proje (akım = trend, hareket, üslup)
+  ✗ Tek bir mimarın özgün dili (kişisel stil değil, kolektif akım)
+  ✗ Yapı tekniği veya malzeme',
+            'tasarim_yaklasimi' => '  ✗ Spesifik bir yapı elemanı veya teknik
+  ✗ Tarihsel akım (yaklaşım = düşünme/yöntemiyle ilgili, üslup değil)',
+            'tarihsel' => '  ✗ Modern teknik tanım (tarihsel bağlamda kalmalı)
+  ✗ Çağdaş yorum veya etki (tarihsel olgu üzerine odaklan)',
+            'standart_yonetmelik' => '  ✗ Genel kavram tanımı (belge/regülasyon olmalı)
+  ✗ Tarihsel köken (modern yönetmeliğin uygulaması olmalı)',
+            'ic_mimarlik' => '  ✗ Yapısal/strüktürel eleman (iç mekan donatısı olmalı)
+  ✗ Mimari akım veya teknik',
+        ];
+        return $map[$contextType] ?? '  (özel kısıtlama yok)';
     }
 
     /**
@@ -775,7 +836,7 @@ TXT;
      * Chunk'a özel kullanıcı mesajı — hangi bölümlerin üretileceği listelenir.
      * @param array<string,mixed> $current
      */
-    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance, array $outline = []): string
+    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance, array $outline = [], string $contextType = 'diger'): string
     {
         $plan = self::CHUNK_PLAN[$chunkId];
         $sections = implode("\n", (array) $plan['sections']);
@@ -785,10 +846,12 @@ TXT;
 
         $lines = [
             'TERİM: ' . $term,
-            'CHUNK: ' . $chunkId . ' — ' . $plan['label'],
-            'HEDEF UZUNLUK: ' . $wordBudget . ' kelime (±%20). Sıkı uy.',
-            'YAZAR SESİ: ' . $voice,
         ];
+        // Q3: Bağlam etiketi — disambiguation hint (DRIFT önleme)
+        $lines = array_merge($lines, self::buildContextDirective($term, $contextType));
+        $lines[] = 'CHUNK: ' . $chunkId . ' — ' . $plan['label'];
+        $lines[] = 'HEDEF UZUNLUK: ' . $wordBudget . ' kelime (±%20). Sıkı uy.';
+        $lines[] = 'YAZAR SESİ: ' . $voice;
         if ($context !== '') {
             $lines[] = 'KULLANICI NOTU: ' . $context;
         }

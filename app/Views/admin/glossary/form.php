@@ -129,6 +129,27 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                            value="<?= esc((string) ($item['category'] ?? '')) ?>"
                            placeholder="örn: Strüktür, Yapı Elemanı, BIM">
                 </label>
+
+                <?php // Q4: Bağlam Etiketi — AI disambiguation hint (drift önleme)
+                $_ctxTypes = \App\Services\GlossaryValidationService::CONTEXT_TYPES;
+                $_currentCtx = (string) ($item['context_type'] ?? 'diger');
+                ?>
+                <label>
+                    <span>Bağlam Türü <em style="color:var(--cobalt)">*</em></span>
+                    <select name="context_type" id="glossary-context-type" required>
+                        <?php foreach ($_ctxTypes as $key => $label): ?>
+                            <option value="<?= esc($key) ?>" <?= $_currentCtx === $key ? 'selected' : '' ?>>
+                                <?= esc($label) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="muted">
+                        <strong>Önemli:</strong> "Döşeme" gibi çok-anlamlı kelimelerde AI'nın yanlış
+                        bağlamı yorumlamasını engeller. Örnek: "Döşeme" yapı elemanı seçilirse, AI
+                        fayans döşeme eylemini değil zemin/tavan plakını tarif eder.
+                    </small>
+                </label>
+
                 <label>
                     <span>Eş Anlamlılar (virgülle)</span>
                     <input type="text" name="aliases" maxlength="2000"
@@ -260,6 +281,52 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
             </section>
 
             <?php if ($isEdit): ?>
+            <?php // Q5: Bağlam Denetimi kartı — drift kontrolü + yeniden denetle
+            $_qs = $item['quality_score'] ?? null;
+            $_df = !empty($item['drift_flag']);
+            $_dr = (string) ($item['drift_reason'] ?? '');
+            $_dsf = (string) ($item['drift_suggested_fix'] ?? '');
+            $_dca = (string) ($item['drift_checked_at'] ?? '');
+            ?>
+            <section class="pe-card glossary-drift-card <?= $_df ? 'is-drift' : ($_qs !== null ? 'is-ok' : 'is-unchecked') ?>">
+                <h2 class="pe-section-title">
+                    Bağlam Denetimi
+                    <?php if ($_qs !== null): ?>
+                        <span class="glossary-quality-badge"
+                              data-state="<?= $_df ? 'dup' : ($_qs >= 75 ? 'ok' : 'warn') ?>"
+                              style="margin-left:.4rem">
+                            <?= $_df ? '🔴' : ($_qs >= 75 ? '🟢' : '🟡') ?> <?= (int) $_qs ?>/100
+                        </span>
+                    <?php else: ?>
+                        <span class="badge badge-draft" style="margin-left:.4rem">Henüz denetlenmedi</span>
+                    <?php endif; ?>
+                </h2>
+                <?php if ($_df && $_dr !== ''): ?>
+                    <p style="background:rgba(176,36,29,.06);border-left:3px solid #B0241D;padding:.55rem .75rem;margin:.5rem 0;font-size:.9rem">
+                        <strong style="color:#B0241D">⚠ Drift:</strong> <?= esc($_dr) ?>
+                    </p>
+                    <?php if ($_dsf !== ''): ?>
+                        <p style="background:rgba(31,58,138,.04);border-left:3px solid var(--cobalt);padding:.55rem .75rem;margin:.5rem 0;font-size:.88rem">
+                            <strong style="color:var(--cobalt)">💡 Öneri:</strong> <?= esc($_dsf) ?>
+                        </p>
+                    <?php endif; ?>
+                <?php elseif ($_qs !== null && !$_df): ?>
+                    <p class="pe-helper">✓ Tanım, seçilen bağlam türünde doğru görünüyor.</p>
+                <?php else: ?>
+                    <p class="pe-helper">AI tabanlı bir doğrulama yapılmadı. "Denetle" ile drift kontrolü çalıştır.</p>
+                <?php endif; ?>
+                <?php if ($_dca !== ''): ?>
+                    <p class="pe-helper" style="font-size:.72rem;color:var(--ash)">Son denetim: <?= esc($_dca) ?></p>
+                <?php endif; ?>
+                <form method="post" action="<?= esc(url('/admin/sozluk/' . (int) $item['id'] . '/denetle')) ?>"
+                      style="margin-top:.5rem">
+                    <?= csrf_field() ?>
+                    <button type="submit" class="btn btn-block">
+                        <?= $_qs === null ? 'Denetle' : 'Yeniden Denetle' ?>
+                    </button>
+                </form>
+            </section>
+
             <section class="pe-card">
                 <h2 class="pe-section-title">URL</h2>
                 <label>

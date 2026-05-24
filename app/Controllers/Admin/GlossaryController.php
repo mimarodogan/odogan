@@ -144,6 +144,94 @@ final class GlossaryController
     }
 
     /**
+     * Q5/Q6: Tek bir terim için drift kontrolü — AI self-review.
+     * POST /admin/sozluk/{id}/denetle
+     */
+    public function validateTerm(Request $req, array $args): Response
+    {
+        if ($g = self::gate()) return $g;
+        $id = (int) ($args['id'] ?? 0);
+        $item = Glossary::findById($id);
+        if (!$item) return Response::notFound();
+
+        $contextType = (string) ($item['context_type'] ?? 'diger');
+        try {
+            $result = \App\Services\GlossaryValidationService::validate(
+                (string) $item['term'],
+                $contextType,
+                (string) ($item['definition'] ?? '')
+            );
+        } catch (\Throwable $e) {
+            flash('error', 'Denetim başarısız: ' . $e->getMessage());
+            return Response::redirect(url('/admin/sozluk/' . $id . '/duzenle'));
+        }
+
+        Glossary::update($id, [
+            'quality_score'       => $result['quality_score'],
+            'drift_flag'          => $result['drift_flag'] ? 1 : 0,
+            'drift_reason'        => $result['drift_reason'],
+            'drift_suggested_fix' => $result['suggested_fix'],
+            'drift_checked_at'    => $result['checked_at'],
+        ]);
+        if ($result['drift_flag']) {
+            flash('error', '⚠ Bağlam kayması tespit edildi: ' . ($result['drift_reason'] ?? '—'));
+        } else {
+            flash('success', '✓ Bağlam doğru — kalite skoru: ' . ($result['quality_score'] ?? 'N/A') . '/100');
+        }
+        return Response::redirect(url('/admin/sozluk/' . $id . '/duzenle'));
+    }
+
+    /**
+     * Q6: Tüm sözlük terimlerini toplu olarak denetim — drift bulunca işaretle.
+     * POST /admin/sozluk/toplu-denetle
+     * Synchronous: 26 terim sırayla (her biri ~3-5 sn × $0.001).
+     */
+    public function bulkValidate(Request $req): Response
+    {
+        if ($g = self::gate()) return $g;
+        $list = Glossary::all();
+        $checked = 0;
+        $drifts = 0;
+        $errors = 0;
+        // 30 saniyelik PHP default time limit'ini kaldır (30 terim ~2 dk sürer)
+        @set_time_limit(0);
+        foreach ($list as $g2) {
+            $id = (int) $g2['id'];
+            $contextType = (string) ($g2['context_type'] ?? 'diger');
+            try {
+                $result = \App\Services\GlossaryValidationService::validate(
+                    (string) $g2['term'],
+                    $contextType,
+                    (string) ($g2['definition'] ?? '')
+                );
+                Glossary::update($id, [
+                    'quality_score'       => $result['quality_score'],
+                    'drift_flag'          => $result['drift_flag'] ? 1 : 0,
+                    'drift_reason'        => $result['drift_reason'],
+                    'drift_suggested_fix' => $result['suggested_fix'],
+                    'drift_checked_at'    => $result['checked_at'],
+                ]);
+                $checked++;
+                if ($result['drift_flag']) $drifts++;
+            } catch (\Throwable $e) {
+                $errors++;
+                if (class_exists(\App\Services\Logger::class)) {
+                    \App\Services\Logger::warning('glossary.bulk_validate.error', [
+                        'term' => $g2['term'] ?? '?',
+                        'msg'  => $e->getMessage(),
+                    ], 'editorial');
+                }
+            }
+        }
+        $msg = sprintf(
+            'Denetim tamamlandı: %d terim incelendi · %d drift bulundu · %d hata.',
+            $checked, $drifts, $errors
+        );
+        flash($drifts > 0 ? 'error' : 'success', $msg);
+        return Response::redirect(url('/admin/sozluk'));
+    }
+
+    /**
      * H1: Hızlı aktivasyon toggle — listede "Onayla" butonu için.
      * AI ile üretilen taslaklar is_active=0 olarak gelir; admin tek tık ile
      * is_active=1 yapar → terim public sözlükte görünür hale gelir.
@@ -398,6 +486,12 @@ final class GlossaryController
             $ctx     = trim((string) $req->input('context', ''));
             $depth   = trim((string) $req->input('depth', 'orta'));
             $chunkId = trim((string) $req->input('chunk', ''));
+            // Q3: context_type — disambiguation hint
+            $contextType = trim((string) $req->input('context_type', 'diger'));
+            $allowedCtx = array_keys(\App\Services\GlossaryValidationService::CONTEXT_TYPES);
+            if (!in_array($contextType, $allowedCtx, true)) {
+                $contextType = 'diger';
+            }
             if (mb_strlen($term) < 2) {
                 return Response::json(['ok' => false, 'message' => 'Terim en az 2 karakter olmalı.'], 400);
             }
@@ -412,15 +506,15 @@ final class GlossaryController
                 'references' => (string) $req->input('current_references', ''),
             ];
 
-            // OUTLINE PRE-PASS: chunk=outline → küresel plan üret (6 çağrılık
-            // akışın 1. adımı). Çıktısı sonraki 5 chunk'a bağlam olarak verilir.
+            // OUTLINE PRE-PASS: chunk=outline → küresel plan üret (3 çağrılık
+            // akışın 1. adımı). Çıktısı sonraki 2 chunk'a bağlam olarak verilir.
             if ($chunkId === 'outline') {
-                $outline = \App\Services\AiGlossaryService::draftOutline($term, $ctx, $depth, $current);
+                $outline = \App\Services\AiGlossaryService::draftOutline($term, $ctx, $depth, $current, $contextType);
                 return Response::json(['ok' => true, 'chunk' => 'outline', 'data' => $outline]);
             }
 
             // PARÇALI üretim: chunk parametresi verilirse tek bir bölüm üretilir.
-            // Client outline'ı outline_json parametresiyle gönderir (chunk_1..5).
+            // Client outline'ı outline_json parametresiyle gönderir (chunk_1, chunk_2).
             if ($chunkId !== '') {
                 $outlineRaw = (string) $req->input('outline_json', '');
                 $outline = [];
@@ -428,7 +522,7 @@ final class GlossaryController
                     $dec = json_decode($outlineRaw, true);
                     if (is_array($dec)) $outline = $dec;
                 }
-                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current, $outline);
+                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current, $outline, $contextType);
                 return Response::json(['ok' => true, 'chunk' => $chunkId, 'data' => $data]);
             }
 
@@ -471,14 +565,21 @@ final class GlossaryController
             $err = 'Tanım en az 10 karakter olmalı.';
             return [];
         }
+        // Q4: context_type — sadece beklenen enum değerleri
+        $contextType = trim((string) $req->input('context_type', 'diger'));
+        $allowedCtx = array_keys(\App\Services\GlossaryValidationService::CONTEXT_TYPES);
+        if (!in_array($contextType, $allowedCtx, true)) {
+            $contextType = 'diger';
+        }
         return [
-            'term'        => mb_substr($term, 0, 180),
-            'definition'  => Sanitizer::clean($def),
-            'category'    => mb_substr(trim((string) $req->input('category', '')), 0, 80),
-            'aliases'     => mb_substr(trim((string) $req->input('aliases', '')), 0, 2000),
-            'references'  => self::normalizeReferences($req->input('references', null)),
-            'faq_json'    => self::normalizeFaq($req->input('faq', null)),
-            'is_active'   => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
+            'term'         => mb_substr($term, 0, 180),
+            'definition'   => Sanitizer::clean($def),
+            'category'     => mb_substr(trim((string) $req->input('category', '')), 0, 80),
+            'context_type' => $contextType,
+            'aliases'      => mb_substr(trim((string) $req->input('aliases', '')), 0, 2000),
+            'references'   => self::normalizeReferences($req->input('references', null)),
+            'faq_json'     => self::normalizeFaq($req->input('faq', null)),
+            'is_active'    => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
         ];
     }
 

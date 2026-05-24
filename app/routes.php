@@ -402,6 +402,8 @@ $router->group('/admin', function ($r) {
     $r->post('/sozluk/check-dup',   [AdminGlossaryController::class, 'checkDuplicate']);
     $r->post('/sozluk/toplu',       [AdminGlossaryController::class, 'batchEnqueue']);
     $r->post('/sozluk/toplu/isle',  [AdminGlossaryController::class, 'batchProcessNext']);
+    // Q6: Toplu drift denetimi (literal POST → {id} öncesinde)
+    $r->post('/sozluk/toplu-denetle', [AdminGlossaryController::class, 'bulkValidate']);
     // ─── {id} CATCH-ALL ROUTE'LARI — literal POST'lardan SONRA ──────────
     $r->get('/sozluk/{id}/duzenle', [AdminGlossaryController::class, 'edit']);
     $r->get('/sozluk/{id}/autolink-debug', [AdminGlossaryController::class, 'autoLinkDebug']);
@@ -409,6 +411,8 @@ $router->group('/admin', function ($r) {
     $r->post('/sozluk/{id}/sil',    [AdminGlossaryController::class, 'destroy']);
     // H1: Hızlı aktivasyon onayı (taslak → public)
     $r->post('/sozluk/{id}/aktif',  [AdminGlossaryController::class, 'toggleActive']);
+    // Q5: Tek terim için drift denetimi (edit sayfasından çağrılır)
+    $r->post('/sozluk/{id}/denetle', [AdminGlossaryController::class, 'validateTerm']);
     $r->post('/sozluk/{id}/ai-iliskili', [AdminGlossaryController::class, 'aiSuggestRelated']);
 
     // Affiliate (Tier 8)

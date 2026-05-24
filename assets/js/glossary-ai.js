@@ -139,7 +139,7 @@
         };
     };
 
-    // Tek bir chunk için API çağrısı (outline ve chunk_1..5 ortak)
+    // Tek bir chunk için API çağrısı (outline ve chunk_1..2 ortak)
     const fetchStep = async (stepId, term, context, depth, snap, outlineJson) => {
         const body = new URLSearchParams();
         body.set('_csrf', csrf);
@@ -147,6 +147,11 @@
         body.set('context', context);
         body.set('depth', depth);
         body.set('chunk', stepId);
+        // Q3: context_type (disambiguation hint) — form'daki select'ten al
+        const ctxSelect = document.getElementById('glossary-context-type');
+        if (ctxSelect && ctxSelect.value) {
+            body.set('context_type', ctxSelect.value);
+        }
         if (outlineJson) {
             body.set('outline_json', outlineJson);
         }

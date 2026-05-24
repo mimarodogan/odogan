@@ -12,6 +12,15 @@
         <a class="btn btn-primary" href="<?= esc(url('/admin/sozluk/yeni')) ?>">+ Yeni Terim</a>
         <?php if (function_exists('feature') && feature('glossary_ai_enabled')): ?>
             <a class="btn" href="<?= esc(url('/admin/sozluk/toplu')) ?>">⚡ Toplu AI Üretim</a>
+            <?php // Q6: Toplu drift denetimi ?>
+            <form method="post" action="<?= esc(url('/admin/sozluk/toplu-denetle')) ?>"
+                  style="display:inline"
+                  onsubmit="return confirm('Tüm sözlük terimlerinin AI bağlam denetimi çalıştırılsın mı? Bu işlem 1-2 dakika sürebilir.');">
+                <?= csrf_field() ?>
+                <button class="btn" type="submit" title="Tüm terimleri AI ile bağlam denetiminden geçir">
+                    🛡️ Tüm Terimleri Denetle
+                </button>
+            </form>
         <?php endif; ?>
         <a class="btn" target="_blank" href="<?= esc(url('/sozluk')) ?>">Public Sözlüğü Aç</a>
     </p>
@@ -27,6 +36,7 @@
             <th scope="col" style="width:1.4rem" aria-label="Durum"></th>
             <th scope="col">Terim</th>
             <th scope="col">Kategori</th>
+            <th scope="col">Kalite</th>
             <th scope="col">Slug</th>
             <th scope="col" style="text-align:right">Görüntülenme</th>
             <th scope="col" colspan="3">İşlem</th>
@@ -52,6 +62,20 @@
                     <?php endif; ?>
                 </td>
                 <td><?= esc((string) ($g['category'] ?? '—')) ?></td>
+                <td>
+                    <?php
+                    $_q = $g['quality_score'] ?? null;
+                    $_d = !empty($g['drift_flag']);
+                    if ($_q === null): ?>
+                        <span class="badge badge-draft" title="Henüz denetlenmedi">—</span>
+                    <?php elseif ($_d): ?>
+                        <span class="badge badge-rejected" title="Bağlam kayması — bu terim yanlış anlamda yorumlanmış olabilir">🔴 <?= (int) $_q ?>/100</span>
+                    <?php elseif ((int) $_q >= 75): ?>
+                        <span class="badge badge-published" title="Bağlam doğru">🟢 <?= (int) $_q ?>/100</span>
+                    <?php else: ?>
+                        <span class="badge badge-pending" title="Belirsiz — manuel kontrol önerilir">🟡 <?= (int) $_q ?>/100</span>
+                    <?php endif; ?>
+                </td>
                 <td><code><?= esc($g['slug']) ?></code></td>
                 <td style="text-align:right"><?= (int) $g['view_count'] ?></td>
                 <td>
@@ -129,5 +153,9 @@
 .gli-approve:hover {
     background: #1f4d2c;
     border-color: #1f4d2c;
+}
+/* Q5/Q6: Drift olanları daha belirgin yap */
+.glossary-admin-list tr td .badge-rejected {
+    font-weight: 600;
 }
 </style>
