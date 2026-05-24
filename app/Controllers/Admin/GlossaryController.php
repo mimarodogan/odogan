@@ -489,12 +489,35 @@ final class GlossaryController
             $ctx     = trim((string) $req->input('context', ''));
             $depth   = trim((string) $req->input('depth', 'orta'));
             $chunkId = trim((string) $req->input('chunk', ''));
+            // RAG v2: engine seçici — 'rag' verilirse pipeline tetiklenir (Faz 3)
+            $engine  = trim((string) $req->input('engine', 'legacy'));
             // Q3 + MC4: çoklu context_type — disambiguation hint.
             // Form'dan name="context_type[]" → array; tek değer için string.
             $rawCtxTypes = $req->input('context_type', null);
             $contextTypes = \App\Services\GlossaryValidationService::normalizeContextTypes($rawCtxTypes);
             if (mb_strlen($term) < 2) {
                 return Response::json(['ok' => false, 'message' => 'Terim en az 2 karakter olmalı.'], 400);
+            }
+
+            // ═══════ RAG v2 PIPELINE (yeni motor) ═══════
+            if ($engine === 'rag') {
+                $manualUrls = self::parseManualUrlsInput($req->input('manual_urls', ''));
+                $result = \App\Services\Rag\GlossaryRagPipeline::generate(
+                    $term, $contextTypes, $manualUrls
+                );
+                if (!$result['ok']) {
+                    $status = ($result['reject_reason'] ?? '') === 'no_sources' ? 422 : 500;
+                    return Response::json([
+                        'ok' => false,
+                        'message' => $result['message'] ?? 'RAG pipeline başarısız',
+                        'reject_reason' => $result['reject_reason'] ?? null,
+                    ], $status);
+                }
+                return Response::json([
+                    'ok' => true,
+                    'engine' => 'rag_v2',
+                    'data' => $result['data'],
+                ]);
             }
 
             // GELİŞTİRME modu: form mevcut bir girdiyi düzenliyorsa, current_*
@@ -574,16 +597,103 @@ final class GlossaryController
         // DB'ye CSV string olarak yaz; AI servisleri normalize'i kendi içinde çağırır.
         $ctxCsv = implode(',', $ctxList);
 
+        // RAG v2: source_urls — kullanıcının manuel girdiği fallback URLs
+        $sourceUrlsRaw = (string) $req->input('source_urls', '');
+        $sourceUrls = self::normalizeSourceUrls($sourceUrlsRaw);
+        // RAG v2: pipeline tarafından kaydedilirse rag_source_pasajs + rag_engine
+        // form'dan gelmez (hidden inputs olarak Faz 4'te eklenir).
+        $ragPasajs = trim((string) $req->input('rag_source_pasajs', ''));
+        $ragEngine = trim((string) $req->input('rag_engine', 'legacy'));
+        if (!in_array($ragEngine, ['legacy', 'rag_v2'], true)) {
+            $ragEngine = 'legacy';
+        }
+
         return [
-            'term'         => mb_substr($term, 0, 180),
-            'definition'   => Sanitizer::clean($def),
-            'category'     => mb_substr(trim((string) $req->input('category', '')), 0, 80),
-            'context_type' => $ctxCsv,
-            'aliases'      => mb_substr(trim((string) $req->input('aliases', '')), 0, 2000),
-            'references'   => self::normalizeReferences($req->input('references', null)),
-            'faq_json'     => self::normalizeFaq($req->input('faq', null)),
-            'is_active'    => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
+            'term'              => mb_substr($term, 0, 180),
+            'definition'        => Sanitizer::clean($def),
+            'category'          => mb_substr(trim((string) $req->input('category', '')), 0, 80),
+            'context_type'      => $ctxCsv,
+            'aliases'           => mb_substr(trim((string) $req->input('aliases', '')), 0, 2000),
+            'references'        => self::normalizeReferences($req->input('references', null)),
+            'faq_json'          => self::normalizeFaq($req->input('faq', null)),
+            'is_active'         => ((int) $req->input('is_active', 1)) === 1 ? 1 : 0,
+            'source_urls'       => $sourceUrls,
+            'rag_source_pasajs' => $ragPasajs !== '' ? $ragPasajs : null,
+            'rag_engine'        => $ragEngine,
         ];
+    }
+
+    /**
+     * Form'dan gelen "Kaynak URL'leri" textarea'sını parse eder.
+     * Her satır bir URL. URL geçersizse atlanır.
+     * DB'ye JSON array olarak kaydedilir.
+     *
+     * @return string  JSON-encoded array or '' if no valid URLs
+     */
+    private static function normalizeSourceUrls(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') return '';
+        $out = [];
+        foreach (preg_split('/\r?\n/', $raw) ?: [] as $line) {
+            $url = trim($line);
+            if ($url === '') continue;
+            // Comment satırı (# ile başlar) → başlık olarak değerlendir
+            if (str_starts_with($url, '#')) continue;
+            if (!preg_match('#^https?://#i', $url)) continue;
+            if (mb_strlen($url) > 500) continue;
+            if (in_array($url, $out, true)) continue;
+            $out[] = $url;
+            if (count($out) >= 10) break;
+        }
+        if ($out === []) return '';
+        return (string) json_encode(
+            array_map(static fn(string $u) => ['url' => $u], $out),
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
+    }
+
+    /**
+     * AI Draft endpoint'inden gelen manual_urls input'unu pipeline'a uygun
+     * forma çevirir. Textarea (newline-separated) veya JSON kabul.
+     *
+     * @return array<int,array{url:string,title:string,extract:string}>
+     */
+    private static function parseManualUrlsInput(mixed $raw): array
+    {
+        if (is_string($raw)) {
+            $raw = trim($raw);
+            if ($raw === '') return [];
+            // JSON formatı dene
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                $raw = $decoded; // aşağıdaki array akışına düşer
+            } else {
+                // newline-separated URL list
+                $out = [];
+                foreach (preg_split('/\r?\n/', $raw) ?: [] as $line) {
+                    $url = trim($line);
+                    if ($url === '' || str_starts_with($url, '#')) continue;
+                    if (!preg_match('#^https?://#i', $url)) continue;
+                    $out[] = ['url' => $url, 'title' => '', 'extract' => ''];
+                    if (count($out) >= 5) break;
+                }
+                return $out;
+            }
+        }
+        if (!is_array($raw)) return [];
+        $out = [];
+        foreach ($raw as $item) {
+            if (!is_array($item)) continue;
+            $url = trim((string) ($item['url'] ?? ''));
+            if ($url !== '' && !preg_match('#^https?://#i', $url)) continue;
+            $title = mb_substr(trim((string) ($item['title'] ?? '')), 0, 200);
+            $extract = mb_substr(trim((string) ($item['extract'] ?? '')), 0, 2000);
+            if ($url === '' && $title === '' && $extract === '') continue;
+            $out[] = ['url' => $url, 'title' => $title, 'extract' => $extract];
+            if (count($out) >= 5) break;
+        }
+        return $out;
     }
 
     /**

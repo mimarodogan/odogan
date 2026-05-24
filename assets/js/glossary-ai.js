@@ -324,4 +324,243 @@
         const defEl = document.getElementById('rich-body');
         if (defEl && success > 0) defEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    // ============================================================
+    // RAG v2 — Yeni AI butonu + A/B karşılaştırma (Faz 4)
+    // Bkz: docs/GLOSSARY_AI_REDESIGN.md
+    // ============================================================
+    const ragBtn = document.getElementById('glossary-rag-run');
+    const abPanel = document.getElementById('glossary-ab-compare');
+
+    const judgeIcon = (verdict) => {
+        if (verdict === 'supported') return '🟢';
+        if (verdict === 'partial') return '🟡';
+        if (verdict === 'drift') return '🔴';
+        return '⚪';
+    };
+
+    const renderAbCompare = (ragData) => {
+        if (!abPanel) return;
+
+        // ── Eski (mevcut form değerleri) ──
+        const oldHtml = (document.getElementById('rich-body') || {}).value || '';
+        const oldCat = (form.querySelector('input[name="category"]') || {}).value || '';
+        const oldAli = (form.querySelector('input[name="aliases"]') || {}).value || '';
+        const oldRefsCount = form.querySelectorAll('[data-ref-row]').length;
+        const oldFaqsCount = form.querySelectorAll('[data-faq-row]').length;
+
+        // ── Yeni (RAG) ──
+        const newHtml = ragData.definition_html || '';
+        const newCat = ragData.category || '';
+        const newAliases = Array.isArray(ragData.aliases) ? ragData.aliases : [];
+        const newAli = newAliases.join(', ');
+        const newRefs = Array.isArray(ragData.references) ? ragData.references : [];
+        const newFaqs = Array.isArray(ragData.faq) ? ragData.faq : [];
+        const judge = ragData.judge || {};
+        const sources = Array.isArray(ragData.sources) ? ragData.sources : [];
+
+        const sourcesHtml = sources.map(s => {
+            const url = escAttr(s.url || '');
+            const title = escAttr(s.title || '?');
+            const lang = escAttr((s.lang || '?').toUpperCase());
+            return url
+                ? `<li><a href="${url}" target="_blank" rel="noopener">${title}</a> <em>(${lang})</em></li>`
+                : `<li>${title} <em>(${lang})</em></li>`;
+        }).join('');
+
+        abPanel.innerHTML = `
+            <h3>🔬 A/B Karşılaştırma — Hangisini Kaydedeceksin?</h3>
+            <div class="glossary-ab-grid">
+
+                <div class="glossary-ab-col">
+                    <h4>🔄 Eski (Mevcut Form)</h4>
+                    <div class="glossary-ab-meta">
+                        <span>Kategori: ${escAttr(oldCat || '—')}</span>
+                        <span>Alias: ${oldAli ? oldAli.split(',').filter(s=>s.trim()).length : 0}</span>
+                        <span>Ref: ${oldRefsCount}</span>
+                        <span>FAQ: ${oldFaqsCount}</span>
+                    </div>
+                    <div class="glossary-ab-preview">
+                        ${oldHtml || '<em>Henüz tanım yok</em>'}
+                    </div>
+                    <div class="glossary-ab-actions">
+                        <button type="button" class="btn btn-ghost" data-ab-action="keep-old">
+                            ↺ Eskiyi Tut (Panel Kapat)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glossary-ab-col is-new">
+                    <h4>
+                        ✨ Yeni (RAG v2)
+                        <span class="badge" style="background:#FFB400;color:#111">BETA</span>
+                    </h4>
+                    <div class="glossary-ab-meta">
+                        <span>Kategori: ${escAttr(newCat || '—')}</span>
+                        <span>Alias: ${newAliases.length}</span>
+                        <span>Ref: ${newRefs.length}</span>
+                        <span>FAQ: ${newFaqs.length}</span>
+                        <span class="judge-score" data-verdict="${escAttr(judge.overall_verdict || 'unknown')}">
+                            ${judgeIcon(judge.overall_verdict)} ${parseInt(judge.score || 0, 10)}/100
+                        </span>
+                    </div>
+                    ${judge.drift_reason
+                        ? `<p class="glossary-ab-drift"><strong>⚠ Drift:</strong> ${escAttr(judge.drift_reason)}</p>`
+                        : ''}
+                    ${judge.suggested_fix
+                        ? `<p class="glossary-ab-fix"><strong>💡 Öneri:</strong> ${escAttr(judge.suggested_fix)}</p>`
+                        : ''}
+                    <div class="glossary-ab-preview">
+                        ${newHtml || '<em>Boş çıktı</em>'}
+                    </div>
+                    <p style="font-size:.72rem;color:var(--ash);margin:.4rem 0 0">
+                        <strong>Kaynaklar (${sources.length}):</strong>
+                    </p>
+                    <ul class="glossary-ab-sources-list">
+                        ${sourcesHtml || '<li><em>Yok</em></li>'}
+                    </ul>
+                    <div class="glossary-ab-actions">
+                        <button type="button" class="btn btn-primary" data-ab-action="use-new">
+                            ✓ Yeniyi Kullan (Form'a Aktar)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        `;
+        abPanel.hidden = false;
+        abPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Buton handlers
+        const keepOldBtn = abPanel.querySelector('[data-ab-action="keep-old"]');
+        if (keepOldBtn) {
+            keepOldBtn.addEventListener('click', () => {
+                abPanel.hidden = true;
+                abPanel.innerHTML = '';
+                setStatus('Eski tutuldu — RAG çıktısı atıldı.', null);
+            });
+        }
+        const useNewBtn = abPanel.querySelector('[data-ab-action="use-new"]');
+        if (useNewBtn) {
+            useNewBtn.addEventListener('click', () => {
+                // Form'a RAG çıktısını aktar
+                setBodyHtml(newHtml);
+
+                const catInp = form.querySelector('input[name="category"]');
+                if (catInp && newCat) catInp.value = newCat;
+
+                const aliInp = form.querySelector('input[name="aliases"]');
+                if (aliInp) aliInp.value = newAli;
+
+                if (newRefs.length > 0) setReferences(newRefs);
+                if (newFaqs.length > 0) setFaq(newFaqs);
+
+                // Hidden meta inputlar: save'de DB'ye yazılır
+                const ragPasajsInp = document.getElementById('glossary-rag-pasajs');
+                if (ragPasajsInp) {
+                    ragPasajsInp.value = JSON.stringify(sources);
+                }
+                const ragEngineInp = document.getElementById('glossary-rag-engine');
+                if (ragEngineInp) ragEngineInp.value = 'rag_v2';
+
+                // Panel kapat
+                abPanel.hidden = true;
+                abPanel.innerHTML = '';
+                setStatus('✓ RAG çıktısı form\'a aktarıldı — "Kaydet"/"Güncelle" ile bitir.', 'success');
+
+                // Tanım alanına scroll
+                const richBody = document.getElementById('rich-body');
+                if (richBody) richBody.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+    };
+
+    if (ragBtn) {
+        ragBtn.addEventListener('click', async () => {
+            const term = ($('#glossary-term') || {}).value || '';
+            if (term.trim().length < 2) {
+                setStatus('Önce terim adını yaz (en az 2 karakter).', 'error');
+                return;
+            }
+
+            // Bağlam türü zorunlu — en az 1 checkbox
+            const ctxCbs = document.querySelectorAll(
+                '#glossary-context-types input[type="checkbox"][data-ctx-cb]:checked'
+            );
+            if (ctxCbs.length === 0) {
+                setStatus('Önce en az 1 bağlam türü seç (yapı_elemani gibi).', 'error');
+                return;
+            }
+
+            // Manuel kaynak URL'leri (opsiyonel)
+            const sourceUrlsRaw = (document.getElementById('glossary-source-urls') || {}).value || '';
+
+            // Diğer paramlar (legacy ile uyumlu)
+            const depthEl = form.querySelector('input[name="ai-depth"]:checked');
+            const depth = depthEl ? depthEl.value : 'orta';
+            const context = ($('#glossary-ai-context') || {}).value || '';
+
+            const body = new URLSearchParams();
+            body.set('_csrf', csrf);
+            body.set('term', term.trim());
+            body.set('context', context.trim());
+            body.set('depth', depth);
+            body.set('engine', 'rag');
+            body.set('manual_urls', sourceUrlsRaw);
+            ctxCbs.forEach((cb) => body.append('context_type[]', cb.value));
+
+            // UI: loading
+            ragBtn.disabled = true;
+            ragBtn.textContent = '⏳ Üretiliyor...';
+            setStatus('🔍 Librarian → 🌐 Wikipedia → ✍️ Writer → 🛡️ Judge (30-60 sn)...', 'loading');
+
+            try {
+                const res = await fetch(
+                    window.appUrl ? window.appUrl('/admin/sozluk/ai-uret') : '/admin/sozluk/ai-uret',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'content-type': 'application/x-www-form-urlencoded',
+                            'accept': 'application/json',
+                            'x-requested-with': 'XMLHttpRequest',
+                        },
+                        body: body.toString(),
+                        credentials: 'same-origin',
+                    }
+                );
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch {
+                    const txt = await res.text().catch(() => '');
+                    throw new Error('Yanıt JSON değil. HTTP ' + res.status +
+                        '. Başı: ' + (txt || '').slice(0, 200));
+                }
+
+                if (!res.ok || !data.ok) {
+                    // 422 = no_sources (kullanıcı hatası, normal)
+                    if (res.status === 422 && (data.reject_reason === 'no_sources')) {
+                        setStatus('⚠ ' + (data.message || 'Kaynak bulunamadı.'), 'error');
+                        // "Manuel Kaynak URL'leri" detayına dikkat çek
+                        const detEl = document.querySelector('.glossary-rag-sources');
+                        if (detEl) {
+                            detEl.open = true;
+                            detEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return;
+                    }
+                    throw new Error(data.message || ('HTTP ' + res.status));
+                }
+
+                renderAbCompare(data.data || {});
+                setStatus('✓ RAG tamamlandı — Aşağıdaki A/B karşılaştırmadan birini seç.', 'success');
+            } catch (err) {
+                setStatus('❌ RAG hatası: ' + ((err && err.message) || 'bilinmeyen'), 'error');
+            } finally {
+                ragBtn.disabled = false;
+                ragBtn.textContent = '✨ Yeni AI (RAG) ile Üret';
+            }
+        });
+    }
 })();

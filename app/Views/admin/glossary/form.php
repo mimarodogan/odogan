@@ -95,10 +95,53 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                 </div>
                 <div class="glossary-ai-actions">
                     <button type="button" class="btn btn-primary" id="glossary-ai-run">
-                        <?= $isEdit ? 'Mevcut Girdiyi Geliştir' : 'Taslak Üret' ?>
+                        <?= $isEdit ? 'Mevcut Girdiyi Geliştir' : '🔄 Eski AI ile Üret' ?>
+                    </button>
+                    <button type="button" class="btn btn-primary glossary-rag-btn" id="glossary-rag-run"
+                            title="RAG v2: Wikipedia kaynaklarından üretir — drift engellenir">
+                        ✨ Yeni AI (RAG) ile Üret
                     </button>
                     <span class="glossary-ai-status muted" id="glossary-ai-status" aria-live="polite"></span>
                 </div>
+
+                <?php // RAG v2: Manuel Kaynak URL'leri — Wikipedia yoksa kullanılır.
+                $_sourceUrls = (string) ($item['source_urls'] ?? '');
+                $_sourceUrlsText = '';
+                if ($_sourceUrls !== '') {
+                    $_decoded = json_decode($_sourceUrls, true);
+                    if (is_array($_decoded)) {
+                        foreach ($_decoded as $_su) {
+                            if (is_array($_su) && !empty($_su['url'])) {
+                                $_sourceUrlsText .= $_su['url'] . "\n";
+                            }
+                        }
+                        $_sourceUrlsText = trim($_sourceUrlsText);
+                    }
+                }
+                ?>
+                <details class="glossary-rag-sources">
+                    <summary>📚 Manuel Kaynak URL'leri (RAG için fallback — opsiyonel)</summary>
+                    <label>
+                        <textarea name="source_urls" id="glossary-source-urls"
+                                  rows="3" maxlength="3000"
+                                  placeholder="https://archnet.org/sites/12345&#10;https://dergipark.org.tr/tr/pub/...&#10;# Her satır bir URL"><?= esc($_sourceUrlsText) ?></textarea>
+                        <small class="muted">
+                            Wikipedia'da bu terim için makale bulunamazsa RAG bu URL'leri kullanır.
+                            Her satır bir URL. <code>#</code> ile başlayan satırlar yorum sayılır.
+                            Max 10 URL. <strong>HTTPS zorunlu.</strong> Mimari/akademik/TS yönetmeliği
+                            PDF'leri gibi spesifik kaynak verirsen RAG bunlardan çeker.
+                        </small>
+                    </label>
+                </details>
+
+                <!-- A/B karşılaştırma paneli (JS doldurur, varsayılan gizli) -->
+                <div id="glossary-ab-compare" class="glossary-ab-panel" hidden aria-live="polite">
+                    <!-- Faz 4: glossary-ai.js yan yana iki sütun render edecek -->
+                </div>
+
+                <!-- Hidden inputs — RAG meta (Faz 4 JS doldurur, save'de gönderilir) -->
+                <input type="hidden" name="rag_source_pasajs" id="glossary-rag-pasajs" value="<?= esc((string) ($item['rag_source_pasajs'] ?? '')) ?>">
+                <input type="hidden" name="rag_engine" id="glossary-rag-engine" value="<?= esc((string) ($item['rag_engine'] ?? 'legacy')) ?>">
             </section>
             <?php endif; ?>
 
@@ -536,6 +579,190 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 }
 .glossary-ctx-count[data-state="ok"] {
     color: var(--ok, #2F6A3E);
+}
+
+/* ============================================================
+   RAG v2 — Yeni AI butonu, manuel kaynak alanı, A/B karşılaştırma
+   ============================================================ */
+.glossary-rag-btn {
+    background: linear-gradient(135deg, var(--cobalt, #1F3A8A) 0%, #4A30A0 100%);
+    border: none;
+    color: #fff;
+    position: relative;
+}
+.glossary-rag-btn:hover {
+    filter: brightness(1.1);
+}
+.glossary-rag-btn::after {
+    content: 'BETA';
+    position: absolute;
+    top: -.4rem;
+    right: -.4rem;
+    font-size: .55rem;
+    background: #FFB400;
+    color: #111;
+    padding: .1rem .3rem;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: .03em;
+}
+
+.glossary-rag-sources {
+    margin-top: 1rem;
+    border: 1px dashed var(--rule, #E5E1DA);
+    border-radius: 6px;
+    padding: .6rem .85rem;
+    background: rgba(31, 58, 138, .02);
+}
+.glossary-rag-sources > summary {
+    cursor: pointer;
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--ink, #111);
+    user-select: none;
+    padding: .25rem 0;
+}
+.glossary-rag-sources > summary:hover {
+    color: var(--cobalt, #1F3A8A);
+}
+.glossary-rag-sources[open] > summary {
+    margin-bottom: .55rem;
+    border-bottom: 1px solid var(--rule, #E5E1DA);
+    padding-bottom: .5rem;
+}
+.glossary-rag-sources textarea {
+    width: 100%;
+    font-family: var(--mono, monospace);
+    font-size: .78rem;
+    padding: .5rem .65rem;
+    border: 1px solid var(--rule, #E5E1DA);
+    border-radius: 4px;
+    background: #fff;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+/* A/B Karşılaştırma Paneli */
+.glossary-ab-panel {
+    margin-top: 1.5rem;
+    border: 2px solid var(--cobalt, #1F3A8A);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(31, 58, 138, .04) 0%, transparent 60%);
+    padding: 1rem 1.25rem;
+}
+.glossary-ab-panel > h3 {
+    margin: 0 0 .85rem;
+    font-size: 1rem;
+    color: var(--cobalt, #1F3A8A);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.glossary-ab-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 900px) {
+    .glossary-ab-grid { grid-template-columns: 1fr; }
+}
+.glossary-ab-col {
+    background: #fff;
+    border: 1px solid var(--rule, #E5E1DA);
+    border-radius: 6px;
+    padding: .85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+.glossary-ab-col.is-new {
+    border-color: var(--cobalt, #1F3A8A);
+    box-shadow: 0 2px 8px rgba(31, 58, 138, .15);
+}
+.glossary-ab-col h4 {
+    margin: 0;
+    font-size: .9rem;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+.glossary-ab-col h4 .badge {
+    font-size: .65rem;
+    padding: .15rem .4rem;
+    border-radius: 3px;
+    font-weight: 600;
+}
+.glossary-ab-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    font-size: .72rem;
+    color: var(--ash, #5A544D);
+}
+.glossary-ab-meta > span {
+    background: rgba(0, 0, 0, .04);
+    padding: .15rem .45rem;
+    border-radius: 3px;
+}
+.glossary-ab-meta .judge-score {
+    font-weight: 600;
+}
+.glossary-ab-meta .judge-score[data-verdict="supported"] {
+    background: rgba(47, 106, 62, .15);
+    color: var(--ok, #2F6A3E);
+}
+.glossary-ab-meta .judge-score[data-verdict="partial"] {
+    background: rgba(255, 180, 0, .15);
+    color: #8a5b00;
+}
+.glossary-ab-meta .judge-score[data-verdict="drift"] {
+    background: rgba(176, 36, 29, .15);
+    color: var(--err, #B0241D);
+}
+.glossary-ab-preview {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--rule, #E5E1DA);
+    border-radius: 4px;
+    padding: .55rem .75rem;
+    background: rgba(0, 0, 0, .015);
+    font-size: .82rem;
+    line-height: 1.55;
+}
+.glossary-ab-preview h2 { font-size: .95rem; margin: .6rem 0 .25rem; }
+.glossary-ab-preview h3 { font-size: .85rem; margin: .5rem 0 .2rem; }
+.glossary-ab-preview p  { margin: .35rem 0; }
+.glossary-ab-actions {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+}
+.glossary-ab-actions .btn { flex: 1; min-width: 90px; }
+.glossary-ab-drift {
+    background: rgba(176, 36, 29, .06);
+    border-left: 3px solid var(--err, #B0241D);
+    padding: .45rem .65rem;
+    font-size: .78rem;
+    color: var(--err, #B0241D);
+    border-radius: 0 3px 3px 0;
+}
+.glossary-ab-fix {
+    background: rgba(31, 58, 138, .04);
+    border-left: 3px solid var(--cobalt, #1F3A8A);
+    padding: .45rem .65rem;
+    font-size: .78rem;
+    color: var(--cobalt, #1F3A8A);
+    border-radius: 0 3px 3px 0;
+}
+.glossary-ab-sources-list {
+    font-size: .72rem;
+    color: var(--ash, #5A544D);
+    margin: 0;
+    padding-left: 1.2rem;
+}
+.glossary-ab-sources-list li a {
+    color: var(--cobalt, #1F3A8A);
+    text-decoration: underline;
 }
 </style>
 
