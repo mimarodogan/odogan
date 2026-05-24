@@ -40,7 +40,10 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                class="post-title-input"
                required minlength="2" maxlength="180"
                placeholder="Terim (örn: Konsol kiriş)…"
+               autocomplete="off"
+               data-existing-id="<?= $isEdit ? (int) $item['id'] : 0 ?>"
                value="<?= esc((string) ($item['term'] ?? '')) ?>">
+        <p id="glossary-dup-status" class="glossary-dup-status" aria-live="polite" hidden></p>
     </header>
 
     <div class="post-editor-grid">
@@ -303,3 +306,132 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 <?php if (function_exists('feature') && feature('glossary_ai_enabled')): ?>
 <script src="<?= esc(asset('js/glossary-ai.js')) ?>" defer></script>
 <?php endif; ?>
+
+<style>
+/* H3: Duplicate term uyarı badge'i */
+.glossary-dup-status {
+    margin: .5rem 0 0;
+    padding: .6rem .85rem;
+    font-family: var(--mono, monospace);
+    font-size: .82rem;
+    line-height: 1.4;
+    border-left: 3px solid currentColor;
+}
+.glossary-dup-status[data-state="checking"] {
+    color: var(--ash, #5A544D);
+    background: rgba(17, 17, 17, .03);
+}
+.glossary-dup-status[data-state="ok"] {
+    color: var(--ok, #2F6A3E);
+    background: rgba(47, 106, 62, .07);
+}
+.glossary-dup-status[data-state="dup"] {
+    color: var(--err, #B0241D);
+    background: rgba(176, 36, 29, .07);
+    font-weight: 600;
+}
+.glossary-dup-status a {
+    color: inherit;
+    text-decoration: underline;
+    font-weight: 600;
+}
+/* Form input duplicate olduğunda kırmızı kenar */
+#glossary-term.gli-dup-input {
+    border-color: var(--err, #B0241D) !important;
+    background-color: rgba(176, 36, 29, .04);
+}
+</style>
+
+<script>
+/* H3: Term inputu blur'da AJAX duplicate kontrolü.
+   Mevcut terim varsa kırmızı uyarı + submit disable. */
+(function () {
+    'use strict';
+    var termInp = document.getElementById('glossary-term');
+    var statusEl = document.getElementById('glossary-dup-status');
+    var form = document.getElementById('glossary-form');
+    var submitBtns = form ? form.querySelectorAll('button[type="submit"]') : [];
+    if (!termInp || !statusEl || !form) return;
+
+    var existingId = parseInt(termInp.getAttribute('data-existing-id') || '0', 10);
+    var lastChecked = '';
+    var pendingTimer = null;
+
+    var setStatus = function (state, html) {
+        statusEl.hidden = false;
+        statusEl.setAttribute('data-state', state);
+        statusEl.innerHTML = html;
+        if (state === 'dup') {
+            termInp.classList.add('gli-dup-input');
+            submitBtns.forEach(function (b) { b.disabled = true; b.title = 'Duplicate terim — düzelt'; });
+        } else {
+            termInp.classList.remove('gli-dup-input');
+            submitBtns.forEach(function (b) { b.disabled = false; b.title = ''; });
+        }
+    };
+    var clearStatus = function () {
+        statusEl.hidden = true;
+        statusEl.removeAttribute('data-state');
+        statusEl.innerHTML = '';
+        termInp.classList.remove('gli-dup-input');
+        submitBtns.forEach(function (b) { b.disabled = false; b.title = ''; });
+    };
+
+    var check = function () {
+        var term = (termInp.value || '').trim();
+        if (term.length < 2) { clearStatus(); return; }
+        if (term === lastChecked) return;
+        lastChecked = term;
+        setStatus('checking', '⏳ Kontrol ediliyor…');
+        var fd = new FormData();
+        // CSRF token: önce <meta>'dan, yoksa form'daki gizli input'tan al
+        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        var csrfInp  = form.querySelector('input[name="_csrf"]');
+        var csrfVal  = csrfMeta ? csrfMeta.getAttribute('content')
+                                : (csrfInp ? csrfInp.value : '');
+        fd.append('_csrf', csrfVal);
+        fd.append('term', term);
+        fd.append('exclude_id', String(existingId));
+        fetch('<?= esc(url('/admin/sozluk/check-dup')) ?>', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: fd,
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                if (!json || !json.ok) return;
+                if (json.exists && json.existing) {
+                    var e = json.existing;
+                    var status = e.is_active ? 'aktif' : 'taslak (pasif)';
+                    setStatus('dup',
+                        '⚠ Bu terim zaten kayıtlı: <strong>' + (e.term || '').replace(/[<>&]/g, '') + '</strong>'
+                        + ' (' + status + ') · '
+                        + '<a href="' + e.edit_url + '">Mevcut kaydı düzenle →</a>'
+                    );
+                } else {
+                    setStatus('ok', '✓ Kullanılabilir — bu terim henüz kayıtlı değil.');
+                }
+            })
+            .catch(function () { /* sessiz geç */ });
+    };
+
+    var schedule = function () {
+        if (pendingTimer) clearTimeout(pendingTimer);
+        pendingTimer = setTimeout(check, 350);
+    };
+
+    termInp.addEventListener('input', schedule);
+    termInp.addEventListener('blur', check);
+    // Submit'i de duplicate'a karşı korumalı yap
+    form.addEventListener('submit', function (e) {
+        if (statusEl.getAttribute('data-state') === 'dup') {
+            e.preventDefault();
+            alert('Bu terim zaten kayıtlı — değiştir veya mevcut kaydı düzenle.');
+        }
+    });
+    // İlk yüklemede edit modunda mevcut term varsa sessiz kontrol
+    if (termInp.value && termInp.value.trim().length >= 2) {
+        check();
+    }
+})();
+</script>

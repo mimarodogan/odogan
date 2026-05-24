@@ -398,6 +398,8 @@ $router->group('/admin', function ($r) {
     $r->post('/sozluk/{id}/sil',    [AdminGlossaryController::class, 'destroy']);
     // H1: Hızlı aktivasyon onayı (taslak → public)
     $r->post('/sozluk/{id}/aktif',  [AdminGlossaryController::class, 'toggleActive']);
+    // H3: AJAX duplicate term check (form blur'unda anlık uyarı)
+    $r->post('/sozluk/check-dup',   [AdminGlossaryController::class, 'checkDuplicate']);
     $r->post('/sozluk/{id}/ai-iliskili', [AdminGlossaryController::class, 'aiSuggestRelated']);
     $r->get('/sozluk/{id}/autolink-debug', [AdminGlossaryController::class, 'autoLinkDebug']);
     // Toplu üretim (batch mode)

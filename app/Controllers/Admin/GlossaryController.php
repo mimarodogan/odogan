@@ -88,7 +88,8 @@ final class GlossaryController
         $item = Glossary::findById($id);
         if (!$item) return Response::notFound();
 
-        $patch = self::validateInput($req, $err);
+        // H3: validateInput kendi kaydını duplicate sayma
+        $patch = self::validateInput($req, $err, $id);
         if ($err) {
             flash('error', $err);
             return Response::redirect(url('/admin/sozluk/' . $id . '/duzenle'));
@@ -110,6 +111,36 @@ final class GlossaryController
         Glossary::delete($id);
         flash('success', 'Terim silindi.');
         return Response::redirect(url('/admin/sozluk'));
+    }
+
+    /**
+     * H3: AJAX duplicate check — form term inputuna blur olunca çağrılır.
+     * JSON: {ok: true, exists: bool, existing?: {id, term, slug, is_active}}.
+     * Edit modunda mevcut kayıt dışlanır (exclude_id parametresi).
+     */
+    public function checkDuplicate(Request $req): Response
+    {
+        if ($g = self::gate()) return $g;
+        $term = trim((string) $req->input('term', ''));
+        if (mb_strlen($term) < 2) {
+            return Response::json(['ok' => true, 'exists' => false]);
+        }
+        $excludeId = (int) $req->input('exclude_id', 0);
+        $existing = Glossary::findByTermInsensitive($term, $excludeId > 0 ? $excludeId : null);
+        if ($existing === null) {
+            return Response::json(['ok' => true, 'exists' => false]);
+        }
+        return Response::json([
+            'ok'       => true,
+            'exists'   => true,
+            'existing' => [
+                'id'        => (int) $existing['id'],
+                'term'      => (string) $existing['term'],
+                'slug'      => (string) $existing['slug'],
+                'is_active' => (int) ($existing['is_active'] ?? 0) === 1,
+                'edit_url'  => url('/admin/sozluk/' . (int) $existing['id'] . '/duzenle'),
+            ],
+        ]);
     }
 
     /**
@@ -417,12 +448,22 @@ final class GlossaryController
     /**
      * @return array<string,mixed>
      */
-    private static function validateInput(Request $req, ?string &$err): array
+    /**
+     * @param int|null $existingId  Edit modunda kendi kaydını dışlamak için
+     */
+    private static function validateInput(Request $req, ?string &$err, ?int $existingId = null): array
     {
         $err = null;
         $term = trim((string) $req->input('term', ''));
         if (mb_strlen($term) < 2) {
             $err = 'Terim en az 2 karakter olmalı.';
+            return [];
+        }
+        // H3: Duplicate kontrolü — JS bypass edilse bile server engelleme
+        $dup = Glossary::findByTermInsensitive($term, $existingId);
+        if ($dup !== null) {
+            $err = '"' . $term . '" zaten kayıtlı (slug: ' . $dup['slug'] . '). '
+                 . 'Mevcut kaydı düzenlemek için tüm terimler listesine git.';
             return [];
         }
         $def = trim((string) $req->input('definition', ''));

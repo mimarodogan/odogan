@@ -24,6 +24,32 @@ final class Glossary
         }
     }
 
+    /**
+     * H3: Aynı terimin başka bir kayıtta zaten var olup olmadığını döndürür.
+     * Case-insensitive (Türkçe uyumlu) + diakritik nötr karşılaştırma.
+     * Edit modunda $excludeId verilerek kendi kaydı dışlanır.
+     */
+    public static function findByTermInsensitive(string $term, ?int $excludeId = null): ?array
+    {
+        $term = trim($term);
+        if (mb_strlen($term) < 1) return null;
+        try {
+            // MySQL utf8mb4_unicode_ci collation zaten case-insensitive + diakritik
+            // toleranslı. LOWER() ile ek güvence (yine de pattern eşit kalır).
+            $sql = 'SELECT id, term, slug, is_active FROM glossary
+                    WHERE LOWER(term) = LOWER(:t)';
+            $params = [':t' => $term];
+            if ($excludeId !== null) {
+                $sql .= ' AND id <> :ex';
+                $params[':ex'] = $excludeId;
+            }
+            $sql .= ' LIMIT 1';
+            return Database::instance()->fetch($sql, $params);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     public static function findById(int $id): ?array
     {
         try {
