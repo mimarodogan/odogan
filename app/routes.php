@@ -396,6 +396,8 @@ $router->group('/admin', function ($r) {
     $r->get('/sozluk/{id}/duzenle', [AdminGlossaryController::class, 'edit']);
     $r->post('/sozluk/{id}',        [AdminGlossaryController::class, 'update']);
     $r->post('/sozluk/{id}/sil',    [AdminGlossaryController::class, 'destroy']);
+    // H1: Hızlı aktivasyon onayı (taslak → public)
+    $r->post('/sozluk/{id}/aktif',  [AdminGlossaryController::class, 'toggleActive']);
     $r->post('/sozluk/{id}/ai-iliskili', [AdminGlossaryController::class, 'aiSuggestRelated']);
     $r->get('/sozluk/{id}/autolink-debug', [AdminGlossaryController::class, 'autoLinkDebug']);
     // Toplu üretim (batch mode)

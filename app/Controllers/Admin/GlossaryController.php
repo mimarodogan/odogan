@@ -24,9 +24,23 @@ final class GlossaryController
     public function index(Request $req): Response
     {
         if ($g = self::gate()) return $g;
+        // H1: Pasifleri (onay bekleyenleri) ÜSTE koy → admin önce onları görür
+        // ve onaylar/siler. Sonra aktifler alfabetik gelir.
+        $all = Glossary::all();
+        usort($all, static function ($a, $b) {
+            $aa = (int) ($a['is_active'] ?? 0);
+            $bb = (int) ($b['is_active'] ?? 0);
+            if ($aa !== $bb) return $aa <=> $bb; // pasif (0) önce
+            return strcasecmp((string) ($a['term'] ?? ''), (string) ($b['term'] ?? ''));
+        });
+        $pendingCount = 0;
+        foreach ($all as $g2) {
+            if (((int) ($g2['is_active'] ?? 0)) === 0) $pendingCount++;
+        }
         return view('admin.glossary.index', [
-            'title' => 'Mimari Sözlük',
-            'list'  => Glossary::all(),
+            'title'         => 'Mimari Sözlük',
+            'list'          => $all,
+            'pending_count' => $pendingCount,
         ]);
     }
 
@@ -95,6 +109,26 @@ final class GlossaryController
         $id = (int) ($args['id'] ?? 0);
         Glossary::delete($id);
         flash('success', 'Terim silindi.');
+        return Response::redirect(url('/admin/sozluk'));
+    }
+
+    /**
+     * H1: Hızlı aktivasyon toggle — listede "Onayla" butonu için.
+     * AI ile üretilen taslaklar is_active=0 olarak gelir; admin tek tık ile
+     * is_active=1 yapar → terim public sözlükte görünür hale gelir.
+     */
+    public function toggleActive(Request $req, array $args): Response
+    {
+        if ($g = self::gate()) return $g;
+        $id = (int) ($args['id'] ?? 0);
+        $item = Glossary::findById($id);
+        if (!$item) return Response::notFound();
+
+        $newState = ((int) ($item['is_active'] ?? 0)) === 1 ? 0 : 1;
+        Glossary::update($id, ['is_active' => $newState]);
+        flash('success', $newState === 1
+            ? '"' . $item['term'] . '" terimi onaylandı ve sözlükte yayınlandı.'
+            : '"' . $item['term'] . '" terimi pasifleştirildi.');
         return Response::redirect(url('/admin/sozluk'));
     }
 

@@ -18,16 +18,15 @@
 
     const $ = (sel, root) => (root || document).querySelector(sel);
 
-    // PARÇA PLANI — server tarafıyla aynı (CHUNK_PLAN). Buradaki etiketler
+    // PARÇA PLANI — server tarafıyla aynı (CHUNK_PLAN).
+    // H2 (2026-05): 5 chunk → 2 chunk daraltıldı. Sözlük artık sadece üç
+    // ana bölüm üretir: Nedir? / Kelime Anlamı ve Kökeni / SSS (min 10).
     // sadece progress UI içindir; gerçek üretim sunucu tarafında.
-    // ÖNCE outline (küresel plan), SONRA 5 chunk.
+    // ÖNCE outline (küresel plan, 2 chunk için), SONRA 2 chunk.
     const STEPS = [
         { id: 'outline', label: 'Outline (küresel plan)', isOutline: true },
-        { id: 'chunk_1', label: 'TL;DR + Tanım + Köken' },
-        { id: 'chunk_2', label: 'Tarih + Kullanım' },
-        { id: 'chunk_3', label: 'Türler + Tasarımda Dikkat' },
-        { id: 'chunk_4', label: 'Karıştırılan + Örnekler' },
-        { id: 'chunk_5', label: 'Türkiye + Eleştirel + FAQ' },
+        { id: 'chunk_1', label: 'Nedir + Kelime Anlamı ve Kökeni (HTML)' },
+        { id: 'chunk_2', label: 'Sıkça Sorulan Sorular (min 10) + Kaynaklar' },
     ];
 
     const setStatus = (msg, tone) => {
@@ -213,7 +212,7 @@
             }
         }
 
-        const totalSteps = STEPS.length;  // 1 outline + 5 chunk = 6
+        const totalSteps = STEPS.length;  // 1 outline + 2 chunk = 3 (H2 sade format)
         setBusy(true, `Üretiliyor (1/${totalSteps})…`);
         let combinedHtml = '';
         let outlineJson = '';
@@ -263,8 +262,8 @@
                     setBodyHtml(combinedHtml);
                 }
 
-                // Chunk 5: references + FAQ
-                if (step.id === 'chunk_5') {
+                // Chunk 2 (H2 sade format): references + FAQ (min 10)
+                if (step.id === 'chunk_2') {
                     if (Array.isArray(data.references)) {
                         setReferences(data.references);
                         deadRefs = data.references.filter(r => r && r.dead).length;

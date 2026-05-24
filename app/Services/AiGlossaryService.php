@@ -41,90 +41,49 @@ final class AiGlossaryService
     private const DEFAULT_MODEL = 'claude-haiku-4-5';
 
     /**
-     * Parçalı (chunked) üretim planı. 5 ardışık API çağrısı; her biri
-     * yapının 2-4 bölümünü üretir. Sistem promptu paylaşılır → prompt
-     * caching ilk çağrıdan sonra cache-hit verir, maliyet düşer.
+     * Parçalı (chunked) üretim planı — H2 (2026-05): SADECE 3 ANA BÖLÜM.
      *
-     * Sıra önemli: chunk_1 önce çağrılmalı (term/category/aliases dolacak),
-     * chunk_5 en son (references doğrulamasıyla bitiş).
+     * Sözlük girdileri artık şu üç başlığı içerir:
+     *   1) [TERİM] Nedir?
+     *   2) [TERİM] Kelime Anlamı ve Kökeni
+     *   3) Sıkça Sorulan Sorular  (min 10 soru, FAQ JSON olarak)
+     *
+     * Diğer tüm alt başlıklar (Tarihsel Gelişim, Türler, Karıştırılanlar,
+     * Örnekler, vs.) KALDIRILDI. Sebep: AI'nın spesifik mimar/yapı/tarih
+     * uydurma riski + okunabilirlik (kısa-net referans formatı tercih).
+     *
+     * 2 ardışık API çağrısı; sistem promptu paylaşılır → prompt caching
+     * ile ikinci çağrı ucuzdur.
+     *   chunk_1 → HTML gövde (Nedir + Köken) + meta (term/cat/aliases)
+     *   chunk_2 → JSON meta (FAQ min 10 + references) — HTML üretmez
      */
     public const CHUNK_PLAN = [
         'chunk_1' => [
-            'label'      => 'TL;DR + Nedir + Köken',
-            'word_budget'=> 500, // ~500 kelime hedef (toplam ~3000)
-            'max_tokens' => 3500, // TL;DR + Nedir + Köken + JSON meta (term/cat/aliases)
+            'label'      => 'TL;DR + Nedir + Kelime Anlamı ve Kökeni',
+            'word_budget'=> 600, // ~600 kelime — iki sade H2 bölümü
+            'max_tokens' => 4000,
             'voice'      => '3. tekil, nötr akademik.',
             'sections'   => [
                 '<div class="tldr">…2-3 cümle SEO snippet-optimize özet (40-50 kelime)…</div>',
                 '<h2>[TERİM] Nedir?</h2>',
                 '  (İlk paragraf 40-50 kelime: TERİM + tanım + bağlam — featured snippet hedefli)',
-                '  (İkinci paragraf: mimari/tasarım uygulamadaki yeri)',
+                '  (İkinci paragraf: mimari/tasarım uygulamadaki yeri, ne işe yarar)',
+                '  (Opsiyonel üçüncü paragraf: temel özellikleri ya da neden önemli olduğu)',
                 '<h2>[TERİM] Kelime Anlamı ve Kökeni</h2>',
-                '  <h3>Kelimenin Kökü / İlk Anlamı</h3>',
-                '  <h3>[TERİM] Türkçede Ne Anlama Gelir?</h3>',
-                '    <h4>Yüzeysel ve Mimari Anlam Farkı</h4>',
+                '  <h3>Kelimenin Kökü ve İlk Anlamı</h3>',
+                '    (Etimoloji: hangi dilden gelir, kök kelime, ilk anlamı.)',
+                '  <h3>Türkçede Ne Anlama Gelir?</h3>',
+                '    (Türkçe yüzeysel anlam ve mimari teknik anlam ayrımı.)',
             ],
-            'json_extra' => 'Bu chunk\'ta meta bilgi de döndür: "term", "slug_hint", "category", "aliases".',
+            'json_extra' => 'Bu chunk\'ta meta bilgi de döndür: "term", "slug_hint", "category", "aliases". '
+                . 'BAŞKA H2 BAŞLIĞI EKLEME — yalnızca "Nedir?" ve "Kelime Anlamı ve Kökeni" iki H2 olsun.',
         ],
         'chunk_2' => [
-            'label'      => 'Tarihsel Gelişim + Mimarlıkta Kullanım',
-            'word_budget'=> 700,
-            'max_tokens' => 4000,
+            'label'      => 'Sıkça Sorulan Sorular (min 10) + Kaynaklar — JSON meta',
+            'word_budget'=> 900, // 10+ SSS × ~60-80 kelime cevap = ~700-900
+            'max_tokens' => 5000, // FAQ artık ana bölüm → token bütçesi büyütüldü
             'sections'   => [
-                '<h2>[TERİM] Kavramının Tarihsel Gelişimi</h2>',
-                '  <h3>Erken Dönem ve Geleneksel Karşılıkları</h3>',
-                '  <h3>Modern Mimarlıkta Gelişimi</h3>',
-                '    <h4>Öne Çıkan Mimarlar, Yapılar veya Akımlar</h4>',
-                '<h2>[TERİM] Mimarlıkta Nasıl Kullanılır?</h2>',
-                '  <h3>Tasarım Ölçeğinde Kullanımı</h3>',
-                '  <h3>Teknik Ölçekte Kullanımı</h3>',
-                '  <h3>Kullanıcı Deneyimi Açısından Önemi</h3>',
-            ],
-            'voice' => '3. tekil, nötr akademik.',
-        ],
-        'chunk_3' => [
-            'label'      => 'Türler + Tasarımda Dikkat',
-            'word_budget'=> 700,
-            'max_tokens' => 4000,
-            'sections'   => [
-                '<h2>[TERİM] Türleri veya Yaklaşımları</h2>',
-                '  <h3>Birinci/İkinci/Üçüncü Tür</h3> (en az 2, en fazla 3)',
-                '    <h4>Özellikleri</h4> (ul/li)',
-                '<h2>[TERİM] Tasarımında Dikkat Edilmesi Gerekenler</h2>',
-                '  <h3>Bağlam ve Yer Seçimi</h3>',
-                '  <h3>Malzeme ve Detay</h3>',
-                '  <h3>İklim ve Enerji Performansı</h3>',
-                '  <h3>Estetik ve İşlev Dengesi</h3>',
-            ],
-            // KARAR: 1. tekil "Bursa'da gördüğüm" tarzı yerel deneyim iddiaları
-            // kaldırıldı — AI'nın spesifik proje/lokasyon uydurma riski yüksek.
-            'voice' => '3. tekil, nötr akademik. Genel kabul görmüş bilgi.',
-        ],
-        'chunk_4' => [
-            'label'      => 'Karıştırılan Kavramlar (Ne Değildir entegre) + Mimari Örnekler',
-            'word_budget'=> 600,
-            'max_tokens' => 4000,
-            'sections'   => [
-                '<h2>[TERİM] ile Karıştırılan Kavramlar</h2>',
-                '  (Bu bölüm "Ne değildir?" kavramını da içerir — yaygın yanılgılar burada açıklanır)',
-                '  <h3>Birinci/İkinci/Üçüncü Benzer Kavram</h3> (en az 2, en fazla 3)',
-                '    <h4>[TERİM] ile Farkı</h4>',
-                '<h2>Mimarlıkta [TERİM] Örnekleri</h2>',
-                '  <h3>Birinci/İkinci/Üçüncü Örnek</h3> (en az 2, en fazla 3)',
-                '    <h4>Mimari Önemi</h4>',
-            ],
-            'voice' => '3. tekil, nötr akademik. Örneklerde gerçek yapı/mimar (UYDURMA).',
-        ],
-        'chunk_5' => [
-            'label'      => 'FAQ + Kaynaklar (JSON meta — HTML üretme)',
-            // KARAR (uydurma riski): "Türkiye Bağlamında" ve "Eleştirel Bakış"
-            // bölümleri kaldırıldı. Chunk_5 artık HTML GÖVDESİ ÜRETMEZ —
-            // sadece JSON meta alanları döndürür (faq + references). Public
-            // sayfa FAQ'yu accordion olarak ayrı render eder.
-            'word_budget'=> 350,
-            'max_tokens' => 3000,
-            'sections'   => [
-                '(Bu chunk HTML gövde üretmez. "html" alanı boş string olsun.)',
+                '(Bu chunk HTML gövdesi ÜRETMEZ. "html" alanı boş string olsun.)',
                 '(Sadece JSON meta alanları: "faq" + "references")',
             ],
             'json_extra' => 'Bu chunk için JSON şeması:'
@@ -133,14 +92,23 @@ final class AiGlossaryService
                 . '"faq": [{"q":"Soru?","a":"Cevap (2-3 cümle, net)"},...], '
                 . '"references": [{"text":"...","url":"..."}, ...] }'
                 . "\n\n"
-                . 'FAQ KURALLARI: 3-5 SSS. Konsept-genel sorular ("People Also Ask" hedefli). '
-                . 'Yerel/öznel iddia yok, sadece evrensel doğrulanabilir bilgi.'
+                . 'FAQ KURALLARI (KRİTİK):'
+                . "\n"
+                . '- EN AZ 10 SSS üret. Tercihen 12-15 arası.'
+                . "\n"
+                . '- "People Also Ask" tipi gerçek kullanıcı soruları — konsept-genel sorular.'
+                . "\n"
+                . '- Çeşitlilik: tanım / nasıl / neden / hangi / kim / ne fark / örnek / ölçü / uygulama / vs.'
+                . "\n"
+                . '- Her cevap 2-3 cümle, NET ve UYDURMASIZ.'
+                . "\n"
+                . '- Yerel/öznel iddia yok ("Bursa\'da…", "deneyimimde…" YASAK).'
                 . "\n\n"
                 . 'REFERENCES KURALLARI: 3-6 GERÇEK doğrulanabilir kaynak (uydurma yok). '
                 . 'URL ALANI: sadece SPESİFİK içerik URL\'i (ör. /wiki/Konsol_kirisi). '
                 . 'Anasayfa URL\'i (https://tdk.gov.tr gibi sadece kök) YASAK — '
                 . 'bilmiyorsan url\'i BOŞ STRING bırak.',
-            'voice' => '3. tekil, nötr akademik. Yerel/öznel iddia yok.',
+            'voice' => '3. tekil, nötr akademik.',
         ],
     ];
 
@@ -550,7 +518,7 @@ TXT;
 
     /**
      * Chunk yanıtını projeye uygun hale getirir. chunk_1'de term/cat/aliases,
-     * chunk_5'te references doğrulanır. HTML her chunk için sanitize edilir.
+     * chunk_2'de references doğrulanır. HTML her chunk için sanitize edilir.
      *
      * @param array<string,mixed> $raw
      * @return array{
@@ -590,8 +558,8 @@ TXT;
             $out['aliases'] = array_slice(array_unique($aliases), 0, 15);
         }
 
-        // Chunk 5: references — URL HEAD doğrulama + FAQ array
-        if ($chunkId === 'chunk_5') {
+        // Chunk 2 (H2): references — URL HEAD doğrulama + FAQ min 10
+        if ($chunkId === 'chunk_2') {
             $refs = [];
             foreach ((array) ($raw['references'] ?? []) as $r) {
                 if (!is_array($r)) continue;
@@ -614,7 +582,8 @@ TXT;
             }
             $out['references'] = $refs;
 
-            // FAQ — FAQPage schema markup için
+            // FAQ — H2 (2026-05): min 10, max 20 SSS. FAQPage schema markup için.
+            // Eski limit 6'dan büyütüldü çünkü FAQ artık ana sözlük bölümü.
             $faqs = [];
             foreach ((array) ($raw['faq'] ?? []) as $f) {
                 if (!is_array($f)) continue;
@@ -622,7 +591,7 @@ TXT;
                 $a = mb_substr(trim((string) ($f['a'] ?? '')), 0, 1500);
                 if ($q === '' || $a === '') continue;
                 $faqs[] = ['q' => $q, 'a' => $a];
-                if (count($faqs) >= 6) break;
+                if (count($faqs) >= 20) break;
             }
             $out['faq'] = $faqs;
         }
@@ -656,7 +625,7 @@ KALİTE ANAYASASI (SIRASIYLA UYULACAK)
    - YEREL/ÖZNEL İDDİA YOK: "Türkiye'de", "Bursa'da", "uyguladığım"
      gibi yerel/kişisel ifadeler kullanma — bu yapı çıkarıldı.
 
-   ─── KAYNAK (references) ÖZEL KURALLARI (chunk_5) ───
+   ─── KAYNAK (references) ÖZEL KURALLARI (chunk_2) ───
 
    1.a) UYDURMA YOK: sadece BİLDİĞİN gerçek yayın/kitap/makale.
         Tercih edilen domain'ler: tdk.gov.tr, archnet.org, jstor.org,
@@ -688,10 +657,9 @@ KALİTE ANAYASASI (SIRASIYLA UYULACAK)
         — URL olmadan da değerli kaynaktır.
 
 2) TEKRAR YASAĞI:
-   - Verilen outline'ı OKUR ve diğer bölümlerin nereye değineceğini
-     görürsün. ASLA başka bölümün konusuna girme.
-   - Tanımı sadece chunk_1'in ilk paragrafında ver; başka chunk'larda
-     "yukarıda tanımlandığı gibi" yaklaşımıyla ATIF yap, tekrar etme.
+   - chunk_1 → Nedir + Köken HTML; chunk_2 → SADECE FAQ + references (JSON).
+   - chunk_2'de HTML üretme; FAQ cevaplarında chunk_1'deki tanımı KOPYALAMA,
+     soruya doğrudan cevap ver.
 
 3) FEATURED SNIPPET (chunk_1 ilk paragraf):
    - 40-50 kelime arası
@@ -727,26 +695,26 @@ JSON ŞEMASI
 
 SADECE geçerli JSON. Markdown, kod bloğu, açıklama YOK. Tüm metin Türkçe.
 
-CHUNK 1:
+CHUNK 1 (HTML gövde — Nedir + Köken):
 {
   "term": "Resmi terim (Türkçe yazım kuralları)",
   "slug_hint": "url-uyumlu-slug",
   "category": "TEK kategori (listeden)",
   "aliases": ["TR + yabancı dil + kısaltma"],
-  "html": "<div class=\"tldr\">…</div><h2>...</h2>... bu chunk'ın HTML gövdesi ..."
+  "html": "<div class=\"tldr\">…</div><h2>[TERİM] Nedir?</h2>…<h2>[TERİM] Kelime Anlamı ve Kökeni</h2>… (yalnızca bu iki H2)"
 }
 
-CHUNK 2-4:
-{ "html": "<h2>...</h2>... bu chunk'ın HTML gövdesi ..." }
-
-CHUNK 5:
+CHUNK 2 (JSON meta — FAQ min 10 + References, HTML YOK):
 {
-  "html": "<h2>...</h2>... Türkiye + Eleştirel + FAQ ...",
+  "html": "",
+  "faq": [
+    { "q": "Soru 1?",  "a": "Cevap (2-3 cümle)" },
+    { "q": "Soru 2?",  "a": "Cevap" },
+    …
+    { "q": "Soru 10?", "a": "Cevap" }
+  ],
   "references": [
     { "text": "Kaynak Başlığı — Yazar, Yayın (Yıl)", "url": "https://veya-bos" }
-  ],
-  "faq": [
-    { "q": "Soru?", "a": "Cevap (2-3 cümle, net)" }
   ]
 }
 
@@ -759,27 +727,28 @@ TXT;
     }
 
     /**
-     * Outline pre-pass rubrik'i — küresel bağlamı kuran ilk çağrı.
-     * Çıktısı 5 chunk'a bağlam olarak verilir; tekrar ve üslup tutarsızlığını
-     * büyük ölçüde önler.
+     * Outline pre-pass rubrik'i — H2 (2026-05) sonrası SADE 2-bölümlü plan.
+     * Çıktısı 2 chunk'a bağlam olarak verilir; FAQ konularının "Nedir/Köken"
+     * bölümünde tekrar edilmemesini sağlar.
      */
     private static function outlineRubric(): string
     {
         return <<<TXT
 Sen Türkçe mimarlık sözlüğü için kıdemli editörsün. Sana bir TERİM verilir.
-Görevin yazıyı bölmek yerine BÜTÜNÜYLE planlamaktır — sonradan 5 farklı
-yazar (chunk) bu plana uyarak bölümlerini yazacak.
+Görevin sözlük girdisini planlamaktır — sonradan 2 chunk bu plana uyarak
+içeriği üretecek.
 
-GÖREV: Aşağıdaki 5 chunk için anahtar-cümle planı üret. Her bölüm için
-1-2 cümlelik ÖZ açıklama yaz. Hangi anahtar fikirler, mimarlar, yapılar,
-örnekler her bölümde kullanılacak — kararını şimdi ver ki bölümler arası
-ÇAKIŞMA olmasın.
+YAPI (H2 — 2026-05 sade format):
+  chunk_1 → <h2>Nedir?</h2> + <h2>Kelime Anlamı ve Kökeni</h2>  (~600 kelime HTML)
+  chunk_2 → 10+ SSS (JSON) + References (JSON) — HTML üretmez
+
+GÖREV: Bu iki chunk için anahtar-cümle planı üret. TL;DR yaz, hangi
+SSS kategorileri olacağını listele. Etimolojinin ana hattını çiz.
 
 YANIT KURALLARI:
 - SADECE geçerli JSON döndür. Markdown, açıklama YOK.
 - Tüm metin Türkçe.
-- Toplam ~2500-3000 kelimelik yazı için outline.
-- Bölüm 1'de ÖZ tanım (featured snippet, 40-50 kelime).
+- TL;DR 40-50 kelime — featured snippet hedefli.
 - Belirsiz/uydurma bilgi yerine boş bırakmayı seç.
 - Yerel/öznel iddialardan kaçın — yazı evrensel/akademik kalmalı.
 
@@ -789,21 +758,16 @@ JSON ŞEMASI (TAM):
   "focus_keyword": "ana terim (genelde TERİM'in normal hali)",
   "secondary_keywords": ["yakın anahtar 1", "yakın 2", "yakın 3"],
   "outline": {
-    "nedir":         "Bölüm 1: Nedir + Köken için anahtar cümle. Hangi tanım, hangi etimoloji.",
-    "tarih_kullanim":"Bölüm 2: Tarih + Kullanım — hangi dönem, hangi mimar/akım, hangi ölçek.",
-    "turler_tasarim":"Bölüm 3: Türler + Tasarım — kaç tür, hangi malzeme/detay/iklim notu.",
-    "karistirilan_ornekler":"Bölüm 4: Karıştırılan + Örnekler — hangi 2-3 karıştırılan kavram, hangi 2-3 gerçek yapı/mimar.",
-    "faq":           "Bölüm 5: 3-5 SSS başlığı — konseptin temel/teknik yönüne dair genel sorular."
+    "nedir_koken":   "Bölüm 1: Nedir + Kelime Anlamı ve Kökeni — hangi tanım, hangi etimoloji ipucu, hangi dilden gelir.",
+    "faq_konulari":  "Bölüm 2: 10+ SSS hangi alanları kapsayacak (tanım/nasıl/neden/hangi/fark/örnek/ölçü/uygulama/malzeme/türler/karıştırılan vs)."
   },
-  "key_architects": ["emin olduğun 2-4 mimar adı (chunk 2 ve 4 kullanır). Emin değilsen BOŞ dizi."],
-  "key_buildings":  ["emin olduğun 2-4 yapı adı (chunk 4 kullanır). Emin değilsen BOŞ dizi."]
+  "key_architects": [],
+  "key_buildings":  []
 }
 
 ÖNEMLİ:
-- Bu sadece PLAN — gerçek yazıyı sen yazmayacaksın.
-- key_architects ve key_buildings UYDURMA yasak. Emin değilsen boş bırak.
-- Yapı veya mimar adı vereceksen tarihsel olarak kanıtlanmış, çoklu kaynakta
-  doğrulanmış olanları seç (örn. Le Corbusier, Tadao Ando, Mimar Sinan).
+- Bu sadece PLAN — gerçek yazıyı chunk_1 ve chunk_2 yazacak.
+- key_architects ve key_buildings genellikle BOŞ kalır (kısa-net format).
 TXT;
     }
 
