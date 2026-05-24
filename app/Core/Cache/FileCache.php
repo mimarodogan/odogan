@@ -30,7 +30,10 @@ final class FileCache implements CacheInterface
         if ($raw === false) {
             return $default;
         }
-        $data = @unserialize($raw, ['allowed_classes' => true]);
+        // Güvenlik: Sadece scalar/array saklıyoruz, class instance yok.
+        // allowed_classes=false → cache'e yazılmış zararlı serialized object'i
+        // (LFI/Redis injection senaryosu) unserialize() RCE'ye çeviremez.
+        $data = @unserialize($raw, ['allowed_classes' => false]);
         if (!is_array($data) || !array_key_exists('v', $data)) {
             return $default;
         }

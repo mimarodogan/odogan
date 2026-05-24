@@ -229,7 +229,9 @@ final class MailService
             } elseif ($enc === 'tls') {
                 $m->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             } else {
-                $m->SMTPSecure = false;
+                // PHPMailer 6.x: SMTPSecure string bekler ('' = encryption yok).
+                // false atamak property type mismatch uyarısı verir.
+                $m->SMTPSecure = '';
                 $m->SMTPAutoTLS = false;
             }
             $m->CharSet = 'UTF-8';
@@ -315,7 +317,9 @@ final class MailService
             } elseif ($enc === 'tls') {
                 $m->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             } else {
-                $m->SMTPSecure = false;
+                // PHPMailer 6.x: SMTPSecure string bekler ('' = encryption yok).
+                // false atamak property type mismatch uyarısı verir.
+                $m->SMTPSecure = '';
                 $m->SMTPAutoTLS = false;
             }
             $m->CharSet = 'UTF-8';

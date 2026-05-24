@@ -145,4 +145,63 @@ final class PostNotifier
             'editorial'
         );
     }
+
+    /**
+     * Audit-B2 fix: Onay sürecinde aşama değiştiğinde yazara bilgi maili.
+     * ApprovalController::approve/reject akışında çağrılır — yazara
+     * "yazınız editörden geçti, admin sırada" tarzı progress notification.
+     *
+     * Önceki implementasyon: method hiç yoktu, ApprovalController
+     * `method_exists` guard'ı ile sessizce skip ediyordu → bildirim
+     * gönderilmiyordu. Şimdi method var; mail template'i yoksa
+     * MailService exception fırlatır, biz log + sessiz kal.
+     *
+     * Stage değerleri:
+     *   - 'reviewed'  → Editör onayladı, admin incelemesi bekliyor
+     *   - 'rejected'  → Editör reddetti (notifyAuthorOfRejection ile çakışmasın)
+     *   - genişletilebilir
+     *
+     * Template ihtiyacı: 'post_review_progress' — Settings → Mail Şablonları
+     * üzerinden eklenebilir veya migration ile seed atılabilir.
+     */
+    public static function notifyApprovalProgress(int $postId, string $stage): void
+    {
+        try {
+            $row = Database::instance()->fetch(
+                'SELECT p.title, u.email, u.name
+                 FROM posts p
+                 INNER JOIN users u ON u.id = p.author_id
+                 WHERE p.id = :id LIMIT 1',
+                [':id' => $postId]
+            );
+            if (!$row || empty($row['email'])) {
+                return;
+            }
+            $stageLabel = match ($stage) {
+                'reviewed' => 'editör onayından geçti, admin incelemesini bekliyor',
+                'rejected' => 'editör tarafından düzeltme istendi',
+                default    => 'durumu güncellendi',
+            };
+            MailService::sendTemplate('post_review_progress', (string) $row['email'], [
+                'user_name'  => (string) ($row['name'] ?? ''),
+                'post_title' => (string) ($row['title'] ?? ''),
+                'stage_text' => $stageLabel,
+            ]);
+            Logger::info(
+                'post.approval_progress.mail',
+                ['post_id' => $postId, 'stage' => $stage],
+                'editorial'
+            );
+        } catch (\Throwable $e) {
+            // Mail opsiyonel: template eksikse veya SMTP fail ise sessiz kal,
+            // ama log at — admin "neden mail gitmedi?" sorusuna cevap bulabilsin.
+            if (class_exists(Logger::class)) {
+                Logger::warning(
+                    'post.approval_progress.mail.fail',
+                    ['post_id' => $postId, 'stage' => $stage, 'err' => $e->getMessage()],
+                    'editorial'
+                );
+            }
+        }
+    }
 }

@@ -32,7 +32,10 @@ final class RedisCache implements CacheInterface
         if ($raw === null) {
             return $default;
         }
-        $data = @unserialize((string) $raw, ['allowed_classes' => true]);
+        // Güvenlik: Sadece scalar/array saklıyoruz, class instance yok.
+        // allowed_classes=false → Redis'e write access'i olan saldırgan
+        // serialized object enjekte edip RCE tetikleyemez (defense-in-depth).
+        $data = @unserialize((string) $raw, ['allowed_classes' => false]);
         return $data === false && $raw !== serialize(false) ? $default : $data;
     }
 

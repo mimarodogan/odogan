@@ -329,7 +329,14 @@ final class AutoLinkService
                     $before = substr($original, 0, $matchStart);
                     $after  = substr($original, $matchEnd);
 
-                    $a = $doc->createElement('a', htmlspecialchars($matchText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+                    // DOMDocument::createElement value parametresi entity-encoded
+                    // metni tutarsız handle eder (PHP'nin bilinen davranışı):
+                    // '&' karakteri zaten escaped girerse double-escape olabilir
+                    // veya hiç escape yapılmaz. Güvenli yol: boş element +
+                    // appendChild(createTextNode) — text node otomatik & < >
+                    // karakterlerini doğru şekilde XML entity'ye dönüştürür.
+                    $a = $doc->createElement('a');
+                    $a->appendChild($doc->createTextNode($matchText));
                     $a->setAttribute('href', $pick['href']);
                     $a->setAttribute('class', $pick['class']);
                     $a->setAttribute('data-auto-link', $pick['type']);

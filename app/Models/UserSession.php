@@ -107,10 +107,14 @@ final class UserSession
     public static function pruneStale(int $days = 30): int
     {
         try {
-            return Database::instance()->run(
+            // Database::run() PDOStatement döndürür; method int (silinen sayı)
+            // beklediği için rowCount() üzerinden çevir. Aksi halde PHP strict
+            // types altında TypeError fırlar (Audit-B1).
+            $stmt = Database::instance()->run(
                 'DELETE FROM user_sessions WHERE last_seen_at < DATE_SUB(NOW(), INTERVAL :d DAY)',
                 [':d' => max(1, $days)]
             );
+            return $stmt->rowCount();
         } catch (\Throwable) {
             return 0;
         }

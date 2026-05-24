@@ -17,8 +17,9 @@ use App\Services\Logger;
  * Disambiguation handling: type=='disambiguation' geldiğinde null döner —
  * Librarian'ın yanlış makale önerdiğini gösterir.
  *
- * Cache: file-based, 24h TTL (data/cache/wiki/). Negatif cache (NULL)
- * de tutulur — aynı 404'ü tekrar etmemek için.
+ * Cache: file-based, 24h TTL (storage/cache/wiki/). Negatif cache (NULL)
+ * de tutulur — aynı 404'ü tekrar etmemek için. /storage altı .gitignore
+ * tarafından zaten hariç tutulur — repo'ya bulaşmaz.
  *
  * Kullanım:
  *   $data = WikipediaFetcher::fetch('Slab', 'en');
@@ -27,7 +28,7 @@ use App\Services\Logger;
 final class WikipediaFetcher
 {
     private const REST_BASE = 'https://%s.wikipedia.org/api/rest_v1/page/summary/%s';
-    private const CACHE_DIR_REL = '/data/cache/wiki';
+    private const CACHE_DIR_REL = '/storage/cache/wiki';
     private const CACHE_TTL_SEC = 86400; // 24 saat
     private const TIMEOUT_SEC = 8;
     private const CONNECT_TIMEOUT_SEC = 5;
