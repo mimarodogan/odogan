@@ -1,0 +1,7 @@
+# Backup dosyalarına doğrudan HTTP erişimi engellendi.
+# Yetkili admin sadece /admin/bakim/yedekler/indir/{name} ile alabilir.
+Require all denied
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

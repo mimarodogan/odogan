@@ -1,0 +1,33 @@
+:root{--bone:#FAF7F2;--bone-2:#F1ECE2;--bone-3:#E5DECE;--soot:#111;--soot-2:#2A2724;--ash:#5A544D;--ash-2:#777169;--hair:rgba(17,17,17,.22);--hair-2:rgba(17,17,17,.38);--ink-soft:rgba(17,17,17,.06);--cobalt:#1F3A8A;--cobalt-2:#15296B;--vermilion:#C8421E;--ok:#2F6A3E;--warn:#8C6A12;--err:#B0241D;--info:var(--cobalt);--sans:"Inter","Söhne",-apple-system,blinkmacsystemfont,"Segoe UI",roboto,arial,sans-serif;--serif:"Newsreader","Iowan Old Style","Playfair Display",charter,georgia,serif;--mono:"JetBrains Mono",ui-monospace,sfmono-regular,menlo,consolas,monospace;--max:1280px;--gutter:2rem;--read:660px;--tracked:.14em;--tracked-l:.22em;--ease:cubic-bezier(.2,.7,.2,1)}
+*,*::before,*::after{box-sizing:border-box}
+html{text-size-adjust:100%;font-feature-settings:"ss01","kern","liga"}
+body{margin:0;background:var(--bone);color:var(--soot);font:17px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+img,svg,video{max-width:100%;height:auto;display:block}
+a{color:var(--soot);text-decoration:none;transition:color .2s}
+h1,h2,h3{font-family:var(--serif);font-weight:700;letter-spacing:-.02em;line-height:1;margin:0 0 .6em;color:var(--soot)}
+h1{font-size:clamp(2.6rem,6.4vw,5.4rem);letter-spacing:-.035em;line-height:.95;font-weight:600}
+.skip-link{position:absolute;left:.5rem;top:-50px;background:var(--soot);color:var(--bone);padding:.75rem 1.25rem;font-family:var(--mono);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:var(--tracked);z-index:9999}
+.skip-link:focus{top:.5rem}
+.container{max-width:var(--max);margin:0 auto;padding:0 var(--gutter);position:relative}
+.main{padding-block:3rem 4rem}
+.site-header{background:var(--bone);border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:100;font-family:var(--sans)}
+.site-header .container{display:flex;align-items:stretch;justify-content:space-between;gap:2rem;flex-wrap:wrap;min-height:88px}
+.brand{font-family:var(--serif);font-weight:600;font-size:1.5rem;color:var(--soot);letter-spacing:-.03em;display:inline-flex;align-items:center;gap:.6rem;padding-block:1.5rem;text-decoration:none}
+.brand::before{content:"";display:inline-block;width:14px;height:14px;background:var(--soot);transform:rotate(45deg)}
+.brand-name{display:inline-block}
+.brand-tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:.62rem;font-weight:600;letter-spacing:var(--tracked-l);text-transform:uppercase;color:var(--ash);margin-left:.65rem;padding-left:.7rem;border-left:1px solid var(--hair-2);align-self:center;white-space:nowrap}
+.brand-group{display:inline-flex;align-items:center;gap:1.1rem}
+.nav{display:flex;align-items:stretch;gap:0}
+.nav a{color:var(--soot);font-family:var(--mono);font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:var(--tracked);padding:1.5rem 1.3rem;display:inline-flex;align-items:center;text-decoration:none}
+.nav-toggle{display:none}
+@media(max-width:880px){.nav{display:none}.nav-toggle{display:inline-flex;align-items:center;justify-content:center;background:none;border:0;cursor:pointer}}
+/* Above-the-fold layout — CLS koruması (app.min.css async yüklenirken zıplama olmasın) */
+.hero-featured{display:grid;gap:0;grid-template-columns:1fr;margin-bottom:6rem;border-top:1px solid var(--soot);border-bottom:1px solid var(--soot);position:relative}
+@media(min-width:900px){.hero-featured{grid-template-columns:7fr 5fr;align-items:stretch}}
+.hf-image{aspect-ratio:4/3;background:var(--bone-2);overflow:hidden;position:relative;border-bottom:1px solid var(--hair);display:block}
+@media(min-width:900px){.hf-image{border-bottom:0;border-right:1px solid var(--hair);aspect-ratio:auto;min-height:480px;max-height:600px}}
+.hf-content{display:flex;flex-direction:column;justify-content:space-between;gap:1.5rem;padding:3rem 2.5rem 2.5rem}
+.home-intro{margin:2rem 0 3.5rem;padding-bottom:2rem;border-bottom:1px solid var(--hair)}
+.home-intro-title{font-family:var(--serif);font-size:clamp(2.2rem,5.5vw,4rem);line-height:1.05;letter-spacing:-.025em;margin:0 0 .65rem;color:var(--soot);font-weight:600}
+.post-cover{margin:2.5rem 0 4rem;max-width:920px;width:fit-content;background:var(--bone-2);position:relative}
+.post-cover img{width:auto;max-width:100%;height:auto;max-height:560px;display:block;margin-inline:auto}

@@ -1,0 +1,48 @@
+/vendor/
+/.env
+
+# Runtime storage — .htaccess hariç hepsi ignore
+/storage/cache/*
+!/storage/cache/.gitkeep
+!/storage/cache/.htaccess
+/storage/logs/*
+!/storage/logs/.gitkeep
+!/storage/logs/.htaccess
+
+# Yüklenen medyalar (kullanıcı içeriği)
+/public/uploads/*
+!/public/uploads/.gitkeep
+/uploads/[0-9]*
+/uploads/!(.htaccess|.gitkeep)
+
+# Claude Code (CLI) local metadata — yerel ayarlar, repo'ya girmesin
+.claude/
+
+# OS / editor / build artifacts
+.DS_Store
+._*
+Thumbs.db
+*.bak
+*.orig
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.log
+
+# Node / frontend tooling
+/node_modules/
+
+# Deployment paketleri (60MB+ — repo'ya girmesin)
+# Source map'ler (*.map) DAHİL DEĞİL — onlar prod'a deploy edilmeli ki
+# Sentry / browser devtools sembolize stack trace üretebilsin.
+Arşiv*.zip
+Ar*iv*.zip
+*.zip
+
+# Not: .min.css ve .min.js dosyaları git'te kalır — production deploy
+# kolaylığı için (clone-and-deploy). Source map'ler de yanlarında durur
+# (Sentry sembolize stack trace + browser devtools için). Yerel'de
+# kaynak değiştirince npm run build ile yenilenir, sonra commit edilir.
+!/assets/css/.gitkeep

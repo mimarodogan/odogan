@@ -1,0 +1,9 @@
+assets/css/app.min.css
+assets/css/post.min.css
+assets/css/admin.min.css
+assets/css/panel.min.css
+assets/css/app/projects.min.css
+assets/css/app/building-map.min.css
+node_modules/
+vendor/
+assets/vendor/

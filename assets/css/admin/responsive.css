@@ -1,0 +1,58 @@
+/* ════════════════════════════════════════════════════════════════════
+   responsive.css — Mobile responsive (≤720px) overrides
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Mobile */
+@media(max-width:720px){
+  .post-editor-grid{gap:1rem}
+  .pe-section,.pe-card{padding:1.25rem}
+  .pe-publish{padding:1.25rem}
+  .post-editor-hero{flex-direction:column}
+  .seo-preview-card{padding:.85rem 1rem}
+  .seo-preview-title{font-size:1.05rem}
+
+  /* ─── Tier 5 mobile fixes ──────────────────── */
+  /* Dashboard widget grid kompakt */
+  .dw-delta-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem}
+  .dw-delta{padding:.85rem}
+  .dw-delta .dw-value{font-size:1.6rem}
+  .dw-spark-row, .dw-leaders{grid-template-columns:1fr;gap:.75rem}
+
+  /* Bulk toolbar dik düzene geç */
+  .bulk-toolbar{flex-direction:column;align-items:stretch;gap:.5rem}
+  .bulk-toolbar select, .bulk-toolbar input[type="text"]{min-width:0;width:100%}
+
+  /* Tables — yatay scroll */
+  .table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+
+  /* Quick edit modal — viewport-sıkı */
+  .qe-panel{max-width:none;width:100%;margin:0;border-radius:0;min-height:100vh;max-height:100vh;overflow-y:auto}
+  .qe-modal{align-items:stretch;padding:0}
+
+  /* Features toggle grid */
+  .features-grid{grid-template-columns:1fr !important}
+
+  /* Co-author + suggest list */
+  .pe-coauthor-results{max-height:200px;overflow-y:auto}
+  .pe-suggest-list{max-height:none}
+
+  /* Author applications detay form */
+  .aa-detail{padding:0 .5rem}
+  .aa-detail-block h2{font-size:.65rem}
+
+  /* Security cards mobil */
+  .security-grid{grid-template-columns:1fr !important;gap:1.5rem !important}
+
+  /* TOTP setup grid — mobilde tek kolon */
+  .totp-setup{grid-template-columns:1fr !important;gap:1.25rem !important}
+}
+
+@media(max-width:480px){
+  /* Period filter form mobil */
+  .dash-period-form{flex-direction:column;align-items:stretch}
+  .dash-period-form select{width:100%}
+
+  /* Admin nav header sıkı */
+  .ab-uname, .ab-role{display:none}
+  .ab-link{padding:0 .65rem;font-size:.65rem}
+}

@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `users` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(120) NOT NULL,
+    `slug` VARCHAR(160) NOT NULL,
+    `email` VARCHAR(190) NOT NULL,
+    `password_hash` VARCHAR(255) NOT NULL,
+    `role` ENUM('admin','editor','author') NOT NULL DEFAULT 'author',
+    `status` ENUM('active','pending','banned') NOT NULL DEFAULT 'active',
+    `avatar` VARCHAR(255) NULL,
+    `bio` TEXT NULL,
+    `profile_json` JSON NULL,
+    `email_verified_at` DATETIME NULL,
+    `last_login_at` DATETIME NULL,
+    `remember_token` VARCHAR(100) NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `users_email_unique` (`email`),
+    UNIQUE KEY `users_slug_unique` (`slug`),
+    KEY `users_role_idx` (`role`),
+    KEY `users_status_idx` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

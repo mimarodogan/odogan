@@ -1,0 +1,304 @@
+/* ════════════════════════════════════════════════════════════════════
+   cookie-consent.css — Atelier · KVKK çerez onay banner'ı
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Banner — sayfa sonunda sabit, hairline soot çizgi ile bone üzerinde.
+   max-width 720px + auto margin → desktop'ta merkezde dar bir şerit;
+   mobile'da edge-to-edge. Hidden attribute → JS init etmeden görünmez. */
+.cookie-consent{
+  position:fixed;
+  left:50%;
+  bottom:1.5rem;
+  width:calc(100% - 3rem);
+  max-width:720px;
+  background:var(--bone);
+  border-top:2px solid var(--soot);
+  border-left:1px solid var(--hair);
+  border-right:1px solid var(--hair);
+  border-bottom:1px solid var(--hair);
+  box-shadow:0 8px 32px rgba(17,17,17,.12);
+  z-index:9000;
+  opacity:0;
+  transform:translate(-50%, 1rem);
+  transition:opacity 240ms var(--ease), transform 240ms var(--ease);
+}
+.cookie-consent[hidden]{display:none}
+.cookie-consent.is-visible{opacity:1;transform:translate(-50%, 0)}
+
+.cookie-consent-inner{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:1.5rem;
+  align-items:center;
+  padding:1.25rem 1.5rem;
+}
+
+/* — Sol sütun: metin —————————————————————————————————————————————— */
+.cookie-consent-body{min-width:0}
+.cookie-consent-title{
+  font-family:var(--serif);
+  font-size:1.05rem;
+  font-weight:600;
+  color:var(--soot);
+  margin:0 0 .35rem;
+  letter-spacing:.005em;
+}
+.cookie-consent-text{
+  font-family:var(--sans);
+  font-size:.85rem;
+  line-height:1.55;
+  color:var(--soot-2);
+  margin:0;
+}
+.cookie-consent-text strong{color:var(--soot);font-weight:600}
+.cookie-consent-link{margin:.5rem 0 0;font-family:var(--sans);font-size:.78rem}
+.cookie-consent-link a{
+  color:var(--cobalt);
+  text-decoration:underline;
+  text-underline-offset:3px;
+  text-decoration-thickness:1px;
+}
+.cookie-consent-link a:hover{color:var(--cobalt-2)}
+
+/* — Sağ sütun: butonlar ————————————————————————————————————————— */
+.cookie-consent-buttons{
+  display:flex;
+  flex-direction:column;
+  gap:.6rem;
+  flex-shrink:0;
+}
+.cookie-btn{
+  padding:.7rem 1.25rem;
+  font-size:.7rem;
+  min-width:160px;
+  justify-content:center;
+}
+
+/* — Mobile (≤ 600px) ————————————————————————————————————————————
+   Tek kolona düş, full-width butonlar, sabit alt kenar. */
+@media (max-width: 600px){
+  .cookie-consent{
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    max-width:none;
+    transform:translateY(1rem);
+    border-left:0;
+    border-right:0;
+    border-bottom:0;
+  }
+  .cookie-consent.is-visible{transform:translateY(0)}
+  .cookie-consent-inner{
+    grid-template-columns:1fr;
+    gap:1rem;
+    padding:1rem 1.25rem 1.25rem;
+  }
+  .cookie-consent-buttons{flex-direction:row;width:100%}
+  .cookie-btn{flex:1;min-width:0}
+  .cookie-consent-title{font-size:.95rem}
+  .cookie-consent-text{font-size:.8rem}
+  .cookie-consent-buttons{flex-wrap:wrap}
+  .cookie-btn-prefs{order:2;flex-basis:100%}
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   F2.4 (KVKK): Granular cookie tercih modalı + 3. buton (Tercihler).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 3. buton — "Tercihler" — banner içinde nötr stil (kabul ile reddet arası) */
+.cookie-btn-prefs{
+  background:transparent;
+  color:var(--soot);
+  border:1px solid var(--hair-2);
+}
+.cookie-btn-prefs:hover{
+  background:var(--bone-2);
+  border-color:var(--cobalt);
+  color:var(--cobalt);
+}
+
+/* ─── Tercih modalı ──────────────────────────────────────────────── */
+.cookie-prefs-modal{
+  position:fixed;
+  inset:0;
+  z-index:10001;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:1rem;
+  opacity:0;
+  transition:opacity 200ms var(--ease);
+}
+/* KRİTİK: HTML hidden attribute CSS display:flex tarafından override ediliyor.
+   Modal hidden=true iken bile DOM'da görünür (sadece opacity:0) ve banner'ın
+   üzerinde clickleri yutuyordu. Bu kural HTML hidden'a saygı duyar. */
+.cookie-prefs-modal[hidden]{display:none}
+.cookie-prefs-modal.is-visible{opacity:1}
+.cookie-prefs-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(17,17,17,.55);
+  cursor:pointer;
+}
+.cookie-prefs-panel{
+  position:relative;
+  width:min(100%, 560px);
+  max-height:90vh;
+  overflow-y:auto;
+  background:var(--bone);
+  border:1px solid var(--soot);
+  box-shadow:0 24px 60px rgba(17,17,17,.25);
+}
+.cookie-prefs-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid var(--hair);
+}
+.cookie-prefs-title{
+  margin:0;
+  font-family:var(--serif);
+  font-size:1.35rem;
+  font-weight:600;
+  letter-spacing:-.02em;
+  color:var(--soot);
+}
+.cookie-prefs-close{
+  width:32px;
+  height:32px;
+  border:0;
+  background:transparent;
+  font-size:1.6rem;
+  line-height:1;
+  color:var(--ash);
+  cursor:pointer;
+  transition:color 180ms var(--ease);
+}
+.cookie-prefs-close:hover{color:var(--cobalt)}
+.cookie-prefs-intro{
+  margin:0;
+  padding:1rem 1.5rem 0;
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:.95rem;
+  line-height:1.5;
+  color:var(--ash);
+}
+.cookie-prefs-list{
+  list-style:none;
+  margin:1rem 0 0;
+  padding:0;
+}
+.cookie-prefs-item{
+  padding:1rem 1.5rem;
+  border-top:1px solid var(--hair);
+}
+.cookie-prefs-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:1.5rem;
+}
+.cookie-prefs-cat{
+  margin:0 0 .35rem;
+  font-family:var(--serif);
+  font-size:1.05rem;
+  font-weight:600;
+  letter-spacing:-.01em;
+  color:var(--soot);
+}
+.cookie-prefs-desc{
+  margin:0;
+  font-family:var(--serif);
+  font-size:.88rem;
+  line-height:1.5;
+  color:var(--soot-2);
+}
+.cookie-prefs-toggle{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  cursor:pointer;
+  margin-top:.15rem;
+}
+.cookie-prefs-toggle input[type="checkbox"]{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+.cookie-prefs-switch{
+  display:block;
+  width:42px;
+  height:24px;
+  background:var(--hair-2);
+  border-radius:999px;
+  position:relative;
+  transition:background 200ms var(--ease);
+}
+.cookie-prefs-switch::before{
+  content:"";
+  position:absolute;
+  top:2px;
+  left:2px;
+  width:20px;
+  height:20px;
+  background:var(--bone);
+  border-radius:50%;
+  transition:transform 200ms var(--ease);
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+}
+.cookie-prefs-toggle input:checked + .cookie-prefs-switch{
+  background:var(--cobalt);
+}
+.cookie-prefs-toggle input:checked + .cookie-prefs-switch::before{
+  transform:translateX(18px);
+}
+.cookie-prefs-toggle input:focus-visible + .cookie-prefs-switch{
+  outline:2px solid var(--cobalt);
+  outline-offset:2px;
+}
+.cookie-prefs-badge{
+  font-family:var(--mono);
+  font-size:.62rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+  border:1px solid var(--hair-2);
+  padding:.25rem .55rem;
+}
+.cookie-prefs-foot{
+  display:flex;
+  gap:.5rem;
+  justify-content:flex-end;
+  padding:1.25rem 1.5rem;
+  border-top:1px solid var(--hair);
+  flex-wrap:wrap;
+}
+.cookie-btn-reject{
+  background:transparent;
+  color:var(--soot);
+  border:1px solid var(--hair-2);
+}
+.cookie-btn-reject:hover{
+  border-color:var(--cobalt);
+  color:var(--cobalt);
+}
+
+@media (max-width: 540px){
+  .cookie-prefs-panel{
+    max-height:100vh;
+    height:100vh;
+    width:100%;
+    border:0;
+  }
+  .cookie-prefs-row{flex-direction:column;gap:.75rem}
+  .cookie-prefs-toggle{align-self:flex-start}
+  .cookie-prefs-foot{flex-direction:column-reverse}
+  .cookie-prefs-foot .btn{width:100%}
+}

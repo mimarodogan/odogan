@@ -1,0 +1,97 @@
+/* ════════════════════════════════════════════════════════════════════
+   responsive.css — Mobile/tablet global breakpoints (≤720px ve ≤480px)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════ MOBILE ════════════════════════════════════ */
+@media(max-width:720px){
+  /* Site header rules header-nav.css içindeki hamburger pattern tarafından yönetilir
+     (.nav-toggle + .nav slide-down). Burada sadece içerik genişliği. */
+  .container{padding:0 1.25rem}
+  .main{padding-block:2rem 4rem}
+  .hf-content{padding:1.75rem 1.5rem 1.5rem}
+  .hero::before{position:static;display:block;margin-bottom:.5rem}
+  .block{margin-top:3rem}
+  .block-title{flex-direction:column;align-items:flex-start;gap:.4rem;font-size:1.4rem}
+  .block-title small{margin-left:0}
+  .mag-grid{grid-template-columns:1fr}
+  .mag-card>.cat-pill,.mag-card>h3,.mag-card>p,.mag-card>.mag-meta{margin-left:1.1rem;margin-right:1.1rem}
+  .mag-card>h3{font-size:1.25rem}
+  .two-col{gap:2rem}
+  .btn{min-height:44px}
+  .auth{
+    max-width:100%;
+    margin:1rem auto 3rem;
+    padding:2rem 1.25rem 1.75rem;
+  }
+  .form{max-width:100%}
+  table{font-size:.9rem}
+}
+
+@media(max-width:480px){
+  .container{padding:0 1rem}
+  .nav a{padding:.7rem .55rem;font-size:.6rem;letter-spacing:.08em}
+  .hero h1{font-size:clamp(2rem,8vw,3rem)}
+  .hf-image{aspect-ratio:16/10}
+  .rank-list a{font-size:1rem}
+}
+
+
+/* ════════════════════════ MOBILE TIER-5 ADJUSTMENTS ═════════════════ */
+@media(max-width:760px){
+  /* Yazar bio kartı sıkı padding */
+  .author-bio-card{ margin-top:3rem; padding-top:2rem; }
+  .abc-head{ grid-template-columns:64px 1fr; gap:1rem; }
+  .abc-avatar, .abc-avatar img{ width:64px; height:64px; }
+  .abc-name{ font-size:1.2rem; }
+
+  /* Önceki/Sonraki nav tek kolon */
+  .prev-next-nav{ grid-template-columns:1fr; }
+  .pn-prev{ border-right:0; border-bottom:1px solid var(--hair); }
+  .pn-next{ align-items:flex-start; text-align:left; }
+  .pn-card{ padding:1.25rem 1rem; min-height:auto; }
+
+  /* Series detay mobil */
+  .series-li{ grid-template-columns:1fr; gap:.75rem; padding:1.5rem 0; }
+  .series-num{ text-align:left; font-size:1.6rem; }
+  .series-item{ grid-template-columns:1fr; gap:1rem; }
+  .series-hero{ margin:1rem 0 2rem; padding-bottom:1.5rem; }
+  .series-hero h1{ font-size:1.6rem; }
+
+  /* TOC tek kolon */
+  .toc{ padding:1rem; margin:0 0 1.5rem; }
+  .toc-list{ grid-template-columns:1fr; }
+
+  /* Post sayfası genişlik */
+  .post-body{ max-width:none; }
+  .post h1{ font-size:1.85rem; }
+  .post .lead{ font-size:1.05rem; }
+
+  /* Post series header */
+  .post-series-header{ padding-left:.75rem; flex-direction:column; align-items:flex-start; }
+  .psh-arrows{ font-size:.65rem; }
+
+  /* Yazar başvuru wizard */
+  .author-app{ margin:1.5rem auto 3rem; padding:0 1rem; }
+  .aa-head{ margin-bottom:2rem; padding-bottom:1.25rem; }
+  .aa-head h1{ font-size:1.6rem; }
+  .aa-step{ font-size:.6rem; padding-right:.65rem; margin-right:.65rem; }
+
+  /* /kaydedilenler */
+  .page-saved-head{ margin:1.5rem 0 2rem; padding-bottom:1.25rem; }
+  .page-saved-head h1{ font-size:1.8rem; }
+
+  /* Editörün Seçimi badge mobilde küçük */
+  .mag-card-pick .pick-badge{ font-size:.55rem; padding:.18rem .4rem; }
+
+  /* Site share buttons tablet wrap */
+  .share-buttons{ flex-wrap:wrap; }
+}
+
+@media(max-width:480px){
+  /* Yazı body footnote küçük */
+  .footnotes{ margin-top:2.5rem; padding-top:1.5rem; }
+  .footnotes ol{ padding-left:1.25rem; }
+
+  /* Series detay number row mobilde */
+  .series-num{ font-size:1.3rem; }
+}

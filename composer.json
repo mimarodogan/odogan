@@ -1,0 +1,49 @@
+{
+    "name": "odogan/cms",
+    "description": "Gelismis Icerik Yonetim ve Otorite Yayincilik Platformu",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "chillerlan/php-qrcode": "^5.0",
+        "erusev/parsedown": "^1.7",
+        "getbrevo/brevo-php": "^2.0",
+        "kornrunner/blurhash": "^1.2",
+        "phpmailer/phpmailer": "^6.9",
+        "predis/predis": "^2.2",
+        "sentry/sdk": "^4.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/Helpers/functions.php",
+            "app/Helpers/media.php",
+            "app/Helpers/seo.php"
+        ]
+    },
+    "scripts": {
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
+        "lint": "find app -name '*.php' -exec php -l {} \\;",
+        "test": "echo 'No tests yet — add PHPUnit when ready (composer require --dev phpunit/phpunit).'"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "8.2.0"
+        },
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}

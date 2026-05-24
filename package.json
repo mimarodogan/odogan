@@ -1,0 +1,32 @@
+{
+  "name": "odogan-cms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Odogan CMS — CSS + JS build pipeline",
+  "scripts": {
+    "css:lint": "stylelint 'assets/css/**/*.css' --ignore-path .stylelintignore",
+    "css:lint:fix": "stylelint 'assets/css/**/*.css' --ignore-path .stylelintignore --fix",
+    "css:build": "node scripts/build-css.js",
+    "css:all": "npm run css:lint:fix && npm run css:build",
+    "js:lint": "eslint assets/js/",
+    "js:lint:fix": "eslint assets/js/ --fix",
+    "js:format": "prettier --write 'assets/js/**/*.js' --ignore-path .prettierignore",
+    "js:build": "node scripts/build-js.js",
+    "js:all": "npm run js:lint:fix && npm run js:format && npm run js:build",
+    "build": "npm run css:all && npm run js:all"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "cssnano": "^8.0.0",
+    "eslint": "^10.3.0",
+    "eslint-plugin-n": "^18.0.1",
+    "glob": "^11.0.0",
+    "postcss": "^8.5.0",
+    "prettier": "^3.8.3",
+    "purgecss": "^8.0.0",
+    "stylelint": "^17.0.0",
+    "stylelint-config-standard": "^40.0.0",
+    "terser": "^5.47.1"
+  }
+}

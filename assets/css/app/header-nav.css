@@ -1,0 +1,368 @@
+/* ════════════════════════════════════════════════════════════════════
+   header-nav.css — Site header · brand · primary nav
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════ HEADER ════════════════════════════════════ */
+.site-header{
+  background:var(--bone);
+  border-bottom:1px solid var(--hair);
+  position:sticky;
+  top:0;
+  z-index:100;
+  font-family:var(--sans);
+}
+.site-header .container{
+  display:flex;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:2rem;
+  flex-wrap:wrap;
+  min-height:88px;
+}
+.brand{
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:1.5rem;
+  color:var(--soot);
+  letter-spacing:-.03em;
+  display:inline-flex;
+  align-items:center;
+  gap:.6rem;
+  padding-block:1.5rem;
+  text-decoration:none;
+}
+.brand:hover{color:var(--soot);text-decoration:none}
+.brand::before{
+  content:"";
+  display:inline-block;
+  width:14px;
+  height:14px;
+  background:var(--soot);
+  transform:rotate(45deg);
+  transition:background 200ms var(--ease),transform 400ms var(--ease);
+}
+.brand:hover::before{background:var(--cobalt);transform:rotate(225deg)}
+.brand-name{display:inline-block}
+.brand-tag{
+  display:inline-flex;
+  align-items:center;
+  font-family:var(--mono);
+  font-size:.62rem;
+  font-weight:600;
+  letter-spacing:var(--tracked-l);
+  text-transform:uppercase;
+  color:var(--ash);
+  margin-left:.65rem;
+  padding-left:.7rem;
+  border-left:1px solid var(--hair-2);
+  align-self:center;
+  white-space:nowrap;
+  transition:color 200ms var(--ease);
+}
+.brand:hover .brand-tag{color:var(--cobalt)}
+@media(max-width:640px){.brand-tag{display:none}}
+
+.nav{display:flex;align-items:stretch;gap:0}
+.nav a{
+  color:var(--soot);
+  font-family:var(--mono);
+  font-size:.72rem;
+  font-weight:500;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  padding:1.5rem 1.3rem;
+  display:inline-flex;
+  align-items:center;
+  text-decoration:none;
+  position:relative;
+  transition:color 200ms var(--ease);
+}
+.nav a:hover{color:var(--cobalt);text-decoration:none}
+.nav a::after{
+  content:"";
+  position:absolute;
+  left:1.3rem;
+  right:1.3rem;
+  bottom:1.2rem;
+  height:1px;
+  background:var(--cobalt);
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform 240ms var(--ease);
+}
+.nav a:hover::after{transform:scaleX(1)}
+
+/* Brand grubu — logo + arama ikonu yan yana */
+.brand-group{
+  display:inline-flex;
+  align-items:center;
+  gap:1.1rem;
+}
+
+/* Brand'in hemen yanında arama ikonu — sade glyph, çerçevesiz */
+.brand-search-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:2.6rem;
+  line-height:1;
+  color:var(--soot);
+  text-decoration:none;
+  background:transparent;
+  border:0;
+  padding:.25rem .5rem;
+  flex-shrink:0;
+  transition:color 220ms var(--ease), transform 320ms var(--ease);
+}
+.brand-search-btn:hover{
+  color:var(--cobalt);
+  text-decoration:none;
+  transform:rotate(12deg) scale(1.08);
+}
+.brand-search-btn:focus-visible{
+  outline:2px solid var(--cobalt);
+  outline-offset:4px;
+  border-radius:4px;
+}
+@media(max-width:720px){
+  .brand-group{gap:.5rem}
+  .brand-search-btn{font-size:2rem;padding:.2rem .35rem}
+}
+@media(max-width:480px){
+  .brand-search-btn{font-size:1.7rem}
+}
+
+/* ════════════════════════ MOBILE NAV (hamburger) ════════════════════
+ * Masaüstünde (>880px) tamamen gizli — !important ile bundle/cascade
+ * sürprizlerinden korunur. 880px altında @media kuralında display:flex. */
+.nav-toggle{
+  display:none !important;
+  width:44px;
+  height:44px;
+  margin-left:auto;
+  align-self:center;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:4px;
+  background:transparent;
+  border:0;
+  cursor:pointer;
+  padding:0;
+}
+.nav-toggle span{
+  display:block;
+  width:22px;
+  height:2px;
+  background:var(--soot);
+  transition:transform 260ms var(--ease), opacity 200ms var(--ease);
+  transform-origin:center;
+}
+body.nav-open .nav-toggle span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+body.nav-open .nav-toggle span:nth-child(2){opacity:0}
+body.nav-open .nav-toggle span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+@media(max-width:880px){
+  .nav-toggle{display:flex !important;position:relative;z-index:102}
+  .site-header{position:relative;z-index:101}
+  .site-header .container{
+    min-height:64px;
+    flex-wrap:nowrap;
+    gap:1rem;
+    justify-content:flex-start;
+  }
+  .brand{padding-block:.85rem;font-size:1.25rem}
+  .brand::before{width:11px;height:11px}
+  /* Tam-ekran modal nav — header'ı da kapatır, en üstte. */
+  .nav{
+    position:fixed;
+    inset:0;
+    background:var(--bone);
+    flex-direction:column;
+    align-items:stretch;
+    padding:5rem 0 2rem;       /* top space close butonu/burger için */
+    z-index:100;                /* burger butonu 102 üstte */
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    gap:0;
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(-12px);
+    transition:opacity 220ms var(--ease), transform 280ms var(--ease), visibility 0s linear 280ms;
+  }
+  body.nav-open .nav{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0);
+    transition:opacity 220ms var(--ease), transform 280ms var(--ease), visibility 0s linear 0s;
+  }
+  .nav a{
+    padding:1.1rem 1.5rem;
+    border-bottom:1px solid var(--hair);
+    font-size:.95rem;
+    min-height:52px;
+    text-align:left;
+    justify-content:flex-start;
+    color:var(--soot);
+  }
+  .nav a::after{display:none}
+  .nav a:hover, .nav a:active{background:var(--bone-2)}
+  body.nav-open{overflow:hidden;position:fixed;width:100%}
+  /* Burger 880px modunda her zaman görünür kalır (z-index 102 nav üstünde) */
+  body.nav-open .nav-toggle span{background:var(--soot)}
+}
+
+.main{padding-block:4rem 7rem;min-height:60vh}
+@media(max-width:880px){.main{padding-block:2rem 3rem}}
+
+
+
+/* ════════════════════════ SITE FOOTER (Tier 6) ══════════════════════ */
+.site-footer{
+  background:var(--bone-2);
+  border-top:1px solid var(--soot);
+  margin-top:6rem;
+  padding:3rem 0 2rem;
+}
+.sf-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr;
+  gap:3rem;
+  align-items:flex-start;
+}
+/* 4 kolon — Portfolyo bölümü aktif olduğunda */
+.sf-grid-4{
+  grid-template-columns:2fr 1fr 1fr 1fr;
+}
+@media(max-width:880px){
+  .sf-grid-4{ grid-template-columns:1fr 1fr 1fr; }
+  .sf-grid-4 .sf-brand{ grid-column:1 / -1; margin-bottom:1rem; }
+}
+@media(max-width:720px){
+  .sf-grid,
+  .sf-grid-4{ grid-template-columns:1fr; gap:2rem; }
+  .sf-grid-4 .sf-brand{ grid-column:auto; margin-bottom:0; }
+  .site-footer{ margin-top:3rem; padding:2rem 0 1.5rem; }
+}
+.sf-brand-name{
+  font-family:var(--serif);
+  font-size:1.25rem;
+  font-weight:600;
+  letter-spacing:-.02em;
+  color:var(--soot);
+  margin:0 0 .35rem;
+}
+.sf-tagline{
+  font-family:var(--serif);
+  font-size:.95rem;
+  color:var(--ash);
+  margin:0 0 1rem;
+  line-height:1.5;
+  max-width:34ch;
+  font-style:italic;
+}
+.sf-copyright{
+  font-family:var(--mono);
+  font-size:.7rem;
+  letter-spacing:var(--tracked);
+  text-transform:uppercase;
+  color:var(--ash);
+  margin:0;
+}
+.sf-nav-title{
+  font-family:var(--mono);
+  font-size:.66rem;
+  letter-spacing:var(--tracked-l);
+  text-transform:uppercase;
+  color:var(--ash);
+  font-weight:700;
+  margin:0 0 .85rem;
+}
+.sf-nav ul{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+}
+.sf-nav a{
+  font-family:var(--serif);
+  font-size:.95rem;
+  color:var(--soot);
+  text-decoration:none;
+  transition:color 200ms var(--ease);
+}
+.sf-nav a:hover{ color:var(--cobalt); }
+
+/* ── Footer accordion: mobilde (≤720px) aç/kapa, desktop'ta hep açık ──
+   <details>/<summary> native; JS yok. Desktop'ta .sf-nav ul author kuralı
+   (display:flex) details'in kapalı-gizleme davranışını ezer → liste hep görünür. */
+.sf-acc{ border:0; }
+.sf-acc > summary{
+  list-style:none;            /* default ▸ üçgen marker'ı kaldır */
+  cursor:default;             /* desktop: tıklama hissi yok */
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+}
+.sf-acc > summary::-webkit-details-marker{ display:none; }  /* Safari marker */
+.sf-acc > summary::after{
+  content:"+";
+  font-family:var(--mono);
+  font-size:1.35rem;
+  font-weight:400;
+  line-height:1;
+  color:var(--cobalt);        /* belirgin — açılır menü olduğu belli olsun */
+  display:none;               /* desktop'ta gizli — accordion devre dışı */
+}
+.sf-acc[open] > summary::after{ content:"\2212"; }  /* − (minus) */
+
+/* Desktop GARANTİ: details kapalı kalsa bile liste her zaman görünür
+   (accordion yalnızca mobilde aktif). */
+@media(min-width:721px){
+  .sf-acc > ul{ display:flex !important; }
+}
+
+@media(max-width:720px){
+  .sf-acc > summary{
+    cursor:pointer;           /* mobil: tıklanabilir başlık */
+    padding:.65rem 0;
+    margin-bottom:0;
+  }
+  .sf-acc > summary::after{ display:inline-block; }  /* +/− göster */
+  .sf-acc:not([open]) > ul{ display:none; }          /* kapalıyken listeyi gizle */
+  .sf-acc[open] > ul{ margin-top:.25rem; padding-bottom:.5rem; }
+  /* Gruplar arası ince ayraç — dikey listede netlik */
+  .sf-nav + .sf-nav{ border-top:1px solid var(--hair); }
+}
+
+/* ════════════════════════ YUKARI ÇIK (back-to-top) ════════════════════ */
+.back-to-top{
+  position:fixed;
+  right:1.5rem;
+  bottom:1.5rem;
+  z-index:60;
+  width:46px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--soot);
+  color:var(--bone);
+  border:0;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:1.25rem;
+  line-height:1;
+  box-shadow:0 4px 16px rgba(0,0,0,.18);
+  opacity:.92;
+  transition:opacity 200ms var(--ease),transform 200ms var(--ease),background 200ms var(--ease);
+}
+.back-to-top:hover{ opacity:1; background:var(--cobalt); transform:translateY(-3px); }
+.back-to-top:active{ transform:translateY(-1px); }
+.back-to-top[hidden]{ display:none; }   /* hidden iken gizli kalsın (display:flex'i ezmesin) */
+@media(max-width:680px){
+  .back-to-top{ right:1rem; bottom:1rem; width:42px; height:42px; font-size:1.1rem; }
+}

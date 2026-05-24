@@ -1,0 +1,113 @@
+# Otorite Yayin — root .htaccess (production-ready)
+
+Options -Indexes -MultiViews -ExecCGI
+
+# Disallow access to sensitive files & directories at the document root.
+# (Subdirectories also have their own .htaccess as defense-in-depth.)
+<FilesMatch "^(\.env|\.env\..*|composer\.json|composer\.lock|package\.json|package-lock\.json|README\.md|CHANGELOG\.md|LICENSE|bootstrap\.php|router\.php|.*\.sql|.*\.sqlite|.*\.db|.*\.log|.*\.ini|.*\.bak|.*\.swp|.*\.dist|.*\.example)$">
+    Require all denied
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block direct access to internal directories even if subdir .htaccess is removed.
+RedirectMatch 403 ^/(app|config|database|storage|vendor|tests)(/|$)
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # ─────────────────────────────────────────────────────────────
+    # Canonical URL: https://odogan.com.tr (non-www)
+    # TEK HOP'TA hedefe: hem HTTPS hem non-www aynı redirect'te yapılır.
+    # http://www.X, http://X, https://www.X → tek seferde https://X
+    #
+    # Mantık:
+    #   - HTTPS değilse VEYA host www. ile başlıyorsa → redirect
+    #   - Hedef host her zaman www. olmayan versiyon (RewriteCond %2)
+    # ─────────────────────────────────────────────────────────────
+    RewriteCond %{HTTPS} !=on [OR]
+    RewriteCond %{HTTP:X-Forwarded-Proto} =http [OR]
+    RewriteCond %{HTTP_HOST} ^www\. [NC]
+    RewriteCond %{HTTP_HOST} ^(www\.)?(.+)$ [NC]
+    RewriteRule ^(.*)$ https://%2/$1 [R=301,L]
+
+    # Block dotfiles (.git, .env, .DS_Store, …)
+    RewriteRule "(^|/)\." - [F]
+
+    # Forward to index.php if not a real file/dir
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # MIME-sniffing & clickjacking
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Information leakage
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+    Header unset Server
+
+    # Permissions policy — disable powerful APIs we don't use
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+
+    # Cross-Origin isolation (relaxed for same-site assets)
+    Header set Cross-Origin-Opener-Policy "same-origin"
+    Header set Cross-Origin-Resource-Policy "same-site"
+
+    # Content Security Policy
+    #   default: same-origin
+    #   img:    same-origin + data: (favicons, inlined SVGs) + https: for hot-linked
+    #   style:  same-origin (+ 'unsafe-inline' kept because some inline style attrs exist on legacy view scripts)
+    #   script: same-origin + 'unsafe-inline' (GA gtag config inline) + GA host
+    #   connect: GA collect endpoint
+    Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net; object-src 'none'; upgrade-insecure-requests"
+
+    # HSTS — production HTTPS aktif (kullanıcı kararı: tam puan için aç)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Immutable cache — bundle çıktıları (filename değişmiyor ama mtime-bazlı rebuild)
+    <FilesMatch "\.(min\.css|min\.js)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+    # Statik medya — 1 yıl immutable
+    <FilesMatch "\.(jpg|jpeg|png|webp|avif|gif|svg|ico|woff2|woff|ttf)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# Strip server signature (additional defense; ServerSignature is usually off in cPanel anyway)
+ServerSignature Off
+
+# Brotli — daha yüksek sıkıştırma; gzip yedeği aşağıda
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/javascript application/javascript application/json image/svg+xml text/xml application/xml application/rss+xml application/ld+json
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml text/xml application/xml application/rss+xml application/ld+json
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png  "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 30 days"
+    ExpiresByType application/javascript "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType application/xml "access plus 1 day"
+    ExpiresByType application/ld+json "access plus 1 hour"
+</IfModule>
+
+# Force UTF-8 for text responses
+AddDefaultCharset UTF-8

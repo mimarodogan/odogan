@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: odogan_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, intl, pdo_mysql, gd, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-progress --no-interaction --prefer-dist
+
+      - name: PHP syntax check
+        run: find app -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: PHPStan static analysis (baseline mode)
+        # Baseline (phpstan-baseline.neon) eski borçları susturur;
+        # YENİ hatalar burada fail eder. Borç temizlendikçe baseline güncellenir.
+        run: composer analyse
+
+      - name: PHPUnit tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: odogan_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        # PHPUnit kurulana kadar `composer test` placeholder echo döndürür (exit 0).
+        # PHPUnit eklendiğinde composer.json scripts.test güncellenir.
+        run: composer test

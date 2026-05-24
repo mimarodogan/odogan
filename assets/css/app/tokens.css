@@ -1,0 +1,158 @@
+/* ════════════════════════════════════════════════════════════════════
+   tokens-base.css — Atelier · CSS tokens · reset · typography · utilities · container
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════
+   OTORİTE YAYIN — "ATELIER"
+   Architectural editorial. Hairline rules, monumental serif, blueprint
+   cobalt as the only accent. No gradients, no glass, no offset shadow
+   tricks — only proportion, type, and rhythm.
+   ════════════════════════════════════════════════════════════════════ */
+
+:root{
+  color-scheme: light only;
+  /* — Palette —————————————————————————————————————————————————— */
+  --bone:        #FAF7F2;       /* warm paper */
+  --bone-2:      #F1ECE2;       /* light surface */
+  --bone-3:      #E5DECE;       /* deeper surface */
+  --soot:        #111111;       /* near-black ink */
+  --soot-2:      #2A2724;       /* secondary text */
+  --ash:         #5A544D;       /* warm muted — WCAG AA on bone */
+  --ash-2:       #777169;       /* faint — for large/decorative text */
+  --hair:        rgba(17,17,17,.22);   /* hairline */
+  --hair-2:      rgba(17,17,17,.38);
+  --ink-soft:    rgba(17,17,17,.06);   /* hover wash */
+
+  /* Architectural accent — blueprint cobalt */
+  --cobalt:      #1F3A8A;
+  --cobalt-2:    #15296B;
+  --vermilion:   #C8421E;       /* reserved for errors / "NEW" stamp */
+
+  /* Status */
+  --ok:          #2F6A3E;
+  --warn:        #8C6A12;
+  --err:         #B0241D;
+  --info:        var(--cobalt);
+
+  /* — Type —————————————————————————————————————————————————————— */
+  --sans:        "Inter","Söhne",-apple-system,blinkmacsystemfont,"Segoe UI",roboto,arial,sans-serif;
+  --serif:       "Newsreader","Iowan Old Style","Playfair Display",charter,georgia,serif;
+  --mono:        "JetBrains Mono",ui-monospace,sfmono-regular,menlo,consolas,monospace;
+
+  /* — Geometry ————————————————————————————————————————————————— */
+  --max:         1280px;
+  --gutter:      2rem;
+  --read:        660px;
+  --tracked:     .14em;
+  --tracked-l:   .22em;
+  --ease:        cubic-bezier(.2,.7,.2,1);
+}
+
+/* A11y — keyboard skip link, visible on focus only */
+.skip-link{
+  position:absolute;
+  left:.5rem;
+  top:-50px;
+  background:var(--soot);
+  color:var(--bone);
+  padding:.75rem 1.25rem;
+  font-family:var(--mono);
+  font-size:.75rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  text-decoration:none;
+  z-index:9999;
+  transition:top 200ms var(--ease);
+}
+.skip-link:focus,.skip-link:focus-visible{top:.5rem;outline:2px solid var(--cobalt);outline-offset:2px}
+
+/* Global focus-visible — klavye navigasyonu için tutarlı odak halkası */
+:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px;border-radius:2px}
+:focus:not(:focus-visible){outline:0}
+/* Invalid form alanları için kırmızı sınır vurgu */
+[aria-invalid="true"]{border-color:var(--err) !important;background-color:rgba(176,36,29,0.04)}
+
+/* Ekran okuyucu için, görsel olarak gizli — SEO H1, ARIA labels vs. */
+.visually-hidden{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;
+    clip-path:inset(50%);
+    white-space:nowrap;
+    border:0;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{text-size-adjust:100%;font-feature-settings:"ss01","kern","liga"}
+body{
+  margin:0;
+  background:var(--bone);
+  color:var(--soot);
+  font:17px/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-feature-settings:"kern","liga","ss01";
+}
+::selection{background:var(--cobalt);color:var(--bone)}
+
+img,svg,video{max-width:100%;height:auto;display:block}
+
+/* — Anchors — restrained underlines —————————————————————————————— */
+a{color:var(--soot);text-decoration:none;text-underline-offset:4px;text-decoration-thickness:1px;transition:color 200ms var(--ease)}
+a:hover{color:var(--cobalt);text-decoration:underline}
+
+/* — Rules ——————————————————————————————————————————————————————— */
+hr,.rule{border:0;border-top:1px solid var(--hair);margin:4rem 0}
+.rule-thick{border-top:1px solid var(--soot)}
+
+/* — Type scale ——————————————————————————————————————————————————— */
+h1,h2,h3,h4{font-family:var(--serif);font-weight:700;letter-spacing:-.02em;line-height:1;margin:0 0 .6em;color:var(--soot)}
+h1{font-size:clamp(2.6rem,6.4vw,5.4rem);letter-spacing:-.035em;line-height:.95;font-weight:600}
+h2{font-size:clamp(1.8rem,3.4vw,2.6rem);font-weight:600}
+h3{font-size:clamp(1.2rem,1.8vw,1.5rem);font-weight:600;line-height:1.1}
+h4{font-size:1.05rem;line-height:1.2;font-weight:600}
+p{margin:0 0 1em;color:var(--soot-2)}
+
+code,pre,.mono{font-family:var(--mono)}
+code{background:var(--bone-2);padding:.1em .4em;font-size:.88em;color:var(--soot)}
+
+/* — Utility labels ——————————————————————————————————————————————— */
+.eyebrow,.label{
+  font-family:var(--mono);
+  font-size:.7rem;
+  font-weight:500;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--ash);
+  display:inline-block;
+}
+.eyebrow-strong{color:var(--soot);font-weight:600}
+.muted{color:var(--ash)}
+
+/* — Container with hairline side rails (blueprint frame) ————————————— */
+.container{
+  max-width:var(--max);
+  margin:0 auto;
+  padding:0 var(--gutter);
+  position:relative;
+}
+@media(min-width:1100px){
+  .container{padding:0 3rem}
+}
+
+/* ════════════════════════ REDUCED MOTION (WCAG 2.3.3) ═════════════════
+ * Kullanıcı OS seviyesinde "azaltılmış hareket" tercih ederse tüm
+ * animasyon / transition'ları neredeyse anında bitir — vestibular
+ * disorder olan kullanıcılar için zorunlu. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

@@ -1,0 +1,34 @@
+/* ════════════════════════════════════════════════════════════════════
+   flash.css — Flash mesajları (success · error · info)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════ FLASH ═════════════════════════════════════ */
+.flash{
+  padding:1rem 1.25rem;
+  margin-bottom:1.5rem;
+  background:transparent;
+  border:0;
+  border-left:2px solid var(--soot);
+  font-size:.95rem;
+  display:flex;
+  align-items:flex-start;
+  gap:1rem;
+  font-family:var(--sans);
+  color:var(--soot);
+}
+.flash::before{
+  font-family:var(--mono);
+  font-size:.62rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked-l);
+  padding:.2rem .5rem;
+  border:1px solid currentColor;
+  flex-shrink:0;
+  margin-top:.1rem;
+}
+.flash-success{border-left-color:var(--ok);color:var(--ok)}
+.flash-success::before{content:"TAMAM"}
+.flash-error{border-left-color:var(--err);color:var(--err)}
+.flash-error::before{content:"HATA"}
+

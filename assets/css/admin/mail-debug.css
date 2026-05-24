@@ -1,0 +1,77 @@
+/* ════════════════════════════════════════════════════════════════════
+   mail-debug.css — SMTP debug transcript · Microsoft OAuth2 uyarı kutusu
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────  SMTP debug + uyarı kutuları  ───────────────── */
+.smtp-debug{
+  margin-top:1.25rem;
+  background:#1a1a1a;
+  border:1px solid var(--soot);
+  color:#e6e6e6;
+  font-family:var(--mono);
+}
+.smtp-debug summary{
+  cursor:pointer;
+  padding:.85rem 1.25rem;
+  font-size:.72rem;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:var(--tracked);
+  color:var(--bone);
+  background:#000000;
+  user-select:none;
+}
+.smtp-debug pre{
+  margin:0;
+  padding:1.25rem 1.5rem;
+  font-size:.8rem;
+  line-height:1.45;
+  overflow-x:auto;
+  max-height:280px;
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+  color:#9bf09b;
+}
+.smtp-debug p.muted{
+  padding:.85rem 1.5rem 1rem;
+  margin:0;
+  font-family:var(--sans);
+  color:#bfbfbf;
+  font-size:.85rem;
+  border-top:1px solid #333333;
+}
+.smtp-debug p.muted strong{color:#FFB347}
+
+.smtp-notice{
+  margin:2rem 0;
+  padding:1.5rem 1.75rem;
+  background:linear-gradient(to right, #fff8e1, #fff3cd 60%, #fff8e1);
+  border:1px solid #d4a72c;
+  border-left:4px solid #d4a72c;
+}
+.smtp-notice h2{
+  margin:0 0 .65rem;
+  font-family:var(--serif);
+  font-size:1.15rem;
+  font-weight:600;
+  color:#5c4504;
+  letter-spacing:-.015em;
+  padding:0;
+  border:0;
+}
+.smtp-notice h2::before{content:none}
+.smtp-notice p{
+  margin:.6rem 0;
+  font-size:.92rem;
+  line-height:1.55;
+  color:#3d2f04;
+}
+.smtp-notice ul{
+  margin:.5rem 0 0;
+  padding-left:1.25rem;
+  color:#3d2f04;
+  font-size:.92rem;
+}
+.smtp-notice li{margin:.45rem 0;line-height:1.5}
+.smtp-notice strong{color:#1f1604}
+

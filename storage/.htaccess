@@ -1,0 +1,6 @@
+# Internal storage — never expose via web. Logs, cache, sessions.
+Require all denied
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

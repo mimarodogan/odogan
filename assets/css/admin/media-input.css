@@ -1,0 +1,256 @@
+/* ════════════════════════════════════════════════════════════════════
+ * Media Input — admin form'larda kütüphane seç / bilgisayardan yükle
+ * Atelier tokens: --soot, --cobalt, --bone, --bone-2, --hair, --ash
+ * pe-card / pe-section içinde kullanılır.
+ * ════════════════════════════════════════════════════════════════════ */
+
+/* ───── Single mode container ───── */
+.media-input{
+    display:flex;
+    flex-direction:column;
+    gap:.75rem;
+    margin:0 0 1.1rem;
+}
+.media-input > label{
+    display:flex;
+    flex-direction:column;
+    gap:.4rem;
+    margin:0;
+}
+.media-input > label > span{
+    font-family:var(--mono);
+    font-size:.66rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:var(--tracked, .1em);
+    color:var(--soot);
+}
+.media-input > label input[type="text"]{
+    width:100%;
+    border:0;
+    border-bottom:1px solid var(--hair-2);
+    background:transparent;
+    padding:.55rem 0;
+    font:inherit;
+    font-size:.95rem;
+    color:var(--soot);
+    border-radius:0;
+    transition:border-color 200ms ease;
+}
+.media-input > label input[type="text"]:hover{ border-bottom-color:var(--soot); }
+.media-input > label input[type="text"]:focus{
+    border-bottom-color:var(--cobalt);
+}
+.media-input > label input[type="text"]:focus:not(:focus-visible){
+    outline:0;
+}
+.media-input > label input[type="text"]:focus-visible{
+    outline:2px solid var(--cobalt);
+    outline-offset:2px;
+}
+.media-input > label small{
+    font-family:var(--sans);
+    font-size:.78rem;
+    color:var(--ash);
+}
+
+/* Preview kutusu */
+.media-input-preview{
+    position:relative;
+    border:1px solid var(--hair);
+    background:var(--bone-2);
+    max-width:240px;
+}
+.media-input-preview img{
+    display:block;
+    width:100%;
+    height:auto;
+    max-height:180px;
+    object-fit:cover;
+}
+.media-input-preview .mi-clear{
+    position:absolute;
+    top:.4rem;
+    right:.4rem;
+    width:1.65rem;
+    height:1.65rem;
+    border-radius:50%;
+    border:0;
+    background:rgba(17,17,17,.78);
+    color:#ffffff;
+    font-size:1rem;
+    font-weight:700;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    transition:background 180ms ease;
+    line-height:1;
+    padding:0;
+}
+.media-input-preview .mi-clear:hover{ background:var(--soot); }
+
+/* Aksiyon butonları */
+.media-input-actions{
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+}
+.media-input-actions .btn{
+    flex-shrink:0;
+}
+.mi-icon{
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:.85em;
+    margin-right:.15em;
+    color:var(--cobalt);
+}
+.btn-secondary:hover .mi-icon{ color:#ffffff; }
+
+/* ───── List mode (galeri) ───── */
+.media-input-list{
+    display:flex;
+    flex-direction:column;
+    gap:.85rem;
+    margin:0 0 1.1rem;
+}
+.media-input-list-head{
+    display:flex;
+    flex-direction:column;
+    gap:.4rem;
+    margin:0;
+}
+.media-input-list-head > span{
+    font-family:var(--mono);
+    font-size:.66rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:var(--tracked, .1em);
+    color:var(--soot);
+}
+.media-input-list-head textarea{
+    width:100%;
+    border:0;
+    border-bottom:1px solid var(--hair-2);
+    background:transparent;
+    padding:.55rem 0;
+    font:inherit;
+    font-size:.92rem;
+    color:var(--soot);
+    border-radius:0;
+    resize:vertical;
+    min-height:60px;
+    font-family:var(--mono);
+}
+.media-input-list-head textarea:focus{
+    border-bottom-color:var(--cobalt);
+}
+.media-input-list-head textarea:focus:not(:focus-visible){
+    outline:0;
+}
+.media-input-list-head textarea:focus-visible{
+    outline:2px solid var(--cobalt);
+    outline-offset:2px;
+}
+.media-input-list-head small{
+    font-family:var(--sans);
+    font-size:.78rem;
+    color:var(--ash);
+}
+
+/* Thumbnail strip */
+.media-input-list-strip{
+    display:flex;
+    gap:.5rem;
+    flex-wrap:wrap;
+    min-height:60px;
+    padding:.5rem;
+    background:var(--bone-2);
+    border:1px dashed var(--hair);
+}
+.media-input-list-strip:empty::before{
+    content:"Henüz görsel eklenmedi — kütüphaneden seç veya yükle";
+    font-family:var(--sans);
+    font-size:.82rem;
+    color:var(--ash);
+    font-style:italic;
+    padding:.8rem;
+    margin:auto;
+}
+
+.ml-tile{
+    position:relative;
+    width:80px;
+    height:80px;
+    background:var(--bone);
+    border:1px solid var(--hair);
+    overflow:hidden;
+    cursor:grab;
+    flex-shrink:0;
+    transition:transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+.ml-tile:hover{
+    border-color:var(--cobalt);
+    box-shadow:0 4px 12px rgba(17,17,17,.08);
+}
+.ml-tile.ml-tile-dragging{
+    opacity:.4;
+    cursor:grabbing;
+    transform:scale(.95);
+}
+.ml-tile img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    pointer-events:none;
+}
+.ml-tile-id{
+    width:100%;
+    height:100%;
+    display:grid;
+    place-items:center;
+    font-family:var(--mono);
+    font-size:.85rem;
+    color:var(--ash);
+    background:var(--bone-2);
+}
+.ml-tile-remove{
+    position:absolute;
+    top:.2rem;
+    right:.2rem;
+    width:1.4rem;
+    height:1.4rem;
+    border-radius:50%;
+    border:0;
+    background:rgba(17,17,17,.78);
+    color:#ffffff;
+    font-size:.85rem;
+    font-weight:700;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    line-height:1;
+    padding:0;
+    opacity:0;
+    transition:opacity 180ms ease, background 180ms ease;
+}
+.ml-tile:hover .ml-tile-remove,
+.ml-tile:focus-within .ml-tile-remove{ opacity:1; }
+.ml-tile-remove:hover{ background:var(--soot); }
+
+/* pe-card içinde kullanıldığında üst boşluk yok */
+.pe-card .media-input,
+.pe-card .media-input-list,
+.pe-section .media-input,
+.pe-section .media-input-list{
+    margin:0;
+}
+
+/* Mobile */
+@media (max-width:720px){
+    .ml-tile{ width:66px; height:66px; }
+    .media-input-preview{ max-width:100%; }
+    .media-input-actions{ flex-direction:column; align-items:stretch; }
+    .media-input-actions .btn{ width:100%; text-align:center; }
+}
