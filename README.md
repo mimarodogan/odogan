@@ -8,45 +8,8 @@ for architecture, construction, restoration and engineering content.
 [odogan.com.tr](https://odogan.com.tr) için özel geliştirildi — mimari, yapı,
 restorasyon ve mühendislik içerikleri için "atelier" estetiğinde.
 
-## Screenshots · Ekran Görüntüleri
-
-### Homepage · Anasayfa — featured + magazine grid
-
-<img src="docs/screenshots/home-desktop.webp" alt="Anasayfa: hero featured yazı + atelier magazine grid" width="100%">
-
-### Post page · Yazı Sayfası — TOC, share, footnote, reactions
-
-<img src="docs/screenshots/post-desktop.webp" alt="Yazı sayfası: yan TOC, kayan progress bar, footnote tooltip" width="100%">
-
-### Project portfolio · Proje Portfolyo
-
-<img src="docs/screenshots/projects-desktop.webp" alt="Projeler: filtre chip'leri + tip bazlı kart grid" width="100%">
-
-### Building map · Yapı Haritası — interactive Leaflet
-
-<img src="docs/screenshots/map-desktop.webp" alt="Yapı haritası: OpenStreetMap üzerinde geo-tagged projeler, filter chip'leri" width="100%">
-
-### Glossary · Sözlük — alphabetical accordion
-
-<img src="docs/screenshots/glossary-desktop.webp" alt="Sözlük: harfe göre gruplanmış mimari terimler, FULLTEXT arama" width="100%">
-
-<details>
-<summary><b>Mobile views · Mobile görünümler</b> (click · tıkla)</summary>
-
-<p align="center">
-  <img src="docs/screenshots/home-mobile.webp" alt="Anasayfa mobile" width="240">
-  <img src="docs/screenshots/post-mobile.webp" alt="Yazı sayfası mobile" width="240">
-  <img src="docs/screenshots/projects-mobile.webp" alt="Projeler mobile" width="240">
-</p>
-<p align="center">
-  <img src="docs/screenshots/map-mobile.webp" alt="Harita mobile" width="240">
-  <img src="docs/screenshots/glossary-mobile.webp" alt="Sözlük mobile" width="240">
-</p>
-
-</details>
-
-> **EN —** Screenshots are auto-generated — refresh with `npm run screenshots`.
-> **TR —** Ekran görüntüleri otomatik üretildi — yenilemek için: `npm run screenshots`
+> **Live demo · Canlı önizleme:** [odogan.com.tr](https://odogan.com.tr) — anasayfa, yazı sayfası,
+> proje portfolyo, yapı haritası ve mimari sözlük canlı olarak görülebilir.
 
 ## Features · Özellikler
 
@@ -55,8 +18,8 @@ restorasyon ve mühendislik içerikleri için "atelier" estetiğinde.
 - Markdown + sanitized HTML dual format
 - Co-author / çoklu yazar desteği
 - Series (dizi yazılar) + bölüm navigasyonu
-- Tag ve kategori sistemi
-- Glossary (sözlük) modülü
+- Silo URL kategori sistemi
+- Glossary (sözlük) modülü + Wikipedia-stili otomatik iç linkleme
 - Project portfolio + interaktif Leaflet harita
 
 ### SEO & Discoverability
@@ -156,7 +119,6 @@ npm run css:build    # PurgeCSS + cssnano
 npm run js:lint      # ESLint check · kontrol
 npm run js:format    # Prettier
 npm run js:build     # Terser minify + source map
-npm run screenshots  # README screenshots via Playwright + Sharp · ekran görüntüleri
 npm run build        # Full pipeline (CSS + JS) · tüm pipeline
 ```
 
