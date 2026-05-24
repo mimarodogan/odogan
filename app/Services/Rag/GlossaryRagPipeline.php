@@ -219,7 +219,8 @@ final class GlossaryRagPipeline
         $sysPrompt = self::writerSystemPrompt();
         $userMsg = "TERİM: {$term}\n"
             . "BAĞLAM TÜRÜ: {$ctxText}\n\n"
-            . "KAYNAK PASAJLAR (numaralı — citation için [1] [2] kullan):\n"
+            . "KAYNAK PASAJLAR (numaralandırılmış — sadece senin için referans, "
+            . "metinde [1] [2] gibi citation YAZMA — Kaynaklar bölümünde otomatik gösterilir):\n"
             . $sourceBlock
             . "Bu kaynaklara DAYANARAK '{$term}' için sözlük girdisini hazırla ve "
             . "'submit_glossary' tool'u ile gönder.";
@@ -274,11 +275,21 @@ final class GlossaryRagPipeline
             );
         }
 
-        // Sanitize HTML + H1→H2
+        // Sanitize HTML + H1→H2 + citation cleanup
         $html = (string) ($json['html'] ?? '');
         if ($html !== '') {
             $html = (string) preg_replace('#<h1(\s[^>]*)?>#i', '<h2$1>', $html);
             $html = (string) preg_replace('#</h1>#i', '</h2>', $html);
+
+            // Defansif citation temizliği — prompt'a rağmen AI koyabilir.
+            // Pattern: [1], [2], [3][4], [1-3], [1, 2] gibi varyasyonlar.
+            // Hem ASCII köşeli parantez hem de uzun-tire dahil.
+            $html = (string) preg_replace('/\s*\[\d+(?:[,\-\s]\d+)*\](?:\s*\[\d+(?:[,\-\s]\d+)*\])*/u', '', $html);
+            // Aynı şey FAQ cevaplarına da uygulanır (aşağıda)
+            // Olası double-space veya paragraf öncesi boşluk
+            $html = (string) preg_replace('/\s+([.,;:!?])/u', '$1', $html);
+            $html = (string) preg_replace('/[ \t]{2,}/u', ' ', $html);
+
             if (class_exists(Sanitizer::class)) {
                 $html = Sanitizer::clean($html);
             }
@@ -313,14 +324,20 @@ final class GlossaryRagPipeline
             }
         }
 
-        // FAQ normalize (min 8 hedef)
+        // FAQ normalize (min 8 hedef) + citation cleanup
         $faqs = [];
+        $citationRegex = '/\s*\[\d+(?:[,\-\s]\d+)*\](?:\s*\[\d+(?:[,\-\s]\d+)*\])*/u';
         foreach ((array) ($json['faq'] ?? []) as $f) {
             if (!is_array($f)) continue;
             $q = mb_substr(trim((string) ($f['q'] ?? '')), 0, 500);
             $a = mb_substr(trim((string) ($f['a'] ?? '')), 0, 1500);
             if ($q === '' || $a === '') continue;
-            $faqs[] = ['q' => $q, 'a' => $a];
+            // Citation referansları temizle (defansif)
+            $q = (string) preg_replace($citationRegex, '', $q);
+            $a = (string) preg_replace($citationRegex, '', $a);
+            $a = (string) preg_replace('/\s+([.,;:!?])/u', '$1', $a);
+            $a = trim((string) preg_replace('/[ \t]{2,}/u', ' ', $a));
+            $faqs[] = ['q' => trim($q), 'a' => $a];
             if (count($faqs) >= 20) break;
         }
 
@@ -388,8 +405,9 @@ final class GlossaryRagPipeline
                         'description' => 'Sözlük tanım HTML. YALNIZCA iki H2: '
                             . '"[TERİM] Nedir?" + "[TERİM] Kelime Anlamı ve Kökeni". '
                             . 'İlk paragraf 40-50 kelime (Featured Snippet). Toplam 400-600 kelime. '
-                            . 'Her ana cümle sonunda [1] [2] kaynak referansı. '
-                            . 'İzinli: h2, h3, p, ul, ol, li, strong, em. YASAK: h1, script.',
+                            . 'YASAK: [1] [2] gibi citation referansları metin içinde KULLANMA — '
+                            . 'kaynaklar zaten "Kaynaklar" bölümünde otomatik gösterilir. '
+                            . 'İzinli HTML: h2, h3, p, ul, ol, li, strong, em. YASAK: h1, script.',
                     ],
                     'faq' => [
                         'type'  => 'array',
@@ -436,7 +454,10 @@ KESİN KURALLAR
 1) KAYNAK ZORUNLULUĞU:
    - Pasajda OLMAYAN iddia YAZMA. Şüpheli noktalarda KISA kal.
    - Spesifik tarih/sayı/isim sadece kaynakta varsa kullan.
-   - Her ana cümlenin sonuna kaynak referansı ekle: [1] [2] gibi.
+   - ⚠ Metinde "[1] [2] [3]" gibi citation referansları KULLANMA —
+     kaynaklar "Kaynaklar" bölümünde otomatik gösterilir, metnin içinde
+     gürültü oluşturur. Sadece kendin için hangi pasajdan ne aldığını
+     takip et, ama HTML'de bu numaraları YAZMA.
 
 2) BAĞLAM SADAKAT:
    - Belirtilen bağlam türünden ÇIKMA. Çok-anlamlı kelimelerde:
