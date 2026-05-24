@@ -147,10 +147,18 @@
         body.set('context', context);
         body.set('depth', depth);
         body.set('chunk', stepId);
-        // Q3: context_type (disambiguation hint) — form'daki select'ten al
-        const ctxSelect = document.getElementById('glossary-context-type');
-        if (ctxSelect && ctxSelect.value) {
-            body.set('context_type', ctxSelect.value);
+        // Q3 + MC6: context_type[] çoklu seçim — form'daki checked checkbox'lardan
+        // tüm değerleri topla. Tek seçim de çoklu da aynı kanaldan akar.
+        // FormData / URLSearchParams append: PHP tarafı $req->input alır → array
+        // veya tek değer; normalizeContextTypes her ikisini de kabul eder.
+        const ctxCbs = document.querySelectorAll(
+            '#glossary-context-types input[type="checkbox"][data-ctx-cb]:checked'
+        );
+        if (ctxCbs.length === 0) {
+            // Hiç seçim yoksa 'diger' fallback — AI yine üretebilsin
+            body.append('context_type[]', 'diger');
+        } else {
+            ctxCbs.forEach((cb) => body.append('context_type[]', cb.value));
         }
         if (outlineJson) {
             body.set('outline_json', outlineJson);

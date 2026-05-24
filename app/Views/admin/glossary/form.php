@@ -130,25 +130,54 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                            placeholder="örn: Strüktür, Yapı Elemanı, BIM">
                 </label>
 
-                <?php // Q4: Bağlam Etiketi — AI disambiguation hint (drift önleme)
+                <?php // Q4 + MC5: Bağlam Etiketi — çoklu seçim (max 3) checkbox grid.
+                //    AI'a "bu bağlamlardan birini veya birkaçını ele al" direktifi
+                //    veriyor; tek seçim → tek bağlama kilit, çoklu → birleşik kapsam.
                 $_ctxTypes = \App\Services\GlossaryValidationService::CONTEXT_TYPES;
-                $_currentCtx = (string) ($item['context_type'] ?? 'diger');
+                $_currentCtxRaw = (string) ($item['context_type'] ?? 'diger');
+                $_currentCtxList = \App\Services\GlossaryValidationService::normalizeContextTypes($_currentCtxRaw);
                 ?>
-                <label>
-                    <span>Bağlam Türü <em style="color:var(--cobalt)">*</em></span>
-                    <select name="context_type" id="glossary-context-type" required>
-                        <?php foreach ($_ctxTypes as $key => $label): ?>
-                            <option value="<?= esc($key) ?>" <?= $_currentCtx === $key ? 'selected' : '' ?>>
-                                <?= esc($label) ?>
-                            </option>
+                <fieldset class="pe-fieldset glossary-ctx-fieldset"
+                          aria-describedby="glossary-ctx-hint">
+                    <legend>Bağlam Türü(leri) <em style="color:var(--cobalt)">*</em></legend>
+                    <div class="glossary-ctx-grid"
+                         id="glossary-context-types"
+                         role="group"
+                         aria-label="Bağlam türü seçimi (en az 1, en fazla 3)">
+                        <?php foreach ($_ctxTypes as $key => $label):
+                            $_isChecked = in_array($key, $_currentCtxList, true);
+                            // Uzun label'ı "Yapı Elemanı" ve "(kiriş, kolon …)" parçalarına ayır
+                            $_short = trim((string) preg_replace('/\s*\(.*$/u', '', $label));
+                            $_desc  = '';
+                            if (preg_match('/\((.*)\)\s*$/u', $label, $m)) {
+                                $_desc = trim($m[1]);
+                            }
+                        ?>
+                            <label class="glossary-ctx-opt<?= $_isChecked ? ' is-checked' : '' ?>">
+                                <input type="checkbox"
+                                       name="context_type[]"
+                                       value="<?= esc($key) ?>"
+                                       <?= $_isChecked ? 'checked' : '' ?>
+                                       data-ctx-cb>
+                                <span class="ctx-opt-body">
+                                    <strong class="ctx-opt-title"><?= esc($_short) ?></strong>
+                                    <?php if ($_desc !== ''): ?>
+                                        <small class="ctx-opt-desc"><?= esc($_desc) ?></small>
+                                    <?php endif; ?>
+                                </span>
+                            </label>
                         <?php endforeach; ?>
-                    </select>
-                    <small class="muted">
-                        <strong>Önemli:</strong> "Döşeme" gibi çok-anlamlı kelimelerde AI'nın yanlış
-                        bağlamı yorumlamasını engeller. Örnek: "Döşeme" yapı elemanı seçilirse, AI
-                        fayans döşeme eylemini değil zemin/tavan plakını tarif eder.
-                    </small>
-                </label>
+                    </div>
+                    <p id="glossary-ctx-hint" class="muted glossary-ctx-hint">
+                        <strong>Önemli:</strong> En az 1, en fazla 3 bağlam seç. Örnek:
+                        <em>"Kemer"</em> → <em>Yapı Elemanı + Tarihsel</em> (mimari öğe
+                        <em>ve</em> Roma/Selçuklu kemerleri olarak ele alınır).
+                        Tek seçim AI'ı tek anlama kilitler; çoklu seçim "şu bağlamlardan
+                        birini veya birkaçını ele al" der.
+                    </p>
+                    <p class="glossary-ctx-count" aria-live="polite"
+                       data-ctx-count></p>
+                </fieldset>
 
                 <label>
                     <span>Eş Anlamlılar (virgülle)</span>
@@ -407,6 +436,107 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
     border-color: var(--err, #B0241D) !important;
     background-color: rgba(176, 36, 29, .04);
 }
+
+/* MC5: Bağlam türü çoklu seçim — checkbox grid */
+.glossary-ctx-fieldset {
+    border: 1px solid var(--rule, #E5E1DA);
+    border-radius: 6px;
+    padding: .85rem 1rem 1rem;
+    margin: 1rem 0;
+    background: rgba(255, 255, 255, .35);
+}
+.glossary-ctx-fieldset > legend {
+    padding: 0 .4rem;
+    font-weight: 600;
+    font-size: .95rem;
+    color: var(--ink, #111);
+}
+.glossary-ctx-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .55rem;
+    margin: .4rem 0 .65rem;
+}
+@media (max-width: 720px) {
+    .glossary-ctx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+    .glossary-ctx-grid { grid-template-columns: 1fr; }
+}
+.glossary-ctx-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    padding: .55rem .65rem;
+    border: 1px solid var(--rule, #E5E1DA);
+    border-radius: 5px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .12s ease, background-color .12s ease, box-shadow .12s ease;
+    line-height: 1.3;
+}
+.glossary-ctx-opt:hover {
+    border-color: var(--cobalt, #1F3A8A);
+    background: rgba(31, 58, 138, .03);
+}
+.glossary-ctx-opt:focus-within {
+    outline: 2px solid var(--cobalt, #1F3A8A);
+    outline-offset: 1px;
+}
+.glossary-ctx-opt input[type="checkbox"] {
+    margin-top: .2rem;
+    flex: 0 0 auto;
+    accent-color: var(--cobalt, #1F3A8A);
+}
+.glossary-ctx-opt.is-checked {
+    border-color: var(--cobalt, #1F3A8A);
+    background: rgba(31, 58, 138, .06);
+    box-shadow: inset 0 0 0 1px var(--cobalt, #1F3A8A);
+}
+.glossary-ctx-opt.is-disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+.ctx-opt-body {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+.ctx-opt-title {
+    font-size: .88rem;
+    color: var(--ink, #111);
+    font-weight: 600;
+}
+.ctx-opt-desc {
+    font-size: .72rem;
+    color: var(--ash, #5A544D);
+    font-style: italic;
+}
+.glossary-ctx-hint {
+    margin: .4rem 0 0;
+    font-size: .8rem;
+    line-height: 1.45;
+}
+.glossary-ctx-hint em {
+    background: rgba(31, 58, 138, .07);
+    padding: 0 .25rem;
+    border-radius: 3px;
+    font-style: normal;
+    font-weight: 600;
+    color: var(--cobalt, #1F3A8A);
+}
+.glossary-ctx-count {
+    margin: .35rem 0 0;
+    font-size: .78rem;
+    font-weight: 500;
+    min-height: 1.1em;  /* layout shift önle */
+}
+.glossary-ctx-count[data-state="warn"] {
+    color: var(--err, #B0241D);
+}
+.glossary-ctx-count[data-state="ok"] {
+    color: var(--ok, #2F6A3E);
+}
 </style>
 
 <script>
@@ -525,5 +655,97 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
     if (termInp.value && termInp.value.trim().length >= 2) {
         check();
     }
+})();
+</script>
+
+<script>
+/* MC6 (form-side): Bağlam türü checkbox grid — max 3 guard +
+   görsel state (is-checked) + erişilebilir sayaç + min-1 form-level
+   validation. AI panelinin js'i (glossary-ai.js) `context_type[]`
+   adıyla checkboxları okur — bu blok sadece UX'i yönetir. */
+(function () {
+    'use strict';
+    var fieldset = document.getElementById('glossary-context-types');
+    if (!fieldset) return;
+    var MAX = 3;
+    var cbs = Array.prototype.slice.call(
+        fieldset.querySelectorAll('input[type="checkbox"][data-ctx-cb]')
+    );
+    if (cbs.length === 0) return;
+    var countEl = document.querySelector('[data-ctx-count]');
+    var form = document.getElementById('glossary-form');
+
+    var refresh = function () {
+        var n = cbs.filter(function (c) { return c.checked; }).length;
+        // is-checked görsel state
+        cbs.forEach(function (c) {
+            var lbl = c.closest('.glossary-ctx-opt');
+            if (!lbl) return;
+            lbl.classList.toggle('is-checked', c.checked);
+            // max ulaşıldıysa işaretsizleri pasifleştir (görsel)
+            if (n >= MAX && !c.checked) {
+                lbl.classList.add('is-disabled');
+            } else {
+                lbl.classList.remove('is-disabled');
+            }
+        });
+        // Sayaç metni
+        if (countEl) {
+            if (n === 0) {
+                countEl.setAttribute('data-state', 'warn');
+                countEl.textContent = '⚠ En az 1 bağlam türü seçilmeli.';
+            } else if (n > MAX) {
+                countEl.setAttribute('data-state', 'warn');
+                countEl.textContent = '⚠ En fazla ' + MAX + ' bağlam seçebilirsin. ' +
+                    'Birini kaldır.';
+            } else {
+                countEl.setAttribute('data-state', 'ok');
+                countEl.textContent = '✓ ' + n + ' bağlam seçildi (en fazla ' + MAX + ').';
+            }
+        }
+    };
+
+    cbs.forEach(function (cb) {
+        cb.addEventListener('change', function (e) {
+            var n = cbs.filter(function (c) { return c.checked; }).length;
+            if (cb.checked && n > MAX) {
+                // 4. seçim → engelle, kullanıcıya net mesaj
+                cb.checked = false;
+                if (countEl) {
+                    countEl.setAttribute('data-state', 'warn');
+                    countEl.textContent = '⚠ En fazla ' + MAX + ' bağlam seçilebilir. ' +
+                        'Önce mevcut bir seçimi kaldır.';
+                }
+                // Hafif shake (CSS yoksa görünmez, sorun değil)
+                cb.closest('.glossary-ctx-opt')?.animate?.([
+                    { transform: 'translateX(0)' },
+                    { transform: 'translateX(-4px)' },
+                    { transform: 'translateX(4px)' },
+                    { transform: 'translateX(0)' }
+                ], { duration: 220 });
+            }
+            refresh();
+        });
+    });
+
+    // Form submit'te min-1 zorunluluğu (HTML5 required çoklu checkbox'a
+    // standartta uygulanmaz — manuel kontrol).
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            var n = cbs.filter(function (c) { return c.checked; }).length;
+            if (n === 0) {
+                e.preventDefault();
+                if (countEl) {
+                    countEl.setAttribute('data-state', 'warn');
+                    countEl.textContent = '⚠ En az 1 bağlam türü seçmelisin.';
+                }
+                fieldset.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (cbs[0] || {}).focus?.();
+            }
+        });
+    }
+
+    // İlk render — mevcut seçimleri yansıt
+    refresh();
 })();
 </script>

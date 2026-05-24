@@ -341,12 +341,15 @@ TXT;
      *   ts_standards:array
      * }
      */
-    public static function draftOutline(string $term, string $context = '', string $depth = 'orta', array $current = [], string $contextType = 'diger'): array
+    public static function draftOutline(string $term, string $context = '', string $depth = 'orta', array $current = [], string|array $contextTypes = 'diger'): array
     {
         $key = self::apiKey();
         if ($key === '') {
             throw new \RuntimeException('Claude API anahtarı tanımlı değil.');
         }
+        // MC3: Çoklu bağlam normalize — şimdilik outline kullanmıyor (ileride)
+        $ctxList = GlossaryValidationService::normalizeContextTypes($contextTypes);
+        unset($ctxList); // outline prompt henüz contextType direktifi taşımıyor
 
         $term = trim($term);
         if (mb_strlen($term) < 2) {
@@ -445,7 +448,7 @@ TXT;
      *   faq?:array<int,array{q:string,a:string}>
      * }
      */
-    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = [], array $outline = [], string $contextType = 'diger'): array
+    public static function draftChunk(string $chunkId, string $term, string $context = '', string $depth = 'orta', array $current = [], array $outline = [], string|array $contextTypes = 'diger'): array
     {
         $key = self::apiKey();
         if ($key === '') {
@@ -479,7 +482,7 @@ TXT;
         // Haiku üst sınırı: 8000 (8192 tavanından 192 buffer)
         $maxTokens = min($maxTokens, 8000);
 
-        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance, $outline, $contextType);
+        $userText = self::chunkUserPayload($chunkId, $term, $context, $depth, $current, $isEnhance, $outline, $contextTypes);
 
         $body = [
             'model'       => self::model(),
@@ -600,42 +603,73 @@ TXT;
     }
 
     /**
-     * Q3: Bağlam etiketi direktifi — disambiguation hint olarak prompt'a
-     * inject edilir. Çok-anlamlı kelimelerin (örn. "döşeme" = yapı elemanı
-     * VS fayans döşeme eylemi) AI tarafından yanlış bağlamda
-     * yorumlanmasını önler.
+     * Q3 + MC3: Bağlam etiketi direktifi — disambiguation hint olarak
+     * prompt'a inject edilir. Çok-anlamlı kelimelerin (örn. "döşeme" =
+     * yapı elemanı VS fayans döşeme eylemi) AI tarafından yanlış
+     * bağlamda yorumlanmasını önler.
      *
+     * MC3: Tek bağlam VEYA çoklu bağlam (1-3 değer) kabul eder.
+     *      Çoklu için: "şu bağlamlardan birini veya birkaçını ele al;
+     *      hepsini de kapsamayı dene".
+     *
+     * @param string|array<int,string> $contextTypes
      * @return array<int,string>  satır listesi (chunkUserPayload'a append)
      */
-    private static function buildContextDirective(string $term, string $contextType): array
+    private static function buildContextDirective(string $term, string|array $contextTypes): array
     {
+        $list = GlossaryValidationService::normalizeContextTypes($contextTypes);
         $types = GlossaryValidationService::CONTEXT_TYPES;
-        if (!isset($types[$contextType]) || $contextType === 'diger') {
+
+        // Tek değerli ve 'diger' ise eski davranış: zayıf uyarı
+        if ($list === ['diger']) {
             return [
                 '⚠ BAĞLAM TÜRÜ: BELİRLENMEMİŞ — mimari/yapı bağlamında en olası anlamı seç.',
             ];
         }
-        $label = $types[$contextType];
-        // Spesifik bağlam directives — AI'ya net "ne YAZMA" kuralı ver
-        $forbidden = self::contextForbiddenList($contextType, $term);
+
+        $isMulti = count($list) > 1;
+        $forbidden = self::contextForbiddenList($list, $term);
+
         $lines = [
             '═══════════════════════════════════════════════════════════',
-            '🎯 BAĞLAM TÜRÜ (KESİN UYULACAK): ' . $contextType,
-            '   → ' . $label,
-            '',
-            '"' . $term . '" terimini SADECE bu bağlamda ele al.',
-            'Aşağıdaki anlamlara GİTME (YAZMA):',
-            $forbidden,
-            '',
-            'Çok-anlamlı kelime ise sadece belirtilen bağlamı anlat;',
-            'günlük Türkçe veya komşu anlamları açıklama.',
-            '═══════════════════════════════════════════════════════════',
         ];
+        if ($isMulti) {
+            $lines[] = '🎯 BAĞLAM TÜRLERİ (' . count($list) . ' adet — HEPSİNİ KAPSA):';
+            foreach ($list as $i => $ct) {
+                $lines[] = sprintf('   %d) %s → %s', $i + 1, $ct, $types[$ct] ?? '');
+            }
+            $lines[] = '';
+            $lines[] = '"' . $term . '" terimini bu bağlamlardan EN AZ BİRİNİN';
+            $lines[] = 'penceresinden ele al; tercihen hepsini örerek bir bütün oluştur.';
+            $lines[] = 'Örnek: "Kemer" hem yapı elemanı (mimari öğe) hem tarihsel';
+            $lines[] = '(Roma/Selçuklu kemerleri) bağlamında ise → ikisini birlikte anlat.';
+        } else {
+            $only = $list[0];
+            $lines[] = '🎯 BAĞLAM TÜRÜ (KESİN UYULACAK): ' . $only;
+            $lines[] = '   → ' . ($types[$only] ?? '');
+            $lines[] = '';
+            $lines[] = '"' . $term . '" terimini SADECE bu bağlamda ele al.';
+        }
+
+        $lines[] = '';
+        $lines[] = 'Aşağıdaki anlamlara GİTME (YAZMA):';
+        $lines[] = $forbidden;
+        $lines[] = '';
+        $lines[] = 'Çok-anlamlı kelime ise sadece belirtilen bağlam(lar)ı anlat;';
+        $lines[] = 'günlük Türkçe veya komşu anlamları açıklama.';
+        $lines[] = '═══════════════════════════════════════════════════════════';
+
         return $lines;
     }
 
-    /** Her context_type için "anlatma" yasak listesi — sık karıştırılan diğer bağlamlar. */
-    private static function contextForbiddenList(string $contextType, string $term): string
+    /**
+     * Her context_type için "anlatma" yasak listesi — sık karıştırılan diğer
+     * bağlamlar. MC3: Çoklu context için her birinin forbidden satırını
+     * birleştirir (dup'lar tek tutulur).
+     *
+     * @param array<int,string> $contextTypes
+     */
+    private static function contextForbiddenList(array $contextTypes, string $term): string
     {
         $map = [
             'yapi_elemani' => '  ✗ Eylem/işlem ("X döşeme işi", "X yapımı", "X uygulaması")
@@ -657,7 +691,21 @@ TXT;
             'ic_mimarlik' => '  ✗ Yapısal/strüktürel eleman (iç mekan donatısı olmalı)
   ✗ Mimari akım veya teknik',
         ];
-        return $map[$contextType] ?? '  (özel kısıtlama yok)';
+
+        // MC3: Çoklu için ÖRTÜŞMEYEN satırları birleştir. Aynı yasak satırı
+        // iki context'ten geliyorsa tek seferde tut.
+        $combined = [];
+        foreach ($contextTypes as $ct) {
+            if (!isset($map[$ct])) continue;
+            $combined[] = '  [' . $ct . ']';
+            foreach (explode("\n", $map[$ct]) as $line) {
+                $clean = trim($line);
+                if ($clean === '' || in_array($clean, $combined, true)) continue;
+                $combined[] = '  ' . $clean;
+            }
+        }
+        if ($combined === []) return '  (özel kısıtlama yok)';
+        return implode("\n", $combined);
     }
 
     /**
@@ -836,7 +884,7 @@ TXT;
      * Chunk'a özel kullanıcı mesajı — hangi bölümlerin üretileceği listelenir.
      * @param array<string,mixed> $current
      */
-    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance, array $outline = [], string $contextType = 'diger'): string
+    private static function chunkUserPayload(string $chunkId, string $term, string $context, string $depth, array $current, bool $isEnhance, array $outline = [], string|array $contextTypes = 'diger'): string
     {
         $plan = self::CHUNK_PLAN[$chunkId];
         $sections = implode("\n", (array) $plan['sections']);
@@ -847,8 +895,8 @@ TXT;
         $lines = [
             'TERİM: ' . $term,
         ];
-        // Q3: Bağlam etiketi — disambiguation hint (DRIFT önleme)
-        $lines = array_merge($lines, self::buildContextDirective($term, $contextType));
+        // Q3 + MC3: Çoklu bağlam etiketi — disambiguation hint (DRIFT önleme)
+        $lines = array_merge($lines, self::buildContextDirective($term, $contextTypes));
         $lines[] = 'CHUNK: ' . $chunkId . ' — ' . $plan['label'];
         $lines[] = 'HEDEF UZUNLUK: ' . $wordBudget . ' kelime (±%20). Sıkı uy.';
         $lines[] = 'YAZAR SESİ: ' . $voice;

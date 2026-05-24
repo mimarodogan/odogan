@@ -154,11 +154,13 @@ final class GlossaryController
         $item = Glossary::findById($id);
         if (!$item) return Response::notFound();
 
-        $contextType = (string) ($item['context_type'] ?? 'diger');
+        // MC4: DB'deki CSV string'i validate'e olduğu gibi geç —
+        // normalizeContextTypes service içinde explode eder.
+        $contextTypes = (string) ($item['context_type'] ?? 'diger');
         try {
             $result = \App\Services\GlossaryValidationService::validate(
                 (string) $item['term'],
-                $contextType,
+                $contextTypes,
                 (string) ($item['definition'] ?? '')
             );
         } catch (\Throwable $e) {
@@ -197,11 +199,12 @@ final class GlossaryController
         @set_time_limit(0);
         foreach ($list as $g2) {
             $id = (int) $g2['id'];
-            $contextType = (string) ($g2['context_type'] ?? 'diger');
+            // MC4: CSV string olduğu gibi geç — service normalize eder
+            $contextTypes = (string) ($g2['context_type'] ?? 'diger');
             try {
                 $result = \App\Services\GlossaryValidationService::validate(
                     (string) $g2['term'],
-                    $contextType,
+                    $contextTypes,
                     (string) ($g2['definition'] ?? '')
                 );
                 Glossary::update($id, [
@@ -486,12 +489,10 @@ final class GlossaryController
             $ctx     = trim((string) $req->input('context', ''));
             $depth   = trim((string) $req->input('depth', 'orta'));
             $chunkId = trim((string) $req->input('chunk', ''));
-            // Q3: context_type — disambiguation hint
-            $contextType = trim((string) $req->input('context_type', 'diger'));
-            $allowedCtx = array_keys(\App\Services\GlossaryValidationService::CONTEXT_TYPES);
-            if (!in_array($contextType, $allowedCtx, true)) {
-                $contextType = 'diger';
-            }
+            // Q3 + MC4: çoklu context_type — disambiguation hint.
+            // Form'dan name="context_type[]" → array; tek değer için string.
+            $rawCtxTypes = $req->input('context_type', null);
+            $contextTypes = \App\Services\GlossaryValidationService::normalizeContextTypes($rawCtxTypes);
             if (mb_strlen($term) < 2) {
                 return Response::json(['ok' => false, 'message' => 'Terim en az 2 karakter olmalı.'], 400);
             }
@@ -509,7 +510,7 @@ final class GlossaryController
             // OUTLINE PRE-PASS: chunk=outline → küresel plan üret (3 çağrılık
             // akışın 1. adımı). Çıktısı sonraki 2 chunk'a bağlam olarak verilir.
             if ($chunkId === 'outline') {
-                $outline = \App\Services\AiGlossaryService::draftOutline($term, $ctx, $depth, $current, $contextType);
+                $outline = \App\Services\AiGlossaryService::draftOutline($term, $ctx, $depth, $current, $contextTypes);
                 return Response::json(['ok' => true, 'chunk' => 'outline', 'data' => $outline]);
             }
 
@@ -522,7 +523,7 @@ final class GlossaryController
                     $dec = json_decode($outlineRaw, true);
                     if (is_array($dec)) $outline = $dec;
                 }
-                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current, $outline, $contextType);
+                $data = \App\Services\AiGlossaryService::draftChunk($chunkId, $term, $ctx, $depth, $current, $outline, $contextTypes);
                 return Response::json(['ok' => true, 'chunk' => $chunkId, 'data' => $data]);
             }
 
@@ -565,17 +566,19 @@ final class GlossaryController
             $err = 'Tanım en az 10 karakter olmalı.';
             return [];
         }
-        // Q4: context_type — sadece beklenen enum değerleri
-        $contextType = trim((string) $req->input('context_type', 'diger'));
-        $allowedCtx = array_keys(\App\Services\GlossaryValidationService::CONTEXT_TYPES);
-        if (!in_array($contextType, $allowedCtx, true)) {
-            $contextType = 'diger';
-        }
+        // Q4 + MC4: context_type — çoklu (array) veya tek (string) kabul.
+        // Form'dan: name="context_type[]" → array; legacy/JSON: string olur.
+        // normalizeContextTypes geçersiz/dup/boşları temizler, max 3'e kırpar.
+        $rawCtx = $req->input('context_type', null);
+        $ctxList = \App\Services\GlossaryValidationService::normalizeContextTypes($rawCtx);
+        // DB'ye CSV string olarak yaz; AI servisleri normalize'i kendi içinde çağırır.
+        $ctxCsv = implode(',', $ctxList);
+
         return [
             'term'         => mb_substr($term, 0, 180),
             'definition'   => Sanitizer::clean($def),
             'category'     => mb_substr(trim((string) $req->input('category', '')), 0, 80),
-            'context_type' => $contextType,
+            'context_type' => $ctxCsv,
             'aliases'      => mb_substr(trim((string) $req->input('aliases', '')), 0, 2000),
             'references'   => self::normalizeReferences($req->input('references', null)),
             'faq_json'     => self::normalizeFaq($req->input('faq', null)),

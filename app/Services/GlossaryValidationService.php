@@ -56,6 +56,15 @@ final class GlossaryValidationService
     /**
      * Bir sözlük girdisini bağlam denetiminden geçirir.
      *
+     * MC2: $contextTypes parametresi hem string (CSV: "yapi_elemani,tarihsel")
+     *      hem array (['yapi_elemani', 'tarihsel']) kabul eder. Tek değer de
+     *      geriye uyumlu çalışır.
+     *
+     * @param string $term
+     * @param string|array<int,string> $contextTypes  Tek değer (string) veya
+     *        çoklu (array/CSV). Max 3 değere kırpılır.
+     * @param string $definitionHtml
+     *
      * @return array{
      *   ok: bool,
      *   is_correct_context: bool,
@@ -68,7 +77,7 @@ final class GlossaryValidationService
      *   checked_at: string
      * }
      */
-    public static function validate(string $term, string $contextType, string $definitionHtml): array
+    public static function validate(string $term, string|array $contextTypes, string $definitionHtml): array
     {
         $key = self::apiKey();
         if ($key === '') {
@@ -79,14 +88,13 @@ final class GlossaryValidationService
         if ($term === '') {
             throw new \InvalidArgumentException('Term boş olamaz.');
         }
-        if (!isset(self::CONTEXT_TYPES[$contextType])) {
-            $contextType = 'diger';
-        }
+        // MC2: Çoklu context normalize — array/CSV → ['yapi_elemani', ...]
+        $ctxList = self::normalizeContextTypes($contextTypes);
         // Tanımdan HTML'i sıyır — AI sadece anlam için bakacak
         $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($definitionHtml)));
         if (mb_strlen($plain) < 30) {
             // Çok kısa tanım — anlamlı kontrol yapılamaz
-            return self::fallbackResult($term, $contextType, 'too_short');
+            return self::fallbackResult($term, $ctxList, 'too_short');
         }
         // Token bütçesi için kırp (3000 char ~= 750 token)
         if (mb_strlen($plain) > 3000) {
@@ -94,7 +102,7 @@ final class GlossaryValidationService
         }
 
         $sysPrompt = self::systemPrompt();
-        $userPrompt = self::userPrompt($term, $contextType, $plain);
+        $userPrompt = self::userPrompt($term, $ctxList, $plain);
 
         $body = [
             'model'      => self::model(),
@@ -109,7 +117,7 @@ final class GlossaryValidationService
             $resp = self::http($key, $body);
         } catch (\Throwable $e) {
             // API hatası — fail-open, admin manuel kontrol etsin
-            return self::fallbackResult($term, $contextType, 'api_error: ' . $e->getMessage());
+            return self::fallbackResult($term, $ctxList, 'api_error: ' . $e->getMessage());
         }
 
         $text = '';
@@ -120,7 +128,7 @@ final class GlossaryValidationService
         }
         $json = self::extractJson($text);
         if (!is_array($json)) {
-            return self::fallbackResult($term, $contextType, 'parse_error');
+            return self::fallbackResult($term, $ctxList, 'parse_error');
         }
 
         $isCorrect = (bool) ($json['is_correct_context'] ?? true);
@@ -149,15 +157,69 @@ final class GlossaryValidationService
         ];
     }
 
-    /** Insan-okunabilir context_type etiketi. */
-    public static function contextLabel(?string $type): string
+    /**
+     * MC2: İnsan-okunabilir context_type etiketi.
+     * Tek değer veya çoklu (CSV/array) destekler. Çoklu ise " + " ile birleştirir.
+     *
+     * @param string|array<int,string>|null $type
+     */
+    public static function contextLabel(string|array|null $type): string
     {
-        if ($type === null || $type === '') return 'Belirlenmemiş';
-        return self::CONTEXT_TYPES[$type] ?? 'Diğer';
+        if ($type === null || $type === '' || $type === []) return 'Belirlenmemiş';
+        $list = self::normalizeContextTypes($type);
+        if ($list === []) return 'Belirlenmemiş';
+        $labels = [];
+        foreach ($list as $t) {
+            // Uzun açıklama yerine kısa label — virgülden öncesi yeterli
+            $full = self::CONTEXT_TYPES[$t] ?? 'Diğer';
+            // "Yapı Elemanı (kiriş, kolon, döşeme — bir nesne/eleman)" → "Yapı Elemanı"
+            $labels[] = trim((string) preg_replace('/\s*\(.*$/u', '', $full));
+        }
+        return implode(' + ', $labels);
     }
 
-    /** Validation atlandığında dönen sonuç. */
-    private static function fallbackResult(string $term, string $contextType, string $reason): array
+    /**
+     * MC2: Bağlam türü girdisini temizlenmiş array'e dönüştürür.
+     *
+     * Kabul edilen formatlar:
+     *   - "yapi_elemani"                       → ['yapi_elemani']
+     *   - "yapi_elemani,tarihsel"              → ['yapi_elemani', 'tarihsel']
+     *   - ['yapi_elemani', 'tarihsel']         → aynı
+     *   - "" / null / [] / "invalid"           → ['diger']
+     *
+     * @param string|array<int,string>|null $input
+     * @return array<int,string>  Geçerli enum değerleri, max 3 öğe.
+     */
+    public static function normalizeContextTypes(string|array|null $input): array
+    {
+        if ($input === null || $input === '' || $input === []) {
+            return ['diger'];
+        }
+        // String → CSV explode
+        if (is_string($input)) {
+            $parts = array_map('trim', explode(',', $input));
+        } else {
+            $parts = array_map(static fn($v) => trim((string) $v), $input);
+        }
+        // Boşları, geçersizleri ve dup'ları temizle
+        $clean = [];
+        foreach ($parts as $p) {
+            if ($p === '') continue;
+            if (!isset(self::CONTEXT_TYPES[$p])) continue;
+            if (in_array($p, $clean, true)) continue;
+            $clean[] = $p;
+        }
+        // Boş kaldıysa veya hep geçersizse 'diger'
+        if ($clean === []) return ['diger'];
+        // Max 3'e kırp (UI'da JS de bu sınırı uygular)
+        return array_slice($clean, 0, 3);
+    }
+
+    /**
+     * Validation atlandığında dönen sonuç.
+     * @param array<int,string> $contextTypes
+     */
+    private static function fallbackResult(string $term, array $contextTypes, string $reason): array
     {
         return [
             'ok'                  => false,
@@ -177,19 +239,31 @@ final class GlossaryValidationService
         return <<<TXT
 Sen Türkçe mimarlık ve yapı terminolojisinin kıdemli editörüsün.
 GÖREVİN: Sana verilen bir sözlük tanımının, terim için BELİRTİLEN
-BAĞLAM TÜRÜNDE doğru olup olmadığını tek bir JSON ile döndürmek.
+BAĞLAM TÜRÜ(LERİ)NDE doğru olup olmadığını tek bir JSON ile döndürmek.
 
-Çok-anlamlı Türkçe kelimeler (örn. "döşeme", "perde", "çatı", "askı")
-mimari sözlükte spesifik bir bağlamda kullanılır. Eğer tanım o
-bağlamı tarif etmiyorsa drift'tir.
+Çok-anlamlı Türkçe kelimeler (örn. "döşeme", "perde", "çatı", "kemer")
+mimari sözlükte spesifik bir veya birkaç bağlamda kullanılır. Eğer
+tanım belirtilen bağlamlardan EN AZ BİRİNİ doğru tarif ediyorsa kabul.
+HİÇBİRİNE uymuyorsa drift'tir.
 
-DRIFT ÖRNEKLERI:
-- Term: "Döşeme", context: yapi_elemani, tanım fayans döşeme işleminden
-  bahsediyor → DRIFT (yanlış bağlam, eylem değil eleman olmalı)
-- Term: "Perde", context: yapi_elemani (perde duvar), tanım pencere
-  perdesinden bahsediyor → DRIFT
-- Term: "Konsol Kiriş", context: yapi_elemani, tanım statik mühendislik
-  açısından konsol elemanı anlatıyor → DOĞRU
+ÇOKLU BAĞLAM (MC):
+- Bir terim 1-3 bağlama girebilir. Örn: "Kemer" hem yapi_elemani
+  (mimari öğe) hem tarihsel (Roma/Selçuklu kemerleri) bağlamında geçer.
+- Tanım iki bağlamı da kapsıyorsa "is_correct_context": true.
+- Tanım sadece bir bağlamı kapsıyor ama belirtilen DİĞER bağlamı
+  TAMAMEN ATLAMIŞSA: yine "true" sayılır ama confidence düşer (0.6 civarı).
+- Tanım belirtilen HİÇBİR bağlama uymuyor, başka anlamı anlatıyorsa
+  "false" + drift_reason.
+
+DRIFT ÖRNEKLERİ:
+- Term: "Döşeme", context: [yapi_elemani], tanım fayans döşeme
+  işleminden bahsediyor → DRIFT (yanlış bağlam, eylem değil eleman)
+- Term: "Perde", context: [yapi_elemani], tanım pencere perdesinden
+  bahsediyor → DRIFT
+- Term: "Kemer", context: [yapi_elemani, tarihsel], tanım hem mimari
+  öğe hem Roma kemerlerinden bahsediyor → DOĞRU (confidence 0.95)
+- Term: "Kemer", context: [yapi_elemani, tarihsel], tanım sadece
+  yapı öğesi tarif ediyor → DOĞRU (confidence 0.65, fix önerisi tarihsel ekle)
 
 YANIT KURALI:
 - SADECE geçerli JSON, başka hiçbir şey yok.
@@ -205,17 +279,31 @@ JSON ŞEMASI:
 TXT;
     }
 
-    private static function userPrompt(string $term, string $contextType, string $plain): string
+    /**
+     * @param array<int,string> $ctxList
+     */
+    private static function userPrompt(string $term, array $ctxList, string $plain): string
     {
-        $label = self::CONTEXT_TYPES[$contextType] ?? 'Belirlenmemiş';
+        // Bağlam listesini formatla
+        $ctxLines = [];
+        foreach ($ctxList as $i => $ct) {
+            $label = self::CONTEXT_TYPES[$ct] ?? 'Belirlenmemiş';
+            $ctxLines[] = sprintf('  %d. %s — %s', $i + 1, $ct, $label);
+        }
+        $ctxBlock = implode("\n", $ctxLines);
+        $count = count($ctxList);
+        $verdict = $count > 1
+            ? "Bu tanım, '{$term}' kelimesinin yukarıdaki {$count} bağlamdan EN AZ BİRİNİN anlamını doğru tarif ediyor mu?"
+            : "Bu tanım, '{$term}' kelimesinin yukarıdaki bağlamdaki anlamını doğru tarif ediyor mu?";
+
         return "TERİM: {$term}\n"
-            . "BAĞLAM TÜRÜ: {$contextType} ({$label})\n\n"
+            . "BAĞLAM TÜRÜ(LERİ) — " . $count . " adet:\n"
+            . $ctxBlock . "\n\n"
             . "MEVCUT TANIM (HTML stripped, ilk ~3000 karakter):\n"
             . "---\n"
             . $plain
             . "\n---\n\n"
-            . "Bu tanım, '{$term}' kelimesinin '{$label}' bağlamındaki anlamını "
-            . "doğru tarif ediyor mu? JSON ile cevap ver.";
+            . $verdict . ' JSON ile cevap ver.';
     }
 
     private static function apiKey(): string
