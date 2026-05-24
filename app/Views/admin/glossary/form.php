@@ -397,9 +397,19 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
             credentials: 'same-origin',
             body: fd,
         })
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                if (!r.ok) {
+                    // 404 = route yok, 419 = CSRF, 500 = server hatası
+                    throw new Error('HTTP ' + r.status);
+                }
+                return r.json();
+            })
             .then(function (json) {
-                if (!json || !json.ok) return;
+                if (!json || !json.ok) {
+                    // Spinner takılı kalmasın
+                    clearStatus();
+                    return;
+                }
                 if (json.exists && json.existing) {
                     var e = json.existing;
                     var status = e.is_active ? 'aktif' : 'taslak (pasif)';
@@ -412,7 +422,22 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
                     setStatus('ok', '✓ Kullanılabilir — bu terim henüz kayıtlı değil.');
                 }
             })
-            .catch(function () { /* sessiz geç */ });
+            .catch(function (err) {
+                // Hata olursa "kontrol ediliyor" sonsuza takılmasın.
+                // Endpoint deploy edilmemişse 404 alır — kullanıcıya net mesaj.
+                var msg = (err && err.message) || 'bilinmeyen hata';
+                if (msg.indexOf('HTTP 404') >= 0) {
+                    setStatus('checking',
+                        '⚠ Kontrol endpoint\'i bulunamadı. ' +
+                        'Sunucuya routes.php + GlossaryController.php yüklenmemiş olabilir.');
+                } else if (msg.indexOf('HTTP 419') >= 0) {
+                    setStatus('checking', '⚠ Oturum süresi doldu — sayfayı yenileyin.');
+                } else {
+                    setStatus('checking', '⚠ Kontrol yapılamadı (' + msg + '). Yine de submit edebilirsiniz.');
+                }
+                // Submit'e engel olma — server-side validation yine duplicate'ı yakalar
+                submitBtns.forEach(function (b) { b.disabled = false; b.title = ''; });
+            });
     };
 
     var schedule = function () {
