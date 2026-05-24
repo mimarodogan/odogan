@@ -100,9 +100,20 @@ final class MediaService
         $masterMime = $useWebp ? 'image/webp' : 'image/jpeg';
         $masterRel = $relDir . '/' . $hash . '.' . $masterExt;
         $masterAbs = self::publicRoot() . '/' . $masterRel;
+
+        // Audit-C2: JPEG master için alpha kanal düzleştir (JPEG transparency
+        // desteklemez). WebP master için alpha korunur — imagewebp alpha-aware.
+        $masterImg = $img;
+        $needsFlatten = !$useWebp && ($mime === 'image/png' || $mime === 'image/webp');
+        if ($needsFlatten) {
+            $masterImg = self::flattenAlpha($img);
+        }
         $writeOk = $useWebp
-            ? @imagewebp($img, $masterAbs, self::WEBP_QUALITY)
-            : @imagejpeg($img, $masterAbs, self::JPEG_QUALITY);
+            ? @imagewebp($masterImg, $masterAbs, self::WEBP_QUALITY)
+            : @imagejpeg($masterImg, $masterAbs, self::JPEG_QUALITY);
+        if ($needsFlatten) {
+            imagedestroy($masterImg); // helper'dan dönen ayrı resource
+        }
         if (!$writeOk) {
             imagedestroy($img);
             $err = error_get_last();
@@ -191,10 +202,14 @@ final class MediaService
         }
         // Always produce a JPEG fallback at this width so the variant is usable
         // even when neither WebP nor AVIF could be written.
+        // Audit-C2: JPEG fallback için alpha düzleştir (aksi halde transparan
+        // bölgeler tahmini renkle/siyahla yedirilir).
         if (!isset($out['webp']) && !isset($out['avif'])) {
-            if (@imagejpeg($dst, $absBase . '.jpg', self::JPEG_QUALITY)) {
+            $dstFlat = self::flattenAlpha($dst);
+            if (@imagejpeg($dstFlat, $absBase . '.jpg', self::JPEG_QUALITY)) {
                 $out['jpg'] = $base . '.jpg';
             }
+            imagedestroy($dstFlat);
         }
         imagedestroy($dst);
         return $out;
@@ -249,19 +264,35 @@ final class MediaService
         if ($img === false) {
             return null;
         }
-        // Normalize PNG/WebP transparency onto white when we re-encode as JPEG.
+        // Audit-C2 fix: Eski davranış PNG/WebP transparanlığını koşulsuz olarak
+        // beyazla düzleştiriyordu — bu mimari portfolyo sitesinde transparan
+        // logoları, render kesitlerini bozuyordu. Yeni davranış: alpha kanalı
+        // KORU; düzleştirme sadece JPEG yazılırken yapılır (flattenAlpha).
+        // Master WebP olarak kaydedildiğinde transparency korunur.
         if ($mime === 'image/png' || $mime === 'image/webp') {
-            $w = imagesx($img);
-            $h = imagesy($img);
-            $bg = imagecreatetruecolor($w, $h);
-            $white = imagecolorallocate($bg, 255, 255, 255);
-            imagefilledrectangle($bg, 0, 0, $w, $h, $white);
-            imagealphablending($bg, true);
-            imagecopy($bg, $img, 0, 0, 0, 0, $w, $h);
-            imagedestroy($img);
-            return $bg;
+            imagealphablending($img, false);
+            imagesavealpha($img, true);
         }
         return $img;
+    }
+
+    /**
+     * Audit-C2: JPEG çıktı için alpha kanalını beyaz arka plan üzerine
+     * yatırarak düzleştirir. JPEG alpha desteklemediği için zorunlu —
+     * aksi halde GD alpha'yı tahmini bir renkle (genelde siyah) yedirir.
+     *
+     * PNG/WebP çıktıları için ÇAĞRILMAMALI — alpha kaybedilir.
+     */
+    private static function flattenAlpha(\GdImage $img): \GdImage
+    {
+        $w = imagesx($img);
+        $h = imagesy($img);
+        $bg = imagecreatetruecolor($w, $h);
+        $white = imagecolorallocate($bg, 255, 255, 255);
+        imagefilledrectangle($bg, 0, 0, $w, $h, $white);
+        imagealphablending($bg, true);
+        imagecopy($bg, $img, 0, 0, 0, 0, $w, $h);
+        return $bg;
     }
 
     public static function findById(int $id): ?array
