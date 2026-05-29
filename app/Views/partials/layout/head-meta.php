@@ -262,7 +262,9 @@ if (!$_inAdmin):
     <?php if ($_gaId !== '' && preg_match('/^[A-Z0-9-]{6,30}$/', $_gaId)): ?>
     <?php /* Consent-gated: gtag.js onay verilene kadar YÜKLENMEZ (performans + KVKK).
              dataLayer + gtag fonksiyonu tanımlanır; gerçek script ve config'i
-             cookie-consent.js, kullanıcı 'all' onayı verince window.__gaId'den ekler. */ ?>
-    <script nonce="<?= esc(csp_nonce()) ?>">window.__gaId=<?= json_encode($_gaId, JSON_UNESCAPED_SLASHES) ?>;window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());</script>
+             cookie-consent.js, kullanıcı 'all' onayı verince window.__gaId'den ekler.
+             nonce: csp_nonce() helper henüz deploy edilmemişse fallback boş — eski
+             CSP 'unsafe-inline' ile yine de çalışır; helper deploy olunca nonce eklenir. */ ?>
+    <script<?= function_exists('csp_nonce') ? ' nonce="' . esc(csp_nonce()) . '"' : '' ?>>window.__gaId=<?= json_encode($_gaId, JSON_UNESCAPED_SLASHES) ?>;window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());</script>
     <?php endif; ?>
 <?php endif; ?>
