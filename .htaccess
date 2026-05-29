@@ -61,13 +61,13 @@ RedirectMatch 403 ^/(app|config|database|storage|vendor|tests)(/|$)
     Header set Cross-Origin-Opener-Policy "same-origin"
     Header set Cross-Origin-Resource-Policy "same-site"
 
-    # Content Security Policy
-    #   default: same-origin
-    #   img:    same-origin + data: (favicons, inlined SVGs) + https: for hot-linked
-    #   style:  same-origin (+ 'unsafe-inline' kept because some inline style attrs exist on legacy view scripts)
-    #   script: same-origin + 'unsafe-inline' (GA gtag config inline) + GA host
-    #   connect: GA collect endpoint
-    Header set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net; object-src 'none'; upgrade-insecure-requests"
+    # Content Security Policy — STATİK FALLBACK
+    # PHP Response::send() HTML yanıtlarda nonce-based CSP yollar (XSS bypass
+    # koruması). Apache mod_headers `Header set` direktifi PHP'den SONRA
+    # çalıştığı için statik versiyon PHP'nin nonce'lu CSP'sini eziyor;
+    # `setifempty` ile yalnızca PHP CSP göndermediğinde devreye gir.
+    # (Sitemap.xml, image bytes vb. non-HTML yanıtlar için fallback.)
+    Header setifempty Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net; object-src 'none'; upgrade-insecure-requests"
 
     # HSTS — production HTTPS aktif (kullanıcı kararı: tam puan için aç)
     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
