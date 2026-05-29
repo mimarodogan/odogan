@@ -109,16 +109,31 @@ self.addEventListener('fetch', function (event) {
     if (url.pathname.startsWith('/panel') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/editor')) return;
     if (url.pathname.startsWith('/api')) return;
 
+    // Her respondWith MUTLAKA bir Response döndürmeli. Aksi takdirde
+    // "Failed to convert value to 'Response'" hatası → tarayıcı network
+    // error sayar (FetchEvent rejected). Offline/cache-miss durumlarında
+    // bu basit fallback Response döner.
+    var offlineResponse = function () {
+        return new Response('Offline', {
+            status: 503,
+            statusText: 'Offline',
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+    };
+
     // HTML — network-first, cache fallback
     if (req.headers.get('accept') && req.headers.get('accept').indexOf('text/html') >= 0) {
         event.respondWith(
             fetch(req).then(function (resp) {
                 var copy = resp.clone();
-                caches.open(CACHE_HTML).then(function (c) { c.put(req, copy); });
+                caches.open(CACHE_HTML).then(function (c) { c.put(req, copy); }).catch(function () {});
                 return resp;
             }).catch(function () {
                 return caches.match(req).then(function (cached) {
-                    return cached || caches.match(OFFLINE_URL);
+                    if (cached) return cached;
+                    return caches.match(OFFLINE_URL).then(function (off) {
+                        return off || offlineResponse();
+                    });
                 });
             })
         );
@@ -131,12 +146,12 @@ self.addEventListener('fetch', function (event) {
             var network = fetch(req).then(function (resp) {
                 if (resp && resp.status === 200 && resp.type === 'basic') {
                     var copy = resp.clone();
-                    caches.open(CACHE_ASSETS).then(function (c) { c.put(req, copy); });
+                    caches.open(CACHE_ASSETS).then(function (c) { c.put(req, copy); }).catch(function () {});
                 }
                 return resp;
-            }).catch(function () { return cached; });
+            }).catch(function () { return cached || offlineResponse(); });
             return cached || network;
-        })
+        }).catch(function () { return offlineResponse(); })
     );
 });
 JS;
