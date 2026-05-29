@@ -166,7 +166,7 @@ $adminUser = $user ?? null;
     </form>
 </section>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 (function () {
     var sel = document.getElementById('mail-preset');
     if (!sel) return;

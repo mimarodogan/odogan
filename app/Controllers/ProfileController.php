@@ -176,11 +176,12 @@ final class ProfileController
         // ID rotasyonu — eski session_id'yi kullanmaya çalışan saldırgan kapanır.
         session_regenerate_id(true);
         // Re-track current session under the new id (eski satır pruneStale ile temizlenecek).
+        // Trusted-proxy aware IP — CF/XFF zincirinden gerçek client.
         try {
             \App\Models\UserSession::track(
                 $userId,
                 (string) session_id(),
-                (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                \App\Services\RealIpService::ip(),
                 (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')
             );
         } catch (\Throwable) {}

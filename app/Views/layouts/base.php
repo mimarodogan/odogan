@@ -92,7 +92,7 @@ if ($_inAdmin) {
 <?php if ($_inAdmin) require $_partials . '/admin-drawer-script.php'; ?>
 <script src="<?= esc(\App\Services\AssetMinifier::asset('assets/js/app.js')) ?>" defer></script>
 <?php if (!$_inAdmin && function_exists('feature') && feature('pwa_enabled')): ?>
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 (function(){
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function(){

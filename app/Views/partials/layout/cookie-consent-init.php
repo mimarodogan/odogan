@@ -24,7 +24,7 @@ $_gdprRequired = (bool)  \App\Models\Setting::get('gdpr_consent_required', true,
 $_gaIdInit    = (string) \App\Models\Setting::get('google_analytics_id', '', 'analytics');
 
 if ($_ccEnabled && $_gdprRequired && $_gaIdInit !== ''): ?>
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent', 'default', {

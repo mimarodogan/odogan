@@ -59,7 +59,7 @@
 <?php endif; ?>
 <?php endif; ?>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 document.querySelectorAll('.copy-path').forEach(function(b){
     b.addEventListener('click', function(){
         navigator.clipboard.writeText(b.dataset.path).then(function(){

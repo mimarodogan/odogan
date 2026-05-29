@@ -300,13 +300,13 @@ final class AuthService
         $_SESSION['user_id'] = $userId;
         $_SESSION['_login_at'] = time();
 
-        // Active session tracking (Tier 8)
+        // Active session tracking (Tier 8) — trusted-proxy aware IP
         if (function_exists('feature') && feature('active_sessions_enabled')) {
             try {
                 \App\Models\UserSession::track(
                     $userId,
                     (string) session_id(),
-                    (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+                    RealIpService::ip(),
                     (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')
                 );
             } catch (\Throwable) {}

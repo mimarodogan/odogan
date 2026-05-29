@@ -38,8 +38,10 @@ final class ConsentController
             return Response::json(['ok' => false, 'error' => 'invalid_action'], 400);
         }
 
-        // Rate limit — IP saatte 30 (banner reklam üzerinden saldırı engelleme)
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        // Rate limit — IP saatte 30 (banner reklam üzerinden saldırı engelleme).
+        // RealIpService trusted-proxy aware: Cloudflare arkasında REMOTE_ADDR
+        // CF edge IP'sidir → CF-Connecting-IP veya XFF zincirinden gerçek IP.
+        $ip = \App\Services\RealIpService::ip();
         if (!self::checkRate($ip)) {
             return Response::json(['ok' => false, 'error' => 'rate_limited'], 429);
         }

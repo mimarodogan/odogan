@@ -4,7 +4,7 @@
  * senkronizasyonu — title/excerpt/slug/kategori değiştikçe güncellenir.
  */
 ?>
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 (function () {
     var titleInput    = document.querySelector('input[name="title"]');
     var excerptInput  = document.querySelector('textarea[name="excerpt"]');

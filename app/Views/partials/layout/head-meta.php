@@ -133,6 +133,11 @@ if ($_criticalOn) {
     if ($_criticalCss !== '') {
         $_criticalCss = preg_replace('#@import[^;]*;#i', '', $_criticalCss) ?? '';
         $_criticalCss = preg_replace('#url\s*\(\s*["\']?\s*(?!data:)[^)]*\)#i', '', $_criticalCss) ?? '';
+        // XSS guard — bu blok <style> içine inline yazılıyor. CSS gramerinde
+        // '<' meşru değil; "</style><script>" payload'ını kapatmak için her
+        // '<' karakterini düşür. CriticalCssController da save'de aynı kontrolü
+        // yapıyor ama DB'de patch öncesi kaydedilmiş satırları da kurtarıyoruz.
+        $_criticalCss = str_replace(['<', '-->', '<!--'], '', $_criticalCss);
         // Boş kaldıysa <style> bloğu basmayalım
         $_criticalCss = trim($_criticalCss);
     }
@@ -257,6 +262,6 @@ if (!$_inAdmin):
     <?php /* Consent-gated: gtag.js onay verilene kadar YÜKLENMEZ (performans + KVKK).
              dataLayer + gtag fonksiyonu tanımlanır; gerçek script ve config'i
              cookie-consent.js, kullanıcı 'all' onayı verince window.__gaId'den ekler. */ ?>
-    <script>window.__gaId=<?= json_encode($_gaId, JSON_UNESCAPED_SLASHES) ?>;window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());</script>
+    <script nonce="<?= esc(csp_nonce()) ?>">window.__gaId=<?= json_encode($_gaId, JSON_UNESCAPED_SLASHES) ?>;window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());</script>
     <?php endif; ?>
 <?php endif; ?>

@@ -45,7 +45,13 @@ final class ViewCounter
             return;
         }
         $redis = CacheManager::redis();
-        $fingerprint = $fingerprint ?? ($_SERVER['REMOTE_ADDR'] ?? 'anon');
+        if ($fingerprint === null) {
+            try {
+                $fingerprint = \App\Services\RealIpService::ip() ?: 'anon';
+            } catch (\Throwable) {
+                $fingerprint = (string) ($_SERVER['REMOTE_ADDR'] ?? 'anon');
+            }
+        }
 
         if ($redis !== null) {
             $client = $redis->client();

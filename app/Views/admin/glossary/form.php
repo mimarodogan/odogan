@@ -766,7 +766,7 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 }
 </style>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 /* H3: Term inputu blur'da AJAX duplicate kontrolü.
    Mevcut terim varsa kırmızı uyarı + submit disable. */
 (function () {
@@ -885,7 +885,7 @@ $action = $isEdit ? url('/admin/sozluk/' . (int) $item['id']) : url('/admin/sozl
 })();
 </script>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 /* MC6 (form-side): Bağlam türü checkbox grid — max 3 guard +
    görsel state (is-checked) + erişilebilir sayaç + min-1 form-level
    validation. AI panelinin js'i (glossary-ai.js) `context_type[]`

@@ -70,21 +70,27 @@ final class LinkChecker
      */
     public static function probe(string $url): array
     {
+        // SSRF guard — yazar yazısına `http://127.0.0.1/...` veya
+        // `http://169.254.169.254/...` (cloud metadata) koyup cron'u iç
+        // ağdaki servisleri taratmak isteyebilir. Şema ve host'u önden
+        // doğrula; localhost/private/link-local/CGN aralıklarını reddet.
+        if (!self::isPublicHttpUrl($url)) {
+            return ['ok' => false, 'status' => 0, 'error' => 'blocked: non-public target'];
+        }
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_NOBODY => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_FOLLOWLOCATION => false, // her hop'u kendimiz doğrula
             CURLOPT_TIMEOUT => self::TIMEOUT,
             CURLOPT_CONNECTTIMEOUT => self::TIMEOUT,
             CURLOPT_USERAGENT => 'OtoriteLinkChecker/1.0',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
         ]);
-        curl_exec($ch);
-        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        $err = curl_error($ch) ?: null;
+        [$status, $err] = self::execWithRedirects($ch, $url, true);
         curl_close($ch);
 
         // Some servers reject HEAD — retry GET once.
@@ -92,18 +98,17 @@ final class LinkChecker
             $ch = curl_init();
             curl_setopt_array($ch, [
                 CURLOPT_URL => $url,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS => 5,
+                CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_TIMEOUT => self::TIMEOUT,
                 CURLOPT_CONNECTTIMEOUT => self::TIMEOUT,
                 CURLOPT_USERAGENT => 'OtoriteLinkChecker/1.0',
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+                CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
                 CURLOPT_RANGE => '0-1024',
             ]);
-            curl_exec($ch);
-            $s2 = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-            $e2 = curl_error($ch) ?: null;
+            [$s2, $e2] = self::execWithRedirects($ch, $url, false);
             curl_close($ch);
             if ($s2 > 0) {
                 $status = $s2;
@@ -112,6 +117,109 @@ final class LinkChecker
         }
         $ok = $status >= 200 && $status < 400;
         return ['ok' => $ok, 'status' => $status, 'error' => $ok ? null : $err];
+    }
+
+    /**
+     * Redirect zincirini elle takip et — her hop'ta hedef host'u tekrar
+     * SSRF guard'ından geçir. cURL'ün CURLOPT_FOLLOWLOCATION'ı host re-resolve
+     * etmeden iç IP'lere yönlendirmeyi izler; yazar saldırgan domain'inde
+     * `Location: http://127.0.0.1/` döndüren endpoint kurabilir.
+     *
+     * @return array{0:int,1:?string}  [status, error]
+     */
+    private static function execWithRedirects(\CurlHandle $ch, string $startUrl, bool $head): array
+    {
+        $current = $startUrl;
+        $hops = 0;
+        while ($hops <= 5) {
+            curl_setopt($ch, CURLOPT_URL, $current);
+            curl_exec($ch);
+            $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $err = curl_error($ch) ?: null;
+            if ($status < 300 || $status >= 400) {
+                return [$status, $err];
+            }
+            $location = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+            if ($location === '') {
+                return [$status, $err];
+            }
+            if (!self::isPublicHttpUrl($location)) {
+                return [0, 'blocked redirect: non-public target'];
+            }
+            $current = $location;
+            $hops++;
+            // GET fallback'inde 3xx'i takip et ama HEAD'de yapıyorsak büyük bir
+            // body çekme — range header zaten devrede.
+        }
+        return [0, 'too many redirects'];
+    }
+
+    /**
+     * URL public bir HTTP(S) hedefi mi? Şema + DNS resolve + private/loopback
+     * /link-local/multicast/CGN bloklarına bakar. Hem A hem AAAA çözer; eğer
+     * tek bir kayıt blocklu aralığa düşerse reddedilir (DNS rebinding'i de
+     * cürlün re-resolve etmesine bırakmamak için elle kontrol ediyoruz).
+     */
+    private static function isPublicHttpUrl(string $url): bool
+    {
+        $parts = @parse_url($url);
+        if (!is_array($parts)) {
+            return false;
+        }
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+        $host = (string) ($parts['host'] ?? '');
+        if ($host === '') {
+            return false;
+        }
+        // Userinfo (user@host) kullanılmasın — proxy/SSRF amplifier'ı.
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            return false;
+        }
+        $ips = self::resolveAll($host);
+        if ($ips === []) {
+            return false; // çözümlenemeyen host → güvenli tarafta reddet
+        }
+        foreach ($ips as $ip) {
+            if (!self::isPublicIp($ip)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** @return string[] */
+    private static function resolveAll(string $host): array
+    {
+        // Sayısal IP doğrudan host olarak verilmiş olabilir.
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return [$host];
+        }
+        $out = [];
+        $v4 = @gethostbynamel($host);
+        if (is_array($v4)) {
+            $out = array_merge($out, $v4);
+        }
+        $aaaa = @dns_get_record($host, DNS_AAAA);
+        if (is_array($aaaa)) {
+            foreach ($aaaa as $r) {
+                if (!empty($r['ipv6'])) {
+                    $out[] = (string) $r['ipv6'];
+                }
+            }
+        }
+        return array_values(array_unique($out));
+    }
+
+    private static function isPublicIp(string $ip): bool
+    {
+        return (bool) filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        );
     }
 
     private static function record(int $postId, string $url, array $r): void

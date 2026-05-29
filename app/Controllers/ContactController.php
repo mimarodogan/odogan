@@ -74,8 +74,8 @@ final class ContactController
             return $this->reject('spam_too_fast');
         }
 
-        // 3. Rate limit — IP başına saatte 3
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        // 3. Rate limit — IP başına saatte 3 (RealIpService trusted-proxy aware)
+        $ip = \App\Services\RealIpService::ip();
         if (!$this->checkRateLimit($ip)) {
             flash('error', 'Saatte en fazla 3 mesaj gönderebilirsiniz. Lütfen biraz sonra tekrar deneyin.');
             return Response::redirect(url('/iletisim'));

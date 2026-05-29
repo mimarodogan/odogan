@@ -73,7 +73,14 @@ final class Logger
         }
         $message = mb_substr($message, 0, 500);
         $userId = $_SESSION['user_id'] ?? null;
-        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+        // Trusted-proxy aware: Cloudflare/Reverse-proxy arkasında REMOTE_ADDR
+        // edge IP'sini gösterir; saldırgan IP'sini doğru kayda almak için
+        // RealIpService XFF/CF-Connecting-IP zincirinden gerçek client'ı çözer.
+        try {
+            $ip = RealIpService::ip();
+        } catch (\Throwable) {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+        }
         $uri = $_SERVER['REQUEST_URI'] ?? null;
 
         try {

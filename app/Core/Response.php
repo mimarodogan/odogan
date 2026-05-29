@@ -77,8 +77,40 @@ final class Response
             foreach ($this->headers as $k => $v) {
                 header("$k: $v");
             }
+            self::emitSecurityHeaders($this->headers['Content-Type'] ?? '');
         }
         echo $this->body;
+    }
+
+    /**
+     * HTML yanıtlarda nonce-based CSP yolla — .htaccess'teki statik 'unsafe-inline'
+     * CSP'sini ezer. Nonce yalnızca csp_nonce() helper'ı çağrıldığında üretilir;
+     * inline <script nonce="..."> bu nonce'u taşır. Sanitizer bypass'ından gelen
+     * nonce'suz <script> CSP3 tarayıcılarda bloklanır ('unsafe-inline' nonce
+     * varlığında yok sayılır).
+     */
+    private static function emitSecurityHeaders(string $contentType): void
+    {
+        if (!str_contains(strtolower($contentType), 'text/html')) {
+            return;
+        }
+        if (!function_exists('csp_nonce')) {
+            return;
+        }
+        $nonce = csp_nonce();
+        $csp = "default-src 'self'; "
+             . "base-uri 'self'; "
+             . "form-action 'self'; "
+             . "frame-ancestors 'self'; "
+             . "img-src 'self' data: https:; "
+             . "style-src 'self' 'unsafe-inline'; "
+             . "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; "
+             . "script-src-attr 'unsafe-inline'; "
+             . "font-src 'self' data:; "
+             . "connect-src 'self' https://www.google-analytics.com https://*.analytics.google.com https://*.g.doubleclick.net; "
+             . "object-src 'none'; "
+             . "upgrade-insecure-requests";
+        header('Content-Security-Policy: ' . $csp);
     }
 
     private static function renderFile(string $file, array $vars): string

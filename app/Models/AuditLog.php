@@ -77,6 +77,14 @@ final class AuditLog
 
     private static function clientIp(): ?string
     {
-        return (string) ($_SERVER['REMOTE_ADDR'] ?? '') ?: null;
+        // Trusted-proxy aware: Cloudflare/Reverse-proxy arkasında REMOTE_ADDR
+        // edge IP'sidir; audit log'da saldırgan IP'sini doğru tutmak için
+        // RealIpService XFF/CF-Connecting-IP zincirinden gerçek client'ı çözer.
+        try {
+            $ip = \App\Services\RealIpService::ip();
+            return $ip !== '' ? $ip : null;
+        } catch (\Throwable) {
+            return (string) ($_SERVER['REMOTE_ADDR'] ?? '') ?: null;
+        }
     }
 }

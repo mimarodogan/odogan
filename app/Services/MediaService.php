@@ -57,7 +57,10 @@ final class MediaService
             return ['ok' => false, 'error' => 'Dosya boyutu 0–8 MB arasında olmalı.'];
         }
         $tmp = (string) $file['tmp_name'];
-        if (!is_uploaded_file($tmp) && !is_file($tmp)) {
+        // Sadece is_uploaded_file kabul et — is_file fallback'i tmp_name
+        // başka bir path'e zorlanırsa (sahte $_FILES injection ya da gelecekteki
+        // API endpoint hatası) yerel dosya okuma savunma katmanını gevşetir.
+        if (!is_uploaded_file($tmp)) {
             return ['ok' => false, 'error' => 'Geçersiz yükleme.'];
         }
         $mime = (string) (mime_content_type($tmp) ?: ($file['type'] ?? ''));

@@ -208,3 +208,20 @@ if (!function_exists('feature')) {
         return $val === true || $val === '1' || $val === 1;
     }
 }
+
+if (!function_exists('csp_nonce')) {
+    /**
+     * Per-request CSP nonce — inline <script nonce="..."> için.
+     *
+     * Response::send() HTML yanıtlarda nonce'lu Content-Security-Policy başlığı
+     * yollar; sanitizer bypass'ından gelen nonce'suz <script> çalışmaz.
+     */
+    function csp_nonce(): string
+    {
+        static $nonce = null;
+        if ($nonce === null) {
+            $nonce = base64_encode(random_bytes(16));
+        }
+        return $nonce;
+    }
+}

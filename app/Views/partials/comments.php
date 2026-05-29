@@ -130,7 +130,7 @@ $_renderComment = function (array $c, int $depth = 0) use (&$_renderComment, &$_
     </div>
 </section>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 // Reply threading — "Yanıtla" tıklayınca form'a parent_id set + scroll
 (function(){
     document.querySelectorAll('.comment-reply-btn').forEach(function(btn){

@@ -332,7 +332,7 @@ $is2fa = ((int) ($user['totp_enabled'] ?? 0)) === 1;
     </div>
 </section>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 // expertise_csv → array (submit öncesi)
 document.getElementById('profile-form')?.addEventListener('submit', function () {
     var csv = this.querySelector('input[name="profile[expertise_csv]"]');

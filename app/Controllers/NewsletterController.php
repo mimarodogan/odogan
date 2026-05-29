@@ -77,7 +77,16 @@ final class NewsletterController
     private static function backTo(Request $req): string
     {
         $ref = $req->header('referer', '');
-        if (is_string($ref) && $ref !== '' && str_contains($ref, $_SERVER['HTTP_HOST'] ?? '')) {
+        if (!is_string($ref) || $ref === '') {
+            return url('/');
+        }
+        // Open redirect guard — eski sürüm `str_contains($ref, $host)` kullanıyordu,
+        // saldırgan `https://evil.com/?fake=odogan.com.tr` referer'ı substring
+        // match'ini geçip kullanıcıyı kendi sayfasına döndürebiliyordu. URL'yi
+        // parse edip host'u tam eşle.
+        $host = parse_url($ref, PHP_URL_HOST);
+        $expected = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($host !== null && $expected !== '' && strcasecmp((string) $host, $expected) === 0) {
             return $ref;
         }
         return url('/');

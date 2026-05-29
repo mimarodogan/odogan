@@ -120,7 +120,7 @@ $commonPlaceholders = ['site_name', 'site_url', 'date_time'];
 
 <script src="<?= esc(asset('js/editor.js')) ?>" defer></script>
 <script src="<?= esc(asset('js/media-picker.js')) ?>" defer></script>
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 // Yer tutucu chip'ine tıklayınca clipboard'a kopyala (UX iyileştirmesi)
 document.querySelectorAll('.pe-placeholder').forEach(function (el) {
     el.addEventListener('click', function (ev) {

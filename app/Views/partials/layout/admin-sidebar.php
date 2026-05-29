@@ -256,7 +256,7 @@ $_hasShowcase = (function_exists('feature') && (feature('project_portfolio_enabl
     </nav>
 </aside>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 // Sidebar accordion durumu + canlı arama. Inline — asset cache derdi yok.
 (function () {
     'use strict';

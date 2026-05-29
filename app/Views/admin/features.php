@@ -129,7 +129,7 @@
 .feature-card.is-on .toggle-knob{transform:translateX(16px)}
 </style>
 
-<script>
+<script nonce="<?= esc(csp_nonce()) ?>">
 // Live toggle visual feedback — backend submit'i değiştirmez, sadece sınıf değişir.
 document.querySelectorAll('.feature-card').forEach(function(card){
     var cb = card.querySelector('input[type="checkbox"]');

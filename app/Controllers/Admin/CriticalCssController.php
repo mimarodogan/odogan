@@ -35,6 +35,14 @@ final class CriticalCssController
             flash('error', 'Critical CSS 100KB üzeri olamaz; lütfen kısaltın.');
             return Response::redirect(url('/admin/critical-css'));
         }
+        // XSS guard — CSS gövdesinde HTML tag'i (</style>, <script ...) ya da
+        // HTML yorumu bulunmamalı. head-meta.php bunu <style>{...}</style>
+        // içine inline koyduğu için "</style><script>" payload'ı persistent XSS
+        // doğurur. CSS gramerinde '<' meşru bir karakter değildir → guard.
+        if (preg_match('#<|-->|<!--#', $content)) {
+            flash('error', 'Critical CSS içinde "<" karakteri veya HTML yorumu bulunamaz (XSS koruması).');
+            return Response::redirect(url('/admin/critical-css'));
+        }
         Setting::set('critical_css_content', $content, 'string', 'features');
         Setting::flushCache();
         AuditLog::record('critical_css.updated', 'setting', 0, mb_strlen($content) . ' karakter');
