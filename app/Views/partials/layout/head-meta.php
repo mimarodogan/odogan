@@ -16,6 +16,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light only">
+<meta name="csrf-token" content="<?= esc(csrf_token()) ?>">
 <?= seo_meta($seoArgs) ?>
 <?php
 // Pagination rel=prev/next (kategori vb. sayfalanmış sayfalarda)
